@@ -11,6 +11,15 @@ import os
 from flask import send_from_directory
 
 
+import hashlib
+import uuid
+
+from werkzeug.utils import secure_filename
+
+
+
+
+
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -24,20 +33,6 @@ UPLOAD_FOLDER = './uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Ensure the upload directory exists
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# def create_connection():
-#     try:
-#         connection = pymysql.connect(
-#             host="box2272.bluehost.com",
-#             user="travarit_test",
-#             password="Kiotel123!",
-#             database="travarit_login",
-#             cursorclass=pymysql.cursors.DictCursor
-#         )
-#         print("Successfully connected to the database")
-#         return connection
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return None
 
 def create_connection():
     try:
@@ -125,53 +120,6 @@ def get_user_email():
         return jsonify({"error": "Database query failed"}), 500
     finally:
         connection.close()
-
-# @app.route("/api/register", methods=["POST"])
-# def register_user():
-#     data = request.json
-#     email = data["email"]
-#     password = data["password"]
-#     fname = data.get("fname")
-#     lname = data.get("lname")
-#     dob = data.get("dob")
-#     address = data.get("address")
-#     account_no = data.get("account_no")
-#     mobileno = data.get("mobileno")
-#     role_id = data.get("role_id", 2)  # Assuming 1 is the default role_id for new users
-
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         with connection.cursor() as cursor:
-#             # Check if the user already exists
-#             cursor.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
-#             user_exists = cursor.fetchone() is not None
-
-#             if user_exists:
-#                 return jsonify({"error": "User already exists"}), 409
-
-#             # Call the stored procedure to insert the new user
-#             cursor.callproc('Proc_tblusers_Upsert', (0, email, password, fname, lname, dob, address, account_no, mobileno, role_id))
-#             connection.commit()
-
-#             # Fetch the newly created user
-#             cursor.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
-#             new_user = cursor.fetchone()
-
-#             session["user_id"] = new_user['id']
-#             session.permanent = True  # Make the session permanent (cookie won't be deleted after the browser is closed)
-
-#             return jsonify({
-#                 "id": new_user['id'],
-#                 "email": new_user['emailid']
-#             })
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Database query failed"}), 500
-#     finally:
-#         connection.close()
 
 
 @app.route("/api/register", methods=["POST"])
@@ -366,6 +314,17 @@ def get_closed_tickets():
 
 
 
+
+
+#----------------------------------------------------------------------------------------------------------
+
+def generate_unique_name(filename):
+    # You can generate a unique name based on the original filename and some random string (e.g., UUID)
+    unique_str = str(uuid.uuid4())  # Generate a UUID
+    _, ext = os.path.splitext(filename)  # Extract the file extension
+    unique_name = hashlib.sha256(unique_str.encode()).hexdigest() + ext  # Encrypt the UUID and append the extension
+    return unique_name
+
 @app.route("/api/ticket", methods=["POST"])
 @login_required
 def create_ticket():
@@ -392,11 +351,19 @@ def create_ticket():
         with connection.cursor() as cursor:
             if attachments:
                 for attachment in attachments:
-                    filename = attachment.filename
-                    attachment_filenames.append(filename)
-                    file_path = os.path.join(upload_folder, filename)
+                    original_filename = attachment.filename
+                    
+                    # Generate unique encrypted name for the file
+                    unique_name = generate_unique_name(original_filename)
+                    
+                    # Save the file on the server with the unique encrypted name
+                    file_path = os.path.join(upload_folder, unique_name)
                     attachment.save(file_path)
+                    
+                    # Store only the original filename
+                    attachment_filenames.append(original_filename)
 
+            # Convert attachment filenames to JSON format
             attachments_json = json.dumps(attachment_filenames)
 
             # Set the session variable for the current user ID
@@ -405,10 +372,11 @@ def create_ticket():
             # Set status_id to 1 (assumed 'Open' status)
             status_id = 1
 
-            # Call the stored procedure with the parameters including status_id
-            cursor.callproc('Proc_tbltickets_UpsertTicket', (0, title, description, attachments_json, status_id))
+            # Call the stored procedure with the parameters, including the attachments JSON and status_id
+            cursor.callproc('Proc_tbltickets_UpsertTicket', (0, title, description, attachments_json, unique_name if attachments else None, status_id))
             connection.commit()
 
+            # Fetch the last inserted ticket ID
             cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
             ticket_id = cursor.fetchone()["ticket_id"]
 
@@ -461,13 +429,34 @@ def get_ticket(ticket_id):
         connection.close()
 
 
+
+
+
+# Route for serving files from the 'uploads' folder
 @app.route('/uploads/<filename>', methods=['GET'])
 def uploaded_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    try:
+        # Use send_from_directory to serve the file from the uploads folder
+        return send_from_directory(UPLOAD_FOLDER, filename)
+    except FileNotFoundError:
+        # Return a 404 error if the file does not exist
+        abort(404, description=f"File '{filename}' not found in the 'uploads' folder.")
 
+# Route for serving files from the 'uploads/replies' subdirectory
 @app.route('/uploads/replies/<filename>', methods=['GET'])
-def uploaded_file1(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+def uploaded_reply_file(filename):
+    replies_folder = os.path.join(UPLOAD_FOLDER, 'replies')
+    
+    # Ensure the replies folder exists, otherwise create it
+    if not os.path.exists(replies_folder):
+        os.makedirs(replies_folder)
+    
+    try:
+        # Use send_from_directory to serve the file from the replies folder
+        return send_from_directory(replies_folder, filename)
+    except FileNotFoundError:
+        # Return a 404 error if the file does not exist
+        abort(404, description=f"File '{filename}' not found in the 'uploads/replies' folder.")
 
 
 
@@ -527,6 +516,8 @@ def get_roles():
 
 # By kshiti
 
+
+
 @app.route("/api/tickets/<int:ticket_id>/reply", methods=["POST"])
 def reply_to_ticket(ticket_id):
     print(f"Received request for ticket ID: {ticket_id}")
@@ -545,19 +536,24 @@ def reply_to_ticket(ticket_id):
 
         # Process attachments
         attachments = request.files.getlist("attachments")
-        attachment_list = []
+        original_filenames = []
+        unique_names = []
         upload_folder = 'uploads/replies'
         if not os.path.exists(upload_folder):
             os.makedirs(upload_folder)
 
         for file in attachments:
             if file:
-                file_path = os.path.join(upload_folder, file.filename)
+                original_filename = file.filename
+                unique_name = generate_unique_name(original_filename)
+                file_path = os.path.join(upload_folder, unique_name)
                 file.save(file_path)
-                attachment_list.append(file.filename)
+                # Store only the original filename
+                original_filenames.append(original_filename)
+                unique_names.append(unique_name)
 
-        # Convert the list to a JSON string
-        attachment_json = json.dumps(attachment_list)
+        # Convert the list of original filenames to a JSON string
+        attachment_json = json.dumps(original_filenames)
 
         with connection.cursor() as cursor:
             # Call stored procedure to insert or update reply
@@ -567,7 +563,8 @@ def reply_to_ticket(ticket_id):
                 description,
                 user_id,
                 status_id,
-                attachment_json
+                attachment_json,
+                unique_names[0] if unique_names else None  # Include the unique name of the first attachment if any
             ])
             connection.commit()
 
@@ -578,9 +575,10 @@ def reply_to_ticket(ticket_id):
         return jsonify({"error": "Database query failed"}), 500
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        return jsonify({"error": str(e)}), 500
     finally:
         connection.close()
+
 
 
 @app.route("/api/ticket/<int:ticket_id>/replies", methods=["GET"])
@@ -634,73 +632,6 @@ def get_ticket_title(ticket_id):
     finally:
         connection.close()
 
-
-
-# @app.route('/api/users', methods=['GET'])
-# def get_users():
-#     user_id = request.args.get('user_id', type=int)
-
-#     if not user_id:
-#         return jsonify({"error": "User ID is required"}), 400
-
-#     conn = create_connection()
-#     if conn is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-#             cursor.callproc('Proc_tblusers_displaylistofusers2', (user_id,))
-#             users = cursor.fetchall()
-
-#             if not users:
-#                 return jsonify({"error": "No user found with the given ID"}), 404
-
-#             return jsonify(users), 200
-
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Database query failed"}), 500
-
-#     finally:
-#         conn.close()
-
-
-
-# Route to display user details based on user ID
-# @app.route('/api/users', methods=['GET'])
-# def get_users():
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         with connection.cursor() as cursor:
-#             # Call the stored procedure to get the list of all users
-#             cursor.callproc('Proc_tblusers_displaylistofusers_test')
-#             users = cursor.fetchall()  # Fetch all results
-            
-#             if not users:
-#                 return jsonify({"error": "No users found"}), 404
-
-#             # Convert the result to a list of dictionaries
-#             users_list = []
-#             for user in users:
-#                 users_list.append({
-#                     "id": user[0],
-#                     "fname": user[1],
-#                     "lname": user[2],
-#                     "emailid": user[3],
-#                     "role": user[4],
-#                     # Add other fields as necessary
-#                 })
-
-#             return jsonify(users_list)
-            
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Database query failed"}), 500
-#     finally:
-#         connection.close()
 
 
 @app.route('/api/users', methods=['GET'])

@@ -179,6 +179,7 @@
 //     </div>
 //   );
 // };
+// hello this is the way it is was a thing the thing we could get it with the way of the that suits that it could be acomplished in the thing of the way 
 
 // Export the component as default
 // export default TicketReplyForm;
@@ -273,7 +274,7 @@ const TicketReplyForm = ({ params }) => {
       }
     }
     
-    // Log form data
+    // Log form data hello this is the way that is the thing of which that we can do to it so it could be at the very best 
     for (let pair of formData.entries()) {
       console.log(`${pair[0]}: ${pair[1]}`);
     }

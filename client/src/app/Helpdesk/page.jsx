@@ -774,7 +774,7 @@ export default function Home() {
   };
 
   const goBack = () => {
-    router.push("/dashboard");
+    router.push("/Dashboard");
   };
 
   useEffect(() => {
