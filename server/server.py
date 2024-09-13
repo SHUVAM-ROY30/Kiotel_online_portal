@@ -214,6 +214,7 @@ def get_opened_tickets():
 @app.route("/api/latest_opened_tickets", methods=["GET"])
 @login_required
 def get_latest_opened_tickets():
+    user_id = session.get("user_id")
     connection = create_connection()
     if connection is None:
         return jsonify({"error": "Failed to connect to the database"}), 500
@@ -221,7 +222,7 @@ def get_latest_opened_tickets():
     try:
         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
             # Call the stored procedure for the latest 5 opened tickets
-            cursor.callproc("Proc_tbltickets_DisplayTop5Openedtickets")
+            cursor.callproc("Proc_tbltickets_SelectAssignedTicketsOfUser", (user_id))
             
             # Fetch the result
             latest_opened_tickets = cursor.fetchall()
@@ -669,6 +670,147 @@ def get_users():
     finally:
         connection.close()
 
+# ---------------on 11 09 2024 -------------
+
+@app.route('/api/assign_ticket', methods=['POST'])
+def assign_ticket():
+    data = request.json
+    ticket_id = data.get('ticket_id')
+    user_id = data.get('user_id')
+
+    if not ticket_id or not user_id:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Update the assigned user for the ticket
+            cursor.callproc('Proc_tbltickets_UpdateAssignedTo', (ticket_id, user_id))
+            connection.commit()
+            return jsonify({"message": "Ticket assigned successfully"})
+            
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Failed to assign ticket"}), 500
+    finally:
+        connection.close()
+
+
+
+# @app.route('/api/my-tickets', methods=['GET'])
+# def get_user_tickets():
+#     connection = create_connection()  # Using the existing `create_connection` method from your code
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     # Ensure the user is logged in and their ID is stored in the session
+#     user_id = session.get('user_id')
+#     if not user_id:
+#         return jsonify({"error": "User not logged in"}), 401
+
+#     try:
+#         with connection.cursor() as cursor:
+#             # Call the stored procedure to fetch tickets assigned to the logged-in user
+#             cursor.callproc('Proc_tbltickets_SelectAssignedTicketsOfUser', [user_id])
+
+#             # Fetch all results from the stored procedure
+#             tickets = cursor.fetchall()
+
+#             # Check if tickets were found
+#             if not tickets:
+#                 return jsonify({"error": "No tickets found for the user"}), 404
+
+#             return jsonify({"tickets": tickets}), 200
+
+#     except pymysql.MySQLError as e:
+#         print(f"Database query error: {e}")
+#         return jsonify({"error": "Database query failed"}), 500
+#     finally:
+#         connection.close()
+
+
+@app.route('/api/my-tickets', methods=['GET'])
+
+@login_required
+def get_user_ticket_by_id():
+    # Fetch user_id from the session
+    user_id = session.get("user_id")
+    
+    # If user_id is not available, return an error
+    if not user_id:
+        return jsonify({"error": "User ID not found in session"}), 401
+    
+    # Create database connection
+    connection = create_connection()
+    
+    # Handle the case where the connection fails
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            # Call the stored procedure to get the latest 5 opened tickets
+            cursor.callproc("Proc_tbltickets_SelectAssignedTicketsOfUser", (user_id,))
+            
+            # Fetch the result from the procedure
+            latest_opened_tickets = cursor.fetchall()
+            
+            # Log the raw result for debugging purposes
+            print("Raw result:", latest_opened_tickets)
+
+            # Decode any bytes to strings if necessary
+            for ticket in latest_opened_tickets:
+                for key, value in ticket.items():
+                    if isinstance(value, bytes):
+                        ticket[key] = value.decode("utf-8")
+
+            # Return the tickets as a JSON response
+            return jsonify(latest_opened_tickets), 200
+
+    except pymysql.MySQLError as e:
+        # Log any MySQL errors for debugging
+        print(f"MySQL error occurred: {e}")
+        return jsonify({"error": "Database query failed"}), 500
+
+    except Exception as e:
+        # Log unexpected errors
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+
+    finally:
+        # Ensure the connection is closed in all cases
+        connection.close()
+
+
+
+
+@app.route('/api/get_assigned_user/<int:ticket_id>', methods=['GET'])
+def get_assigned_user(ticket_id):
+    # Create database connection
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Call the stored procedure to fetch the assigned user for the given ticket ID
+            cursor.callproc('Proc_GetAssignedUser', [ticket_id])
+            result = cursor.fetchone()  # Assuming the stored procedure returns one row
+            
+            if result:
+                return jsonify(result), 200
+            else:
+                return jsonify({"message": "No user assigned to this ticket"}), 404
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({'error': 'Failed to fetch assigned user'}), 500
+
+    finally:
+        connection.close()  # Ensure the connection is closed
 
 
 
