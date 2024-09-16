@@ -7,13 +7,17 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FaBell, FaUserCircle } from 'react-icons/fa';
 import axios from 'axios';
+import { useRouter } from "next/navigation";
+import ProtectedRoute from "../../context/ProtectedRoute"; // Your authentication wrapper
 
-export default function Dashboard() {
+
+ function Dashboard() {
   const [userFname, setUserFname] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUserFname = async () => {
@@ -55,6 +59,21 @@ export default function Dashboard() {
     setIsProfileMenuOpen(!isProfileMenuOpen);
   };
 
+  const handleLogout = async () => {
+    try {
+      // Send logout API request
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/logout`,
+        {},
+        { withCredentials: true }
+      );
+      // Clear session data and redirect to sign-in page
+      router.push("/sign-in");
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="w-full min-h-screen p-4 bg-white rounded-lg shadow-md">
@@ -80,11 +99,12 @@ export default function Dashboard() {
                       Update Profile
                     </a>
                   </Link>
-                  <Link href="/sign-in" legacyBehavior>
-                    <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                      Logout
-                    </a>
-                  </Link>
+                  <a
+                    onClick={handleLogout}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Logout
+                  </a>
                 </div>
               )}
             </div>
@@ -108,6 +128,15 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+
+export default function DashboardWrapper() {
+  return (
+    <ProtectedRoute>
+      <Dashboard />
+    </ProtectedRoute>
   );
 }
 

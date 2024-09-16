@@ -34,6 +34,8 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Ensure the upload directory exists
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
+
+
 def create_connection():
     try:
         connection = pymysql.connect(
@@ -700,37 +702,6 @@ def assign_ticket():
 
 
 
-# @app.route('/api/my-tickets', methods=['GET'])
-# def get_user_tickets():
-#     connection = create_connection()  # Using the existing `create_connection` method from your code
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     # Ensure the user is logged in and their ID is stored in the session
-#     user_id = session.get('user_id')
-#     if not user_id:
-#         return jsonify({"error": "User not logged in"}), 401
-
-#     try:
-#         with connection.cursor() as cursor:
-#             # Call the stored procedure to fetch tickets assigned to the logged-in user
-#             cursor.callproc('Proc_tbltickets_SelectAssignedTicketsOfUser', [user_id])
-
-#             # Fetch all results from the stored procedure
-#             tickets = cursor.fetchall()
-
-#             # Check if tickets were found
-#             if not tickets:
-#                 return jsonify({"error": "No tickets found for the user"}), 404
-
-#             return jsonify({"tickets": tickets}), 200
-
-#     except pymysql.MySQLError as e:
-#         print(f"Database query error: {e}")
-#         return jsonify({"error": "Database query failed"}), 500
-#     finally:
-#         connection.close()
-
 
 @app.route('/api/my-tickets', methods=['GET'])
 
@@ -797,7 +768,7 @@ def get_assigned_user(ticket_id):
     try:
         with connection.cursor() as cursor:
             # Call the stored procedure to fetch the assigned user for the given ticket ID
-            cursor.callproc('Proc_GetAssignedUser', [ticket_id])
+            cursor.callproc('Proc_tbltickets_GetAssignedUser', [ticket_id])
             result = cursor.fetchone()  # Assuming the stored procedure returns one row
             
             if result:
@@ -822,6 +793,14 @@ def logout():
     response.status_code = 200
     return response
 
+
+
+@app.route('/api/check-session', methods=['GET'])
+def check_session():
+    if 'user_id' not in session:
+        return jsonify({'authenticated': False}), 401
+    return jsonify({'authenticated': True})
+
         
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
@@ -829,7 +808,7 @@ if __name__ == '__main__':
 
 
 
-
+#Hello this is the the 
 
 
 

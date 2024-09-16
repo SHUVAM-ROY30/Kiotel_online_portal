@@ -466,6 +466,21 @@ export default function Home() {
     fetchOpenedTickets();
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      // Send logout API request
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/logout`,
+        {},
+        { withCredentials: true }
+      );
+      // Clear session data and redirect to sign-in page
+      router.push("/sign-in");
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
+
   // Function to convert MST to CST
   const convertMSTtoCST = (mstTime) => {
     const mstDate = new Date(mstTime + " UTC");
@@ -528,11 +543,12 @@ export default function Home() {
                         Update Profile
                       </a>
                     </Link>
-                    <Link href="/sign-in" legacyBehavior>
-                      <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        Logout
-                      </a>
-                    </Link>
+                    <a
+                    onClick={handleLogout}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Logout
+                  </a>
                   </div>
                 )}
               </div>

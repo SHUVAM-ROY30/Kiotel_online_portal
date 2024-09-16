@@ -615,6 +615,8 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import ProtectedRoute from "../../../context/ProtectedRoute"; // Your authentication wrapper
+
 
 function SignUpForm({ existingUser = null }) {
   const [id, setId] = useState(existingUser?.id || 0);
@@ -823,4 +825,10 @@ function SignUpForm({ existingUser = null }) {
   );
 }
 
-export default SignUpForm;
+export default function SignUpFormWrapper() {
+  return (
+    <ProtectedRoute>
+      <SignUpForm />
+    </ProtectedRoute>
+  );
+}

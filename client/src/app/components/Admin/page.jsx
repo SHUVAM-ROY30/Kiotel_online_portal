@@ -253,6 +253,8 @@ import { FaBell, FaUserCircle } from "react-icons/fa";
 import axios from "axios";
 import { useRouter } from "next/navigation"; // For using client-side routing
 import DataTable from "react-data-table-component";
+import ProtectedRoute from "../../../context/ProtectedRoute"; // Your authentication wrapper
+
 
 function Dashboard() {
   const [userFname, setUserFname] = useState(null);
@@ -431,4 +433,12 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+
+
+export default function DashboardWrapper() {
+  return (
+    <ProtectedRoute>
+      <Dashboard />
+    </ProtectedRoute>
+  );
+}
