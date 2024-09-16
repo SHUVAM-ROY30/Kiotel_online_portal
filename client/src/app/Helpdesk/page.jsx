@@ -411,8 +411,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FaBell, FaUserCircle, FaArrowLeft } from "react-icons/fa";
 import axios from "axios";
+import ProtectedRoute from '../../context/ProtectedRoute'; // Import your ProtectedRoute
 
-export default function Home() {
+
+ function Home() {
   const router = useRouter();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [openedTickets, setOpenedTickets] = useState([]);
@@ -609,5 +611,13 @@ export default function Home() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function HomeWrapper() {
+  return (
+    <ProtectedRoute>
+      <Home />
+    </ProtectedRoute>
   );
 }
