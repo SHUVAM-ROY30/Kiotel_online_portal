@@ -815,6 +815,13 @@ def get_assigned_user(ticket_id):
 
 
 
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    session.clear()  # Clear all session data
+    response = jsonify({'message': 'Logged out successfully'})
+    response.status_code = 200
+    return response
+
         
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
