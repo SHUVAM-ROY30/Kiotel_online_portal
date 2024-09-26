@@ -126,6 +126,11 @@ function SignUpForm({ existingUser = null }) {
     } else if (!passwordRegex.test(password)) {
       errors.password = 'Password must be at least 8 characters long, contain at least one capital letter, one number, and one special character';
     }
+
+    if (!fname) {
+      errors.fname = 'fname is required';
+    } 
+
     return errors;
   };
   
@@ -173,7 +178,7 @@ function SignUpForm({ existingUser = null }) {
             <div>
               <label className="block text-sm font-medium text-gray-700">Email ID</label>
               <input
-                type="email"
+                type="text"
                 value={email}
                 name="email"
                 onChange={handleChange}
@@ -203,6 +208,7 @@ function SignUpForm({ existingUser = null }) {
               <label className="block text-sm font-medium text-gray-700">First Name</label>
               <input
                 type="text"
+                name="fname"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required

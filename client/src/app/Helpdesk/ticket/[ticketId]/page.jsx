@@ -15,9 +15,11 @@ export default function TicketDetails({ params }) {
 
   // Utility to check if a file is an image
   const isImage = (filename) => {
+    if (!filename) return false; // Check if filename is null or undefined
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
     return imageExtensions.includes(filename.split('.').pop().toLowerCase());
   };
+  
 
   // Utility to check if a file exists on the server
   const checkFileExistence = async (filePath) => {
