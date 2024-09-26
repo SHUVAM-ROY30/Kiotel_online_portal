@@ -32,7 +32,7 @@
 //     if (ticketId) {
 //       const fetchTicketTitle = async () => {
 //         try {
-//           const response = await axios.get(`http://localhost:8080/api/tickets/${ticketId}`, {
+//           const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tickets/${ticketId}`, {
 //             withCredentials: true,
 //           });
 //           setTitle(response.data.title); // Set the title fetched from the API
@@ -46,7 +46,7 @@
 
 //     const fetchStatusOptions = async () => {
 //       try {
-//         const response = await axios.get(`http://localhost:8080/api/status`, {
+//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/status`, {
 //           withCredentials: true,
 //         });
 //         setStatusOptions(response.data); // Set dropdown options
@@ -89,14 +89,14 @@
 //         formData.append("attachments", attachments[i]);
 //       }
 //     }
-  
-//     // Log form data
+    
+//     // Log form data hello this is the way that is the thing of which that we can do to it so it could be at the very best 
 //     for (let pair of formData.entries()) {
 //       console.log(`${pair[0]}: ${pair[1]}`);
 //     }
   
 //     try {
-//       const response = await axios.post(`http://localhost:8080/api/tickets/${ticketId}/reply`, formData, {
+//       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tickets/${ticketId}/reply`, formData, {
 //         withCredentials: true, // Important for sending/receiving cookies
 //         headers: {
 //           "Content-Type": "multipart/form-data",
@@ -104,8 +104,7 @@
 //       });
   
 //       console.log("Reply submitted successfully", response.data);
-//       // router.push("/thank-you");
-//       router.push(`/Helpdesk/ticket/${ticket.id}`);
+//       router.push(`/Helpdesk/ticket/${ticketId}`);
 //     } catch (error) {
 //       console.error("There was an error submitting the reply!", error);
 //       if (error.response) {
@@ -113,6 +112,7 @@
 //       }
 //     }
 //   };
+
 //   return (
 //     <div className="min-h-screen flex items-center justify-center bg-gray-100">
 //       <form
@@ -179,10 +179,10 @@
 //     </div>
 //   );
 // };
-// hello this is the way it is was a thing the thing we could get it with the way of the that suits that it could be acomplished in the thing of the way 
 
-// Export the component as default
+// // Export the component as default
 // export default TicketReplyForm;
+
 
 
 "use client";
@@ -198,6 +198,7 @@ const TicketReplyForm = ({ params }) => {
   const [attachments, setAttachments] = useState(null);
   const [status, setStatus] = useState(1); // Default status ID
   const [statusOptions, setStatusOptions] = useState([]); // Dropdown options
+  const [roleId, setRoleId] = useState(null); // Role ID from session
 
   // To handle window-specific code
   const [titleFromQuery, setTitleFromQuery] = useState("");
@@ -239,7 +240,19 @@ const TicketReplyForm = ({ params }) => {
       }
     };
 
+    const fetchRoleId = async () => {
+      try {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`, {
+          withCredentials: true,
+        });
+        setRoleId(response.data.role); // Set role ID from session
+      } catch (err) {
+        console.error("Error fetching role ID:", err);
+      }
+    };
+
     fetchStatusOptions();
+    fetchRoleId();
   }, [ticketId, titleFromQuery]);
 
   const handleDescriptionChange = (e) => {
@@ -274,7 +287,7 @@ const TicketReplyForm = ({ params }) => {
       }
     }
     
-    // Log form data hello this is the way that is the thing of which that we can do to it so it could be at the very best 
+    // Log form data
     for (let pair of formData.entries()) {
       console.log(`${pair[0]}: ${pair[1]}`);
     }
@@ -326,20 +339,22 @@ const TicketReplyForm = ({ params }) => {
           ></textarea>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2">Status</label>
-          <select
-            value={status}
-            onChange={handleStatusChange}
-            className="w-full px-3 py-2 border rounded-lg"
-          >
-            {statusOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {roleId === 1 || roleId === 3 ? (
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">Status</label>
+            <select
+              value={status}
+              onChange={handleStatusChange}
+              className="w-full px-3 py-2 border rounded-lg"
+            >
+              {statusOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
 
         <div className="mb-4">
           <label className="block text-gray-700 text-sm font-bold mb-2">Attachments</label>
@@ -366,4 +381,3 @@ const TicketReplyForm = ({ params }) => {
 
 // Export the component as default
 export default TicketReplyForm;
-
