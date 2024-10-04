@@ -696,7 +696,7 @@ def get_users():
     try:
         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
             # Call the stored procedure to get the list of all users
-            cursor.callproc('Proc_tblusers_displaylistofusers_test')
+            cursor.callproc('Proc_tblusers_displaylistofusers')
             users = cursor.fetchall()  # Fetch all results
             
             if not users:
@@ -901,6 +901,289 @@ def check_session():
     if 'user_id' not in session:
         return jsonify({'authenticated': False}), 401
     return jsonify({'authenticated': True})
+
+
+
+
+# @app.route("/api/user", methods=["GET"])
+# @login_required
+# def get_user_data():
+#     user_id = session.get("user_id")
+#     if not user_id:
+#         return jsonify({"error": "User not logged in"}), 401
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+#             cursor.execute("SELECT * FROM tblusers WHERE id = %s", (user_id,))
+#             user = cursor.fetchone()
+#             if user:
+#                 return jsonify({"email": user['emailid'], "role": user["role_id"], "password": user['password'], "fname":user['fname'],"lname":user['lname'],"dob":user['dob'],"address":user['address'],"account_no":user['account_no'],"mobileno":user['mobileno']})  # Return all fields in the user dictionary
+#             else:
+#                 return jsonify({"error": "User not found"}), 404
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     finally:
+#         connection.close()
+
+
+@app.route("/api/user", methods=["GET"])
+@login_required
+def get_user_data():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "User not logged in"}), 401
+
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM tblusers WHERE id = %s", (user_id,))
+            user = cursor.fetchone()
+            if user:
+                return jsonify({
+                    "email": user['emailid'],
+                    "role": user["role_id"],
+                    "password": user['password'],  # It's generally not a good idea to send passwords back
+                    "fname": user['fname'],
+                    "lname": user['lname'],
+                    "dob": user['dob'],
+                    "address": user['address'],
+                    "account_no": user['account_no'],
+                    "mobileno": user['mobileno']
+                })  
+            else:
+                return jsonify({"error": "User not found"}), 404
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    finally:
+        connection.close()
+
+
+# @app.route('/api/user/profile', methods=['GET'])
+# @login_required
+# def get_current_user():
+#     user_id = session.get('user_id')  # Get user ID from the session
+#     if not user_id:
+#         return jsonify({"error": "User not logged in"}), 401
+    
+#     try:
+#         cursor = mysql.connection.cursor()
+#         query = "SELECT emailid, fname, lname, dob, address, account_no, mobileno, role_id FROM tblusers WHERE id = %s"
+#         cursor.execute(query, (user_id,))
+#         user = cursor.fetchone()
+#         if user:
+#             user_data = {
+#                 "emailid": user[0],
+#                 "fname": user[1],
+#                 "lname": user[2],
+#                 "dob": user[3],
+#                 "address": user[4],
+#                 "account_no": user[5],
+#                 "mobileno": user[6],
+#                 "role_id": user[7]
+#             }
+#             return jsonify(user_data), 200
+#         return jsonify({"message": "User not found"}), 404
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+# from flask import jsonify, session
+# import MySQLdb  # Assuming you're using MySQLdb or a similar MySQL connector
+
+@app.route('/api/user/profile', methods=['GET'])
+def get_user_profile():
+    # Fetch the user ID from the session
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # Create database connection
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Query to get user profile information
+            query = "SELECT * FROM tblusers WHERE id = %s"
+            cursor.execute(query, (user_id,))
+            user = cursor.fetchone()
+
+            if user:
+                return jsonify({
+                    "id": user.get("id"),
+                    "emailid": user.get("emailid"),
+                    "password": user.get("password"),
+                    "fname": user.get("fname"),
+                    "lname": user.get("lname"),
+                    "dob": user.get("dob"),
+                    "address": user.get("address"),
+                    "account_no": user.get("account_no"),
+                    "mobileno": user.get("mobileno"),
+                    "role_id": user.get("role_id"),
+                    # Add more fields if necessary
+                }), 200
+            else:
+                return jsonify({"error": "User not found"}), 404
+
+    except pymysql.MySQLError as e:
+        print(f"Database error occurred: {e}")
+        return jsonify({"error": "Failed to fetch user profile"}), 500
+
+    finally:
+        connection.close()
+
+
+@app.route('/api/user/update', methods=['POST'])
+def update_user():
+    # Check if user is logged in and get the user_id from session
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401  # Return 401 if user is not authenticated
+
+    data = request.get_json()  # Get data from the request body
+    
+    # Extract user data from the JSON request
+    p_id = data.get('id', user_id)  # Use the provided ID or fallback to session ID
+    p_emailid = data.get('emailid')
+    p_password = data.get('password')  # Ideally, hash this password before storing
+    p_fname = data.get('fname')
+    p_lname = data.get('lname')
+    p_dob = data.get('dob')
+    p_address = data.get('address')
+    p_account_no = data.get('account_no')
+    p_mobileno = data.get('mobileno')
+    p_role_id = data.get('role_id')
+
+    # Establish database connection
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Call the stored procedure to insert or update user details
+            cursor.callproc('Proc_tblusers_Upsert', [
+                p_id, p_emailid, p_password, p_fname, p_lname, p_dob,
+                p_address, p_account_no, p_mobileno, p_role_id
+            ])
+            connection.commit()  # Commit changes to the database
+            
+            return jsonify({"message": "User details updated successfully."}), 200
+
+    except pymysql.MySQLError as e:
+        print(f"Database error occurred: {e}")
+        return jsonify({"error": "Failed to update user details"}), 500
+
+    finally:
+        connection.close()  # Close the connection after query execution
+
+
+
+
+@app.route('/api/delete-user', methods=['POST'])
+def delete_user():
+    # Extract user_id from request
+    user_id = request.json.get('user_id')
+    if not user_id:
+        return jsonify({"error": "User ID is required"}), 400
+
+    # Create database connection
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Call the stored procedure to soft delete the user
+            cursor.callproc('Proc_tblusers_DeleteUser', [user_id])
+
+            # Commit the changes to the database
+            connection.commit()
+
+        return jsonify({"message": "User deleted successfully"}), 200
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        connection.close()
+
+
+
+@app.route('/api/user/<int:user_id>', methods=['GET'])
+def get_user_by_id(user_id):
+    connection = create_connection()
+    cursor = connection.cursor(pymysql.cursors.DictCursor)
+    
+    try:
+        # Call the stored procedure
+        cursor.callproc('Proc_tblusers_select', [user_id])
+        
+        # Fetch the result
+        user = cursor.fetchone()
+        
+        if user:
+            return jsonify(user), 200
+        else:
+            return jsonify({"error": "User not found"}), 404
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "An error occurred while fetching user data"}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+
+
+
+
+@app.route('/api/user/update/<int:user_id>', methods=['POST'])
+def update_user_byid(user_id):
+    connection = create_connection()
+    cursor = connection.cursor()
+    
+    try:
+        data = request.json
+        
+        # Validate input
+        required_fields = ["emailid", "fname", "lname", "dob", "address", "account_no", "mobileno", "role_id"]
+        if not all(field in data for field in required_fields):
+            return jsonify({"error": "Missing required fields"}), 400
+        
+        # Prepare to call the stored procedure
+        cursor.callproc('Proc_tblusers_Upsert', [
+            user_id,
+            data['emailid'],
+            data['password'],
+            data['fname'],
+            data['lname'],
+            data['dob'],
+            data['address'],
+            data['account_no'],
+            data['mobileno'],
+            data['role_id']
+        ])
+        
+        connection.commit()  # Commit changes
+        
+        return jsonify({"message": "User updated successfully"}), 200
+        
+    except Exception as e:
+        print(f"Error updating user: {e}")
+        return jsonify({"error": "An error occurred while updating user data"}), 500
+    finally:
+        cursor.close()
+        connection.close()
 
         
 if __name__ == '__main__':

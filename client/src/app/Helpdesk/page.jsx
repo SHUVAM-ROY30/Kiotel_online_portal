@@ -432,7 +432,7 @@ function Home() {
                 />
                 {isProfileMenuOpen && (
                   <div className="absolute left-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-20">
-                    <Link href="/update-profile" legacyBehavior>
+                    <Link href="/components/updateProfile" legacyBehavior>
                       <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         Update Profile
                       </a>

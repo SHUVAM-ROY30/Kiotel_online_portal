@@ -5,7 +5,7 @@
 
 // import { useEffect, useState } from "react";
 // import Link from "next/link";
-// import { FaBell, FaUserCircle } from "react-icons/fa";
+// import { FaUserCircle } from "react-icons/fa";
 // import axios from "axios";
 // import { useRouter } from "next/navigation"; // For using client-side routing
 // import DataTable from "react-data-table-component";
@@ -70,6 +70,27 @@
 //     }
 //   };
 
+//   const handleDeleteUser = async (userId) => {
+//     const confirmed = window.confirm("Are you sure you want to delete this user?");
+//     if (!confirmed) return;
+
+//     try {
+//       // Send the delete request to the backend API
+//       await axios.post(
+//         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/delete-user`,
+//         { user_id: userId },
+//         { withCredentials: true }
+//       );
+
+//       // Refresh the user list after deletion
+//       setUsers(users.filter(user => user.id !== userId));
+//       alert("User deleted successfully");
+//     } catch (error) {
+//       console.error("Failed to delete user:", error);
+//       alert("Failed to delete user");
+//     }
+//   };
+
 //   const columns = [
 //     {
 //       name: "ID",
@@ -96,28 +117,28 @@
 //       selector: (row) => row.role,
 //       sortable: true,
 //     },
-//     // {
-//     //   name: "",
-//     //   cell: (row) => (
-//     //     <Link
-//     //       href={`/user/${row.id}`}
-//     //       className="text-blue-500 hover:underline"
-//     //     >
-//     //       Update
-//     //     </Link>
-//     //   ),
-//     // },
-//     // {
-//     //   name: "",
-//     //   cell: (row) => (
-//     //     <Link
-//     //       href={`/user/${row.id}`}
-//     //       className="text-blue-500 hover:underline"
-//     //     >
-//     //       Delete User
-//     //     </Link>
-//     //   ),
-//     // },
+//     {
+//       name: "",
+//       cell: (row) => (
+//         <Link
+//   href={`/components/user/${row.id}`} // Ensure this is correct
+//   className="text-blue-500 hover:underline"
+// >
+//   Update
+// </Link>
+//       ),
+//     },
+//     {
+//       name: "",
+//       cell: (row) => (
+//         <button
+//           className="text-red-500 hover:underline"
+//           onClick={() => handleDeleteUser(row.id)}
+//         >
+//           Delete User
+//         </button>
+//       ),
+//     },
 //   ];
 
 //   return (
@@ -133,9 +154,20 @@
 //                 : `Welcome, ${userFname}`}
 //             </h1>
 //           </div>
+
+//           {/* Centered Image */}
+//           <div className="flex-grow text-center">
+//             <img
+//               src="/Kiotel logo.jpg" // Update the image path here
+//               alt="Dashboard Logo"
+//               className="h-12 w-auto mx-auto cursor-pointer"
+//               onClick={() => router.push('/Dashboard')}
+//             />
+//           </div>
+
 //           <div className="flex items-center space-x-4">
 //             <div className="relative">
-//               <FaBell className="cursor-pointer text-2xl" />
+//               {/* <FaBell className="cursor-pointer text-2xl" /> */}
 //             </div>
 //             <div className="relative">
 //               <FaUserCircle
@@ -144,7 +176,7 @@
 //               />
 //               {isProfileMenuOpen && (
 //                 <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg">
-//                   <Link href="/update-profile" legacyBehavior>
+//                   <Link href="/components/updateProfile" legacyBehavior>
 //                     <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
 //                       Update Profile
 //                     </a>
@@ -160,6 +192,7 @@
 //             </div>
 //           </div>
 //         </div>
+
 //         <div className="w-full flex justify-end p-4">
 //           <Link
 //             href="/components/Create_new_user"
@@ -189,8 +222,6 @@
 //   );
 // }
 
-
-
 // export default function DashboardWrapper() {
 //   return (
 //     <ProtectedRoute>
@@ -204,12 +235,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FaBell, FaUserCircle } from "react-icons/fa";
+import { FaUserCircle } from "react-icons/fa";
 import axios from "axios";
 import { useRouter } from "next/navigation"; // For using client-side routing
 import DataTable from "react-data-table-component";
 import ProtectedRoute from "../../../context/ProtectedRoute"; // Your authentication wrapper
-
 
 function Dashboard() {
   const [userFname, setUserFname] = useState(null);
@@ -269,6 +299,27 @@ function Dashboard() {
     }
   };
 
+  const handleDeleteUser = async (userId) => {
+    const confirmed = window.confirm("Are you sure you want to delete this user?");
+    if (!confirmed) return;
+
+    try {
+      // Send the delete request to the backend API
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/delete-user`,
+        { user_id: userId },
+        { withCredentials: true }
+      );
+
+      // Refresh the user list after deletion
+      setUsers(users.filter(user => user.id !== userId));
+      alert("User deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      alert("Failed to delete user");
+    }
+  };
+
   const columns = [
     {
       name: "ID",
@@ -294,6 +345,28 @@ function Dashboard() {
       name: "Role",
       selector: (row) => row.role,
       sortable: true,
+    },
+    {
+      name: "",
+      cell: (row) => (
+        <Link
+          href={`/components/Admin/user/${row.id}`} // Ensure this is correct
+          className="text-blue-500 hover:underline"
+        >
+          Update
+        </Link>
+      ),
+    },
+    {
+      name: "",
+      cell: (row) => (
+        <button
+          className="text-red-500 hover:underline"
+          onClick={() => handleDeleteUser(row.id)}
+        >
+          Delete User
+        </button>
+      ),
     },
   ];
 
@@ -323,7 +396,7 @@ function Dashboard() {
 
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <FaBell className="cursor-pointer text-2xl" />
+              {/* <FaBell className="cursor-pointer text-2xl" /> */}
             </div>
             <div className="relative">
               <FaUserCircle
@@ -332,7 +405,7 @@ function Dashboard() {
               />
               {isProfileMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg">
-                  <Link href="/update-profile" legacyBehavior>
+                  <Link href="/components/updateProfile" legacyBehavior>
                     <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       Update Profile
                     </a>
