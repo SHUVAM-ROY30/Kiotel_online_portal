@@ -246,7 +246,7 @@ function SignUpForm({ existingUser = null }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Account Number</label>
+            <label className="block text-sm font-medium text-gray-700">Account ID</label>
             <input
               type="text"
               value={accountNumber}

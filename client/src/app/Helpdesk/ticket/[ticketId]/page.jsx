@@ -143,7 +143,16 @@ export default function TicketDetails({ params }) {
           <div className="border-b border-gray-200 pb-4 mb-4">
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Ticket #{ticketDetails.id}</h2>
             <p><strong className="font-medium text-gray-700">Title:</strong> {ticketDetails.title}</p>
-            <p><strong className="font-medium text-gray-700">Created At:</strong> {new Date(ticketDetails.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST</p>
+            {/* <p><strong className="font-medium text-gray-700">Created At:</strong> {new Date(ticketDetails.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST</p> */}
+            <p><strong className="font-medium text-gray-700">Created At:</strong> {new Date(ticketDetails.created_at).toLocaleString("en-US", {
+                        timeZone: "America/Chicago",
+                        weekday: "short",
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })} CST</p>
             <p><strong className="font-medium text-gray-700">Status:</strong> {ticketDetails.status_name}</p>
             <p><strong className="font-medium text-gray-700">Created by:</strong> {ticketDetails.fname}</p>
           </div>

@@ -1,6 +1,4 @@
 
-
-
 // "use client";
 
 // import { useState } from "react";
@@ -38,7 +36,7 @@
 //     }
 
 //     try {
-//       const response = await axios.post("http://localhost:8080/api/ticket", formData, {
+//       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/ticket`, formData, {
 //         withCredentials: true,  // Important for sending/receiving cookies
 //         headers: {
 //           "Content-Type": "multipart/form-data",
@@ -109,13 +107,13 @@
 // }
 
 
-
-
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function TicketCreateForm() {
   const router = useRouter();
@@ -155,13 +153,29 @@ export default function TicketCreateForm() {
         },
       });
 
-      console.log("Ticket created successfully", response.data);
-      router.push("/Helpdesk");
+      // Show success toast
+      toast.success("Ticket created successfully!", {
+        position: "top-center", // Use string instead of constant
+        autoClose: 3000, // Automatically close after 3 seconds
+        theme: "colored",
+      });
+
+      // After a delay, redirect to Helpdesk
+      setTimeout(() => {
+        router.push("/Helpdesk");
+      }, 3000); // 3-second delay before redirection
     } catch (error) {
       console.error("There was an error creating the ticket!", error);
       if (error.response) {
         console.error("Error response data:", error.response.data);
       }
+
+      // Show error toast
+      toast.error("Failed to create the ticket!", {
+        position: "top-center", // Use string instead of constant
+        autoClose: 5000, // Automatically close after 5 seconds
+        theme: "colored",
+      });
     }
   };
 
@@ -214,8 +228,9 @@ export default function TicketCreateForm() {
           </button>
         </div>
       </form>
+
+      {/* Toast Container for showing notifications */}
+      <ToastContainer />
     </div>
   );
 }
-
-

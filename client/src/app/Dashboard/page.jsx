@@ -227,7 +227,7 @@ import ProtectedRoute from "../../context/ProtectedRoute"; // Your authenticatio
           </div>
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <FaBell className="cursor-pointer text-2xl" />
+              {/* <FaBell className="cursor-pointer text-2xl" /> */}
             </div>
             <div className="relative">
               <FaUserCircle 

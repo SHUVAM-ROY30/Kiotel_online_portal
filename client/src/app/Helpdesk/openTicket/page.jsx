@@ -253,7 +253,16 @@ const OpenedTickets = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ticket.title}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ticket.created_by}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(ticket.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
+                    {/* {new Date(ticket.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST */}
+                    {new Date(ticket.created_at).toLocaleString("en-US", {
+                        timeZone: "America/Chicago",
+                        weekday: "short",
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })} CST
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link href={`/Helpdesk/ticket/${ticket.id}`} className="text-blue-600 hover:text-blue-900">

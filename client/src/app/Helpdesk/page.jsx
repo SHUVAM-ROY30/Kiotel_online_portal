@@ -424,7 +424,7 @@ function Home() {
               >
                 <FaArrowLeft className="text-xl" />
               </button>
-              <FaBell className="text-gray-700 hover:text-gray-900 transition duration-200 text-xl" />
+              {/* <FaBell className="text-gray-700 hover:text-gray-900 transition duration-200 text-xl" /> */}
               <div className="relative">
                 <FaUserCircle
                   className="text-gray-700 hover:text-gray-900 cursor-pointer transition duration-200 text-xl"
