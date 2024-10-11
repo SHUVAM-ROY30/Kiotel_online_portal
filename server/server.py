@@ -9,6 +9,7 @@ import datetime
 from models import db, Ticket
 import os
 from flask import send_from_directory
+import traceback
 
 
 import hashlib
@@ -23,6 +24,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
+# CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
 
 # Configure the session
 app.config["SECRET_KEY"] = "abcdefghijklmnopqrstuvwxyz"
@@ -1185,7 +1187,9 @@ def update_user_byid(user_id):
         cursor.close()
         connection.close()
 
-        
+
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
 

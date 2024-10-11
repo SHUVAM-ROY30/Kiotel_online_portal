@@ -227,9 +227,20 @@ const OpenedTickets = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300 p-6">
       <Toaster position="top-center" /> {/* Sonner Toaster Component */}
+
       <header className="bg-white shadow-lg rounded-lg mb-6">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">          <div>
+        
+          </div>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-wide">Opened Tickets</h1>
+          <div className="flex-grow text-center">
+            <img
+              src="/Kiotel logo.jpg" // Update the image path here
+              alt="Dashboard Logo"
+              className="h-11 w-auto mx-auto cursor-pointer"
+              onClick={() => router.push('/Helpdesk')}
+            />
+          </div>
         </div>
       </header>
 
