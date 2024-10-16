@@ -1189,6 +1189,419 @@ def update_user_byid(user_id):
 
 
 
+#------------------------MODULE 2 (Customer module)-------------------------#
+
+
+
+
+
+#----------------------TASK MANGAGER--------------------
+
+
+@app.route("/api/task", methods=["POST"])
+@login_required
+def create_task():
+    user_id = session.get("user_id")
+
+    if user_id is None:
+        return jsonify({"error": "User ID not found in session"}), 400
+
+    title = request.form.get("title")
+    description = request.form.get("description")
+    attachments = request.files.getlist("attachments")
+    
+    if not title or not description:
+        return jsonify({"error": "Title and description are required"}), 400
+
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        attachment_filenames = []
+        upload_folder = app.config['UPLOAD_FOLDER']
+
+        with connection.cursor() as cursor:
+            if attachments:
+                for attachment in attachments:
+                    original_filename = attachment.filename
+                    
+                    # Generate unique encrypted name for the file
+                    unique_name = generate_unique_name(original_filename)
+                    
+                    # Save the file on the server with the unique encrypted name
+                    file_path = os.path.join(upload_folder, unique_name)
+                    attachment.save(file_path)
+                    
+                    # Store only the original filename
+                    attachment_filenames.append(original_filename)
+
+            # Convert attachment filenames to JSON format
+            attachments_json = json.dumps(attachment_filenames)
+
+            # Set the session variable for the current user ID
+            cursor.execute("SET @current_user_id = %s", (user_id,))
+
+            # Set status_id to 1 (assumed 'Open' status)
+            status_id = 1
+
+            # Call the stored procedure with the parameters, including the attachments JSON and status_id
+            cursor.callproc('Proc_tbltasks_Upsert', (0, title, description, attachments_json, unique_name if attachments else None, status_id))
+            connection.commit()
+
+            # Fetch the last inserted ticket ID
+            cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
+            ticket_id = cursor.fetchone()["ticket_id"]
+
+            return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        connection.close()
+
+
+
+@app.route("/api/opened_task", methods=["GET"])
+@login_required
+def get_opened_tasks():
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            # Call the stored procedure
+            cursor.callproc("Proc_tbltasks_DisplayOpenedtasks")
+            
+            # Fetch the result
+            opened_tickets = cursor.fetchall()
+            
+            # Print raw result for debugging
+            print("Raw result:", opened_tickets)
+
+            # Decode bytes fields to strings, if any
+            for ticket in opened_tickets:
+                for key, value in ticket.items():
+                    if isinstance(value, bytes):
+                        ticket[key] = value.decode("utf-8")
+
+            return jsonify(opened_tickets), 200
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+    finally:
+        connection.close()
+
+
+
+@app.route("/api/task/<int:task_id>", methods=["GET"])
+@login_required
+def get_task(task_id):
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.callproc("Proc_tbltaskss_DisplaytasksById", (task_id,))
+            result = cursor.fetchall()
+
+            # Debugging: Print result for verification
+            print("Query Result:", result)
+
+            if not result:
+                return jsonify({"error": "Ticket not found"}), 404
+
+            ticket = result[0]
+
+            for key, value in ticket.items():
+                if isinstance(value, bytes):
+                    ticket[key] = value.decode("utf-8")
+
+            if 'attachments' in ticket and isinstance(ticket['attachments'], str):
+                ticket['attachments'] = json.loads(ticket['attachments'])
+
+            return jsonify(ticket), 200
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+    finally:
+        connection.close()
+
+
+
+
+@app.route("/api/task/<int:task_id>/reply", methods=["POST"])
+def reply_to_task(task_id):
+    print(f"Received request for ticket ID: {task_id}")
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        description = request.form.get("description")
+        # status_id = int(request.form.get("status_id", 1))  # Convert to integer and default to 1 if missing
+
+        # Fetch user_id from the session
+        user_id = session.get('user_id')
+        if user_id is None:
+            return jsonify({"error": "User not logged in"}), 401
+
+        # Process attachments
+        attachments = request.files.getlist("attachments")
+        original_filenames = []
+        unique_names = []
+        upload_folder = 'uploads/replies'
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+
+        for file in attachments:
+            if file:
+                original_filename = file.filename
+                unique_name = generate_unique_name(original_filename)
+                file_path = os.path.join(upload_folder, unique_name)
+                file.save(file_path)
+                # Store only the original filename
+                original_filenames.append(original_filename)
+                unique_names.append(unique_name)
+
+        # Convert the list of original filenames to a JSON string
+        attachment_json = json.dumps(original_filenames)
+
+        with connection.cursor() as cursor:
+            # Call stored procedure to insert or update reply
+            cursor.callproc('Proc_tbltasksreplies_UpsertReply', [
+                0,  # Assuming 0 means a new reply, adjust if necessary
+                task_id,
+                description,
+                user_id,
+                # status_id,
+                attachment_json,
+                unique_names[0] if unique_names else None  # Include the unique name of the first attachment if any
+            ])
+            connection.commit()
+
+        return jsonify({"message": "Reply submitted successfully"}), 201
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        connection.close()
+
+
+
+@app.route("/api/task/<int:task_id>/replies", methods=["GET"])
+@login_required
+def get_replies_by_task_id(task_id):
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.callproc("Proc_tbltasksreplies_SelectRepliesByTaskId", (task_id,))
+            replies = cursor.fetchall()
+            print("Query Result:", replies)
+
+            # Decode bytes fields to strings, if any
+            for reply in replies:
+                for key, value in reply.items():
+                    if isinstance(value, bytes):
+                        reply[key] = value.decode("utf-8")
+
+            return jsonify(replies), 200
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    finally:
+        connection.close()
+
+
+@app.route("/api/task/<int:task_id>/title", methods=["GET"])
+def get_task_title(task_id):
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT title FROM tbltickets WHERE id = %s", (task_id,))
+            ticket = cursor.fetchone()
+            if not ticket:
+                return jsonify({"error": "Ticket not found"}), 404
+            
+            return jsonify({"title": ticket["title"]})
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+    finally:
+        connection.close()
+
+
+@app.route('/api/priority', methods=['GET'])
+def get_priority():
+    conn = create_connection()
+    if conn is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.callproc('Proc_tblpriority_SelectPriorityForDropdown')
+            status_options = cursor.fetchall()
+            
+            # Print raw result for debugging
+            print("Raw result:", status_options)
+
+            return jsonify(status_options), 200
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/taskstate', methods=['GET'])
+def get_taskstate():
+    conn = create_connection()
+    if conn is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.callproc('Proc_tbltaskstatus_SelecttaskStatusForDropdown')
+            status_options = cursor.fetchall()
+            
+            # Print raw result for debugging
+            print("Raw result:", status_options)
+
+            return jsonify(status_options), 200
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+    finally:
+        conn.close()
+
+
+@app.route('/api/update_task_state', methods=['POST'])
+def update_task_state():
+    try:
+        # Get data from the request
+        data = request.json
+        
+        # Debugging step: print received data
+        print("Received data:", data)
+
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        task_id = data.get('task_id')
+        taskstatus_id = data.get('taskstatus_id')
+
+        if not task_id or not taskstatus_id:
+            return jsonify({'error': 'Task ID and Task Status ID are required'}), 400
+
+        # Open database cursor
+        conn = create_connection()
+        cur = conn.cursor()
+
+        # Call the stored procedure with correct parameters
+        cur.callproc('Proc_tbltasks_UpdateTaskStatus', [task_id, taskstatus_id])
+
+        # Commit the transaction
+        conn.commit()
+
+        # Close cursor
+        cur.close()
+        conn.close()
+
+        return jsonify({'message': 'Task state updated successfully'}), 200
+
+    except pymysql.MySQLError as e:
+        # MySQL error handling
+        return jsonify({'error': f"MySQL Error: {str(e)}"}), 500
+
+    except Exception as e:
+        # Generic error handling
+        return jsonify({'error': f"Error: {str(e)}"}), 500
+
+@app.route('/api/assign_task', methods=['POST'])
+def assign_task():
+    data = request.json
+    ticket_id = data.get('ticket_id')
+    user_id = data.get('user_id')
+    print("Received data:", data)
+    if not ticket_id or not user_id:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Update the assigned user for the ticket
+            cursor.callproc('Proc_tbltasks_UpdateAssignedTo', (ticket_id, user_id))
+            connection.commit()
+            return jsonify({"message": "Ticket assigned successfully"})
+            
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Failed to assign ticket"}), 500
+    finally:
+        connection.close()
+
+
+@app.route('/api/get_assigned_user_for_task/<int:task_id>', methods=['GET'])
+def get_assigned_user_for_task(task_id):
+    # Create database connection
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Call the stored procedure to fetch the assigned user for the given ticket ID
+            cursor.callproc('Proc_tbltasks_GetAssignedUser', [task_id])
+            result = cursor.fetchone()  # Assuming the stored procedure returns one row
+            
+            if result:
+                return jsonify(result), 200
+            else:
+                return jsonify({"message": "No user assigned to this ticket"}), 404
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({'error': 'Failed to fetch assigned user'}), 500
+
+    finally:
+        connection.close()
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
