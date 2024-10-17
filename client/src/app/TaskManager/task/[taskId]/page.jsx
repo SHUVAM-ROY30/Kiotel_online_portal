@@ -153,8 +153,8 @@ export default function TicketDetails({ params }) {
                         hour: "2-digit",
                         minute: "2-digit",
                       })} CST</p>
-            {/* <p><strong className="font-medium text-gray-700">Priority:</strong> {ticketDetails.priority_name}</p> */}
-            {/* <p><strong className="font-medium text-gray-700">Status:</strong> {ticketDetails.status_name}</p> */}
+            <p><strong className="font-medium text-gray-700">Priority:</strong> {ticketDetails.priority_name}</p>
+            <p><strong className="font-medium text-gray-700">Status:</strong> {ticketDetails.status_name}</p>
             <p><strong className="font-medium text-gray-700">Created by:</strong> {ticketDetails.fname}</p>
           </div>
 
