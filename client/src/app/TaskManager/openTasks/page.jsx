@@ -615,7 +615,7 @@ const OpenedTickets = () => {
 
       <header className="bg-white shadow-lg rounded-lg mb-6">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-wide">Opened Tasks</h1>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-wide">All Tasks</h1>
           <div className="flex-grow text-center">
             <img
               src="/Kiotel logo.jpg"
@@ -627,9 +627,9 @@ const OpenedTickets = () => {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto bg-white shadow-xl rounded-lg p-6">
+      {/* <div className="max-w-7xl mx-auto bg-white shadow-xl rounded-lg p-6"> */}
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-300">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task ID</th>
@@ -648,7 +648,17 @@ const OpenedTickets = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ticket.id}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ticket.title}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ticket.created_by}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ticket.created_at}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(ticket.created_at).toLocaleString("en-US", {
+                        timeZone: "America/Chicago",
+                        weekday: "short",
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })} CST
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <Link href={`/TaskManager/task/${ticket.id}`}>
                       <button className="text-indigo-600 hover:text-indigo-900">View</button>
@@ -702,7 +712,7 @@ const OpenedTickets = () => {
           </table>
         </div>
       </div>
-    </div>
+    // </div>
   );
 };
 

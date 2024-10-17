@@ -1688,6 +1688,72 @@ def get_locktypes():
 #----------------------TASK MANGAGER--------------------
 
 
+# @app.route("/api/task", methods=["POST"])
+# @login_required
+# def create_task():
+#     user_id = session.get("user_id")
+
+#     if user_id is None:
+#         return jsonify({"error": "User ID not found in session"}), 400
+
+#     title = request.form.get("title")
+#     description = request.form.get("description")
+#     attachments = request.files.getlist("attachments")
+    
+#     if not title or not description:
+#         return jsonify({"error": "Title and description are required"}), 400
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         attachment_filenames = []
+#         upload_folder = app.config['UPLOAD_FOLDER']
+
+#         with connection.cursor() as cursor:
+#             if attachments:
+#                 for attachment in attachments:
+#                     original_filename = attachment.filename
+                    
+#                     # Generate unique encrypted name for the file
+#                     unique_name = generate_unique_name(original_filename)
+                    
+#                     # Save the file on the server with the unique encrypted name
+#                     file_path = os.path.join(upload_folder, unique_name)
+#                     attachment.save(file_path)
+                    
+#                     # Store only the original filename
+#                     attachment_filenames.append(original_filename)
+
+#             # Convert attachment filenames to JSON format
+#             attachments_json = json.dumps(attachment_filenames)
+
+#             # Set the session variable for the current user ID
+#             cursor.execute("SET @current_user_id = %s", (user_id,))
+
+#             # Set status_id to 1 (assumed 'Open' status)
+#             status_id = 1
+
+#             # Call the stored procedure with the parameters, including the attachments JSON and status_id
+#             cursor.callproc('Proc_tbltasks_Upsert', (0, title, description, attachments_json, unique_name if attachments else None, status_id))
+#             connection.commit()
+
+#             # Fetch the last inserted ticket ID
+#             cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
+#             ticket_id = cursor.fetchone()["ticket_id"]
+
+#             return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         connection.close()
+
+
 @app.route("/api/task", methods=["POST"])
 @login_required
 def create_task():
@@ -1698,8 +1764,12 @@ def create_task():
 
     title = request.form.get("title")
     description = request.form.get("description")
+    assigned_user = request.form.get("assignedUser")  # Assigned to user ID
+    task_state = request.form.get("ticketState")  # Task status ID
+    task_priority = request.form.get("ticketPriority")  # Priority ID
     attachments = request.files.getlist("attachments")
-    
+
+    # Validation: Ensure title and description are provided
     if not title or not description:
         return jsonify({"error": "Title and description are required"}), 400
 
@@ -1712,6 +1782,7 @@ def create_task():
         upload_folder = app.config['UPLOAD_FOLDER']
 
         with connection.cursor() as cursor:
+            # Handle file attachments if present
             if attachments:
                 for attachment in attachments:
                     original_filename = attachment.filename
@@ -1732,11 +1803,23 @@ def create_task():
             # Set the session variable for the current user ID
             cursor.execute("SET @current_user_id = %s", (user_id,))
 
-            # Set status_id to 1 (assumed 'Open' status)
-            status_id = 1
+            # Set status_id to the provided task state, defaulting to 1 if not provided
+            status_id = task_state if task_state else 1  # Default status ID to 1 (assumed 'Open')
 
-            # Call the stored procedure with the parameters, including the attachments JSON and status_id
-            cursor.callproc('Proc_tbltasks_Upsert', (0, title, description, attachments_json, unique_name if attachments else None, status_id))
+            # Set priority_id to the provided priority, defaulting to 1 if not provided
+            priority_id = task_priority if task_priority else 4  # Default priority ID to 1 (assumed default priority)
+
+            # Call the stored procedure with the parameters, including the attachments JSON, status_id, priority_id, and assigned_user
+            cursor.callproc('Proc_tbltasks_Upsert', (
+                0,  # 0 for new task (assuming)
+                title, 
+                description, 
+                attachments_json, 
+                unique_name if attachments else None, 
+                status_id, 
+                assigned_user,
+                priority_id
+            ))
             connection.commit()
 
             # Fetch the last inserted ticket ID
@@ -1744,6 +1827,7 @@ def create_task():
             ticket_id = cursor.fetchone()["ticket_id"]
 
             return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
+
     except pymysql.MySQLError as e:
         print(f"The error '{e}' occurred")
         return jsonify({"error": "Database query failed"}), 500
@@ -1752,6 +1836,7 @@ def create_task():
         return jsonify({"error": str(e)}), 500
     finally:
         connection.close()
+
 
 
 
