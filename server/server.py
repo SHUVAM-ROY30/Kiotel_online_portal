@@ -1190,7 +1190,497 @@ def update_user_byid(user_id):
 
 
 #------------------------MODULE 2 (Customer module)-------------------------#
+@app.route('/api/submit', methods=['POST'])
+def hotel_information():
+    data = request.json
 
+    # Extract data from the request
+    p_id = data.get('id', 0)
+    p_date_submitted = data.get('date_submitted')
+    p_hotelName = data.get('hotelName')
+    p_hotelPhone = data.get('hotelPhone')
+    p_hotelEmail = data.get('hotelEmail')
+    p_hotelAddress = data.get('hotelAddress')
+    p_hotelCity = data.get('hotelCity')
+    p_hotelState = data.get('hotelState')
+    p_hotelZipCode = data.get('hotelZipCode')
+    p_hotelWebsite = data.get('hotelWebsite')
+    p_hotelLogo = data.get('hotelLogo')
+    p_hotelLogo_uniquename = data.get('hotelLogo_uniquename')
+    p_propertyType = data.get('propertyType')
+    p_totalRooms = data.get('totalRooms')
+    p_lobbyHours = data.get('lobbyHours')
+    p_nonSmoking = data.get('nonSmoking')
+    p_propertyManagementSystemInformation = data.get('propertyManagementSystemInformation')
+    p_hotelWifiNameAndPassword = data.get('hotelWifiNameAndPassword')
+    p_ownerNameTitle = data.get('ownerNameTitle')
+    p_ownerNameFirst = data.get('ownerNameFirst')
+    p_ownerNameMiddle = data.get('ownerNameMiddle')
+    p_ownerNameLast = data.get('ownerNameLast')
+    p_ownerNameSuffix = data.get('ownerNameSuffix')
+    p_ownerCellPhone = data.get('ownerCellPhone')
+    p_ownerEmail = data.get('ownerEmail')
+    p_dailyOperations = data.get('dailyOperations')
+    p_emergencyContact = data.get('emergencyContact')
+    p_liveOnSite = data.get('liveOnSite')
+    p_roleInOperations = data.get('roleInOperations')
+    p_petsAllowed = data.get('petsAllowed')
+    p_semiTruckParking = data.get('semiTruckParking')
+    p_boxTruckParking = data.get('boxTruckParking')
+    p_parkingPassRequired = data.get('parkingPassRequired')
+    p_breakfastIncluded = data.get('breakfastIncluded')
+    p_fitnessCenter = data.get('fitnessCenter')
+    p_businessCenter = data.get('businessCenter')
+    p_guestLaundry = data.get('guestLaundry')
+    p_poolAvailable = data.get('poolAvailable')
+    p_meetingRoomAvailable = data.get('meetingRoomAvailable')
+    p_bBQareaAvailable = data.get('bBQareaAvailable')
+    p_generalManagerAvailable = data.get('generalManagerAvailable')
+    p_AssistantManagerAvailable = data.get('AssistantManagerAvailable')
+    p_maintanancePersonAvailable = data.get('maintanancePersonAvailable')
+    p_HeadHouseKeeperAvailable = data.get('HeadHouseKeeperAvailable')
+    p_HousemanAvailable = data.get('HousemanAvailable')
+    p_securityPersonAvailable = data.get('securityPersonAvailable')
+    p_sunDryShopAvailable = data.get('sunDryShopAvailable')
+    p_onSiteATMAvailable = data.get('onSiteATMAvailable')
+    p_ElevatorAvailable = data.get('ElevatorAvailable')
+    p_numberofSign = data.get('numberofSign')
+    p_guestVehicleData = data.get('guestVehicleData')
+    p_luggageCartAvailable = data.get('luggageCartAvailable')
+    p_generalManagerPhone = data.get('generalManagerPhone')
+    p_assistantManagerPhone = data.get('assistantManagerPhone')
+    p_maintanancePersonPhone = data.get('maintanancePersonPhone')
+    p_houseKeepingHeadPhone = data.get('houseKeepingHeadPhone')
+    p_roomCatagory = data.get('roomCatagory')
+    p_roomAmmunities = data.get('roomAmmunities')
+    p_maxRoomOccupants = data.get('maxRoomOccupants')
+    p_floorMap = data.get('floorMap')
+    p_minAge = data.get('minAge')
+    p_inOutTime = data.get('inOutTime')
+    p_vendingLocation = data.get('vendingLocation')
+    p_securityDeposit = data.get('securityDeposit')
+    p_depCashCart = data.get('depCashCart')
+    p_smokingVoilationfee = data.get('smokingVoilationfee')
+    p_babyCribs = data.get('babyCribs')
+    p_rollawayBeds = data.get('rollawayBeds')
+    p_distressedTravelItem = data.get('distressedTravelItem')
+    p_localGuestPolicy = data.get('localGuestPolicy')
+    p_hotelroomAllotment = data.get('hotelroomAllotment')
+    p_earlyCheckIn = data.get('earlyCheckIn')
+    p_earlyCheckInPolicy = data.get('earlyCheckInPolicy')
+    p_latecheckout = data.get('latecheckout')
+    p_peakSeason = data.get('peakSeason')
+    p_cancellationPolicy = data.get('cancellationPolicy')
+    p_cancellationPenalty = data.get('cancellationPenalty')
+    p_earlyCheckoutPolicy = data.get('earlyCheckoutPolicy')
+    p_baserate = data.get('baserate')
+    p_extraPeopleCharge = data.get('extraPeopleCharge')
+    p_kidsStayfree = data.get('kidsStayfree')
+    p_anyMandatoryfee = data.get('anyMandatoryfee')
+    p_inRoomSafe = data.get('inRoomSafe')
+    p_weeklyRates = data.get('weeklyRates')
+    p_montlyRates = data.get('montlyRates')
+    p_codesType = data.get('codesType')
+    p_craditcardAuthform = data.get('craditcardAuthform')
+    p_petPolicy = data.get('petPolicy')
+    p_nightAuditTime = data.get('nightAuditTime')
+    p_speceficRepots = data.get('speceficRepots')
+    p_instructionNightAudit = data.get('instructionNightAudit')
+    p_noShowBeforeNightAudit = data.get('noShowBeforeNightAudit')
+    p_dailyHousekeepingList = data.get('dailyHousekeepingList')
+    p_roomServiceFrequencyforWeekly = data.get('roomServiceFrequencyforWeekly')
+    p_roomServiceFrequencyforDaily = data.get('roomServiceFrequencyforDaily')
+    p_inspectionRequired = data.get('inspectionRequired')
+    p_housekeepingReport = data.get('housekeepingReport')
+    p_itemsHotelSupplyinRoom = data.get('itemsHotelSupplyinRoom')
+    p_itemsHotelSupplyinBathRoom = data.get('itemsHotelSupplyinBathRoom')
+    p_volumeOfOnlineReservationinwalkIn = data.get('volumeOfOnlineReservationinwalkIn')
+    p_walkoutrate = data.get('walkoutrate')
+    p_discountFor = data.get('discountFor')
+    p_specialRoom = data.get('specialRoom')
+    p_roomFlooring = data.get('roomFlooring')
+    p_parkandFlyFacilities = data.get('parkandFlyFacilities')
+    p_utensilsRequired = data.get('utensilsRequired')
+    p_extrahouseKeepingCharge = data.get('extrahouseKeepingCharge')
+    p_montlyordailyReconcilination = data.get('montlyordailyReconcilination')
+    p_extentinProcedures = data.get('extentinProcedures')
+    p_housekeepingworkHours = data.get('housekeepingworkHours')
+    p_maintananceworkHours = data.get('maintananceworkHours')
+    p_timeforNostaff = data.get('timeforNostaff')
+    p_thirdpartycc = data.get('thirdpartycc')
+    p_preauthorizeArrival = data.get('preauthorizeArrival')
+    p_acceptclc = data.get('acceptclc')
+    p_roomswithBalcony = data.get('roomswithBalcony')
+    p_DNRlist = data.get('DNRlist')
+    p_regularCompany = data.get('regularCompany')
+    p_recomendationtoGuest = data.get('recomendationtoGuest')
+    p_onSiterecomendationtoGuest = data.get('onSiterecomendationtoGuest')
+    p_lostandfound = data.get('lostandfound')
+    p_internetProvider = data.get('internetProvider')
+    p_pbxProvider = data.get('pbxProvider')
+    p_KeyLockProvider = data.get('KeyLockProvider')
+    p_taxRate = data.get('taxRate')
+    p_kioskTimming = data.get('kioskTimming')
+    p_giftCardd = data.get('giftCardd')
+    p_secondryPhoneLine = data.get('secondryPhoneLine')
+    p_additionalInformation = data.get('additionalInformation')
+
+    # Connect to the database
+    try:
+        connection = create_connection()
+        cursor = connection.cursor()
+
+        # Call the stored procedure
+        cursor.callproc('Proc_tblHotelInformation_Upsert', [
+            p_id,
+            p_date_submitted,
+            p_hotelName,
+            p_hotelPhone,
+            p_hotelEmail,
+            p_hotelAddress,
+            p_hotelCity,
+            p_hotelState,
+            p_hotelZipCode,
+            p_hotelWebsite,
+            p_hotelLogo,
+            p_hotelLogo_uniquename,
+            p_propertyType,
+            p_totalRooms,
+            p_lobbyHours,
+            p_nonSmoking,
+            p_propertyManagementSystemInformation,
+            p_hotelWifiNameAndPassword,
+            p_ownerNameTitle,
+            p_ownerNameFirst,
+            p_ownerNameMiddle,
+            p_ownerNameLast,
+            p_ownerNameSuffix,
+            p_ownerCellPhone,
+            p_ownerEmail,
+            p_dailyOperations,
+            p_emergencyContact,
+            p_liveOnSite,
+            p_roleInOperations,
+            p_petsAllowed,
+            p_semiTruckParking,
+            p_boxTruckParking,
+            p_parkingPassRequired,
+            p_breakfastIncluded,
+            p_fitnessCenter,
+            p_businessCenter,
+            p_guestLaundry,
+            p_poolAvailable,
+            p_meetingRoomAvailable,
+            p_bBQareaAvailable,
+            p_generalManagerAvailable,
+            p_AssistantManagerAvailable,
+            p_maintanancePersonAvailable,
+            p_HeadHouseKeeperAvailable,
+            p_HousemanAvailable,
+            p_securityPersonAvailable,
+            p_sunDryShopAvailable,
+            p_onSiteATMAvailable,
+            p_ElevatorAvailable,
+            p_numberofSign,
+            p_guestVehicleData,
+            p_luggageCartAvailable,
+            p_generalManagerPhone,
+            p_assistantManagerPhone,
+            p_maintanancePersonPhone,
+            p_houseKeepingHeadPhone,
+            p_roomCatagory,
+            p_roomAmmunities,
+            p_maxRoomOccupants,
+            p_floorMap,
+            p_minAge,
+            p_inOutTime,
+            p_vendingLocation,
+            p_securityDeposit,
+            p_depCashCart,
+            p_smokingVoilationfee,
+            p_babyCribs,
+            p_rollawayBeds,
+            p_distressedTravelItem,
+            p_localGuestPolicy,
+            p_hotelroomAllotment,
+            p_earlyCheckIn,
+            p_earlyCheckInPolicy,
+            p_latecheckout,
+            p_peakSeason,
+            p_cancellationPolicy,
+            p_cancellationPenalty,
+            p_earlyCheckoutPolicy,
+            p_baserate,
+            p_extraPeopleCharge,
+            p_kidsStayfree,
+            p_anyMandatoryfee,
+            p_inRoomSafe,
+            p_weeklyRates,
+            p_montlyRates,
+            p_codesType,
+            p_craditcardAuthform,
+            p_petPolicy,
+            p_nightAuditTime,
+            p_speceficRepots,
+            p_instructionNightAudit,
+            p_noShowBeforeNightAudit,
+            p_dailyHousekeepingList,
+            p_roomServiceFrequencyforWeekly,
+            p_roomServiceFrequencyforDaily,
+            p_inspectionRequired,
+            p_housekeepingReport,
+            p_itemsHotelSupplyinRoom,
+            p_itemsHotelSupplyinBathRoom,
+            p_volumeOfOnlineReservationinwalkIn,
+            p_walkoutrate,
+            p_discountFor,
+            p_specialRoom,
+            p_roomFlooring,
+            p_parkandFlyFacilities,
+            p_utensilsRequired,
+            p_extrahouseKeepingCharge,
+            p_montlyordailyReconcilination,
+            p_extentinProcedures,
+            p_housekeepingworkHours,
+            p_maintananceworkHours,
+            p_timeforNostaff,
+            p_thirdpartycc,
+            p_preauthorizeArrival,
+            p_acceptclc,
+            p_roomswithBalcony,
+            p_DNRlist,
+            p_regularCompany,
+            p_recomendationtoGuest,
+            p_onSiterecomendationtoGuest,
+            p_lostandfound,
+            p_internetProvider,
+            p_pbxProvider,
+            p_KeyLockProvider,
+            p_taxRate,
+            p_kioskTimming,
+            p_giftCardd,
+            p_secondryPhoneLine,
+            p_additionalInformation
+        ])
+
+        # Commit the changes
+        connection.commit()
+
+        return jsonify({"status": "success", "message": "Hotel information saved successfully."}), 201
+
+    except pymysql.MySQLError as err:
+        return jsonify({"status": "error", "message": str(err)}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+
+
+#test
+# @app.route('/save-test', methods=['POST'])
+# def save_test():
+#     data = request.get_json()
+
+#     is_yes = data.get('isYes', 0)
+#     is_no = data.get('isNo', 0)
+#     is_other = data.get('isOther', 0)
+#     other_text = data.get('otherText', None)
+
+#     try:
+#         connection = create_connection()
+#         cursor = connection.cursor()
+#         query = """
+#             INSERT INTO test (IsYes, IsNo, IsOther, otherText)
+#             VALUES (%s, %s, %s, %s)
+#         """
+#         cursor.execute(query, (is_yes, is_no, is_other, other_text))
+#         connection.commit()  # Commit using the connection object
+
+#         return jsonify({'message': 'Test record saved successfully.'}), 201
+
+#     except Exception as e:
+#         return jsonify({'message': 'Failed to save test record.', 'error': str(e)}), 500
+
+#     finally:
+#         cursor.close()
+#         connection.close()
+
+
+@app.route('/save-test', methods=['POST'])
+def save_test():
+    data = request.get_json()
+
+    is_yes = data.get('isYes', 0)
+    is_no = data.get('isNo', 0)
+    is_other = data.get('isOther', 0)
+    other_text = data.get('otherText', None)
+
+    # Get values from the new Yes/No set
+    is_yes2 = data.get('isYes2', 0)
+    is_no2 = data.get('isNo2', 0)
+
+    # Determine what to store in the first column based on the second set
+    if is_yes2:
+        is_yes = 1
+        is_no = 0
+    elif is_no2:
+        is_yes = 0
+        is_no = 1
+
+    try:
+        connection = create_connection()
+        cursor = connection.cursor()
+        query = """
+            INSERT INTO test (IsYes, IsNo, IsOther, otherText)
+            VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(query, (is_yes, is_no, is_other, other_text))
+        cursor.connection.commit()  # Fixed reference to cursor.connection
+        return jsonify({'message': 'Test record saved successfully.'}), 201
+
+    except Exception as e:
+        return jsonify({'message': 'Failed to save test record.', 'error': str(e)}), 500
+
+    finally:
+        cursor.close()
+        connection.close()
+# Route to retrieve all records
+@app.route('/get-tests', methods=['GET'])
+def get_tests():
+    try:
+        cursor = create_connection()
+        cursor.execute("SELECT IsYes, IsNo, IsOther, otherText FROM test")
+        rows = cursor.fetchall()
+
+        tests = []
+        for row in rows:
+            test = {
+                'isYes': bool(row[0]),
+                'isNo': bool(row[1]),
+                'isOther': bool(row[2]),
+                'otherText': row[3]
+            }
+            tests.append(test)
+
+        return jsonify(tests), 200
+
+    except Exception as e:
+        return jsonify({'message': 'Failed to retrieve tests.', 'error': str(e)}), 500
+
+    finally:
+        cursor.close()
+
+
+
+@app.route('/submit_equipment_form', methods=['POST'])
+def submit_equipment_form():
+    try:
+        # Extract the form data
+        form_data = request.form
+
+        p_id = form_data.get('id', 0)
+        p_firstname = form_data.get('firstName')
+        p_lastname = form_data.get('lastName')
+        p_propertyName = form_data.get('propertyName')
+        p_address = form_data.get('address')
+        p_city = form_data.get('city')
+        p_state = form_data.get('state')
+        p_zipCode = form_data.get('zipCode')
+        p_phone = form_data.get('phone')
+        p_email = form_data.get('email')
+        p_keyLockProvider = form_data.get('keyLockProvider')
+        p_locktype = form_data.get('locktype')
+        p_provideSupportNumber = form_data.get('provideSupportNumber')
+        p_keyEncoderModel_Serial = form_data.get('keyEncoderModel')
+
+        # Handling file upload
+        p_keyEncoderPhotos = request.files.get('keyEncoderPhotos')
+        p_keyEncoderPhotosUniqueName = p_keyEncoderPhotos.filename if p_keyEncoderPhotos else None
+        
+        p_PINpadModel = form_data.get('PINpadModel')
+        p_PBXSystem = form_data.get('PBXSystem')
+        p_PBXProvider = form_data.get('PBXProvider')
+        p_providerSupportNumber2 = form_data.get('providerSupportNumber2')
+
+        # Call the stored procedure to insert or update the data
+        conn = create_connection()
+        cursor = conn.cursor()
+        
+        cursor.callproc('Proc_tblthirdpartyequipment_Upsert', [
+            p_id, p_firstname, p_lastname, p_propertyName, p_address, p_city, p_state, p_zipCode,
+            p_phone, p_email, p_keyLockProvider, p_locktype, p_provideSupportNumber, 
+            p_keyEncoderModel_Serial,p_keyEncoderPhotos, p_keyEncoderPhotosUniqueName, p_PINpadModel, 
+            p_PBXSystem, p_PBXProvider, p_providerSupportNumber2
+        ])
+        
+        # Commit the changes
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({"message": "Form submitted successfully"}), 200
+    
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "Failed to submit form"}), 500
+        return jsonify({"message": "Form submitted successfully!"}), 200
+
+
+
+
+@app.route('/states', methods=['GET'])
+def get_states():
+    conn = create_connection()
+    if conn is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.callproc('Proc_tblstate_selectstatesfordropdown')
+            roles_options = cursor.fetchall()
+            
+            # Print raw result for debugging
+            print("Raw result:", roles_options)
+
+            return jsonify(roles_options), 200
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+    finally:
+        conn.close()
+
+@app.route('/lock-types', methods=['GET'])
+def get_locktypes():
+    conn = create_connection()
+    if conn is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.callproc('Proc_tblLockType_selectlocktypefordropdown')
+            roles_options = cursor.fetchall()
+            
+            # Print raw result for debugging
+            print("Raw result:", roles_options)
+
+            return jsonify(roles_options), 200
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+    finally:
+        conn.close()
 
 
 
@@ -1548,6 +2038,48 @@ def update_task_state():
     except Exception as e:
         # Generic error handling
         return jsonify({'error': f"Error: {str(e)}"}), 500
+    
+@app.route('/api/update_task_priority', methods=['POST'])
+def update_task_priority():
+    try:
+        # Get data from the request
+        data = request.json
+        
+        # Debugging step: print received data
+        print("Received data:", data)
+
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        task_id = data.get('task_id')
+        priority_id = data.get('priority_id')
+
+        if not task_id or not priority_id:
+            return jsonify({'error': 'Task ID and Task Status ID are required'}), 400
+
+        # Open database cursor
+        conn = create_connection()
+        cur = conn.cursor()
+
+        # Call the stored procedure with correct parameters
+        cur.callproc('Proc_tbltasks_UpdatePriority', [task_id, priority_id])
+
+        # Commit the transaction
+        conn.commit()
+
+        # Close cursor
+        cur.close()
+        conn.close()
+
+        return jsonify({'message': 'Task state updated successfully'}), 200
+
+    except pymysql.MySQLError as e:
+        # MySQL error handling
+        return jsonify({'error': f"MySQL Error: {str(e)}"}), 500
+
+    except Exception as e:
+        # Generic error handling
+        return jsonify({'error': f"Error: {str(e)}"}), 500
 
 @app.route('/api/assign_task', methods=['POST'])
 def assign_task():
@@ -1587,6 +2119,54 @@ def get_assigned_user_for_task(task_id):
         with connection.cursor() as cursor:
             # Call the stored procedure to fetch the assigned user for the given ticket ID
             cursor.callproc('Proc_tbltasks_GetAssignedUser', [task_id])
+            result = cursor.fetchone()  # Assuming the stored procedure returns one row
+            
+            if result:
+                return jsonify(result), 200
+            else:
+                return jsonify({"message": "No user assigned to this ticket"}), 404
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({'error': 'Failed to fetch assigned user'}), 500
+
+    finally:
+        connection.close()
+@app.route('/api/get_assigned_state_for_task/<int:task_id>', methods=['GET'])
+def get_assigned_state_for_task(task_id):
+    # Create database connection
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Call the stored procedure to fetch the assigned user for the given ticket ID
+            cursor.callproc('Proc_tbltasks_GetTaskStatus', [task_id])
+            result = cursor.fetchone()  # Assuming the stored procedure returns one row
+            
+            if result:
+                return jsonify(result), 200
+            else:
+                return jsonify({"message": "No user assigned to this ticket"}), 404
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({'error': 'Failed to fetch assigned user'}), 500
+
+    finally:
+        connection.close()
+@app.route('/api/get_assigned_priority_for_task/<int:task_id>', methods=['GET'])
+def get_assigned_priority_for_task(task_id):
+    # Create database connection
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Call the stored procedure to fetch the assigned user for the given ticket ID
+            cursor.callproc('Proc_tbltasks_GetPriority', [task_id])
             result = cursor.fetchone()  # Assuming the stored procedure returns one row
             
             if result:
