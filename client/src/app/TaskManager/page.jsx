@@ -50,7 +50,7 @@ function Home() {
     const fetchOpenedTickets = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/my-tic`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/my-task`,
           { withCredentials: true }
         );
         setOpenedTickets(response.data);
@@ -67,14 +67,14 @@ function Home() {
     const fetchCreatedTickets = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/created-tick`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/created-task`,
           { withCredentials: true }
         );
         const allTickets = response.data;
 
         // Separate tickets into opened and closed
-        const openTickets = allTickets.filter(ticket => ticket.status_id === 1);
-        const closedTickets = allTickets.filter(ticket => ticket.status_id === 2);
+        const openTickets = allTickets.filter(ticket => ticket.taskstatus_id === 1 || ticket.taskstatus_id === 2);
+        const closedTickets = allTickets.filter(ticket => ticket.taskstatus_id === 3);
 
         setCreatedTickets(openTickets);
         setClosedTickets(closedTickets);
@@ -184,14 +184,14 @@ function Home() {
             onClick={() => handleRedirect("/TaskManager/openTasks")}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none"
           >
-            Opened Tasks
+            Tasks
           </button>
-          <button
+          {/* <button
             onClick={() => handleRedirect("/Helpdesk/closedTicket")}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none"
           >
             Closed Tasks
-          </button>
+          </button> */}
         </div>
       ) : null}
 
@@ -214,7 +214,7 @@ function Home() {
                         key={ticket.id}
                         className="border-b border-gray-200 py-2 hover:bg-gray-50 transition duration-200 rounded-lg"
                       >
-                        <Link href={`/Helpdesk/ticket/${ticket.id}`} legacyBehavior>
+                        <Link href={`/TaskManager/task/${ticket.id}`} legacyBehavior>
                           <a className="text-blue-600 hover:underline font-semibold">
                             {`Ticket #${ticket.id}: ${ticket.title}`}
                           </a>
@@ -247,9 +247,9 @@ function Home() {
                     key={ticket.id}
                     className="border-b border-gray-200 py-2 hover:bg-gray-50 transition duration-200 rounded-lg"
                   >
-                    <Link href={`/Helpdesk/ticket/${ticket.id}`} legacyBehavior>
+                    <Link href={`/TaskManager/task/${ticket.id}`} legacyBehavior>
                       <a className="text-blue-600 hover:underline font-semibold">
-                        {`Ticket #${ticket.id}: ${ticket.title}`}
+                        {`Task #${ticket.id}: ${ticket.title}`}
                       </a>
                     </Link>
                     <p className="text-gray-600">
@@ -265,7 +265,7 @@ function Home() {
 
           {/* Closed Tickets Created by Me Section */}
           <div className="bg-white shadow-lg rounded-lg p-6">
-            <h3 className="text-xl font-semibold text-center text-green-600">Closed Tasks</h3>
+            <h3 className="text-xl font-semibold text-center text-green-600">Completed Tasks</h3>
             <ul className="space-y-4">
               {closedTickets.length > 0 ? (
                 closedTickets.map((ticket) => (
@@ -273,9 +273,9 @@ function Home() {
                     key={ticket.id}
                     className="border-b border-gray-200 py-2 hover:bg-gray-50 transition duration-200 rounded-lg"
                   >
-                    <Link href={`/Helpdesk/ticket/${ticket.id}`} legacyBehavior>
+                    <Link href={`/TaskManager/task/${ticket.id}`} legacyBehavior>
                       <a className="text-green-600 hover:underline font-semibold">
-                        {`Ticket #${ticket.id}: ${ticket.title}`}
+                        {`Task #${ticket.id}: ${ticket.title}`}
                       </a>
                     </Link>
                     <p className="text-gray-600">

@@ -2183,6 +2183,113 @@ def get_assigned_priority_for_task(task_id):
 
 
 
+@app.route('/api/my-task', methods=['GET'])
+
+@login_required
+def get_user_task_by_id():
+    # Fetch user_id from the session
+    user_id = session.get("user_id")
+    
+    # If user_id is not available, return an error
+    if not user_id:
+        return jsonify({"error": "User ID not found in session"}), 401
+    
+    # Create database connection
+    connection = create_connection()
+    
+    # Handle the case where the connection fails
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            # Call the stored procedure to get the latest 5 opened tickets
+            cursor.callproc("Proc_tbltasks_SelectAssignedTasksOfUser", (user_id,))
+            
+            # Fetch the result from the procedure
+            latest_opened_tickets = cursor.fetchall()
+            
+            # Log the raw result for debugging purposes
+            print("Raw result:", latest_opened_tickets)
+
+            # Decode any bytes to strings if necessary
+            for ticket in latest_opened_tickets:
+                for key, value in ticket.items():
+                    if isinstance(value, bytes):
+                        ticket[key] = value.decode("utf-8")
+
+            # Return the tickets as a JSON response
+            return jsonify(latest_opened_tickets), 200
+
+    except pymysql.MySQLError as e:
+        # Log any MySQL errors for debugging
+        print(f"MySQL error occurred: {e}")
+        return jsonify({"error": "Database query failed"}), 500
+
+    except Exception as e:
+        # Log unexpected errors
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+
+    finally:
+        # Ensure the connection is closed in all cases
+        connection.close()
+
+
+
+@app.route('/api/created-task', methods=['GET'])
+@login_required
+def get_task_created_by_me():
+    # Fetch user_id from the session
+    user_id = session.get("user_id")
+    
+    # If user_id is not available, return an error
+    if not user_id:
+        return jsonify({"error": "User ID not found in session"}), 401
+    
+    # Create database connection
+    connection = create_connection()
+    
+    # Handle the case where the connection fails
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Call the stored procedure to get tickets created by the user
+            cursor.callproc("Proc_tbltasks_GetTasksCreatedBy", (user_id,))
+            
+            # Fetch the result from the procedure
+            created_tickets = cursor.fetchall()
+            
+            # Log the raw result for debugging purposes
+            print("Raw result:", created_tickets)
+
+            # Decode any bytes to strings if necessary
+            for ticket in created_tickets:
+                for key, value in ticket.items():
+                    if isinstance(value, bytes):
+                        ticket[key] = value.decode("utf-8")
+
+            # Return the tickets as a JSON response
+            return jsonify(created_tickets), 200
+
+    except pymysql.MySQLError as e:
+        # Log any MySQL errors for debugging
+        print(f"MySQL error occurred: {e}")
+        return jsonify({"error": "Database query failed"}), 500
+
+    except Exception as e:
+        # Log unexpected errors
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+
+    finally:
+        # Ensure the connection is closed in all cases
+        connection.close()
+
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
 

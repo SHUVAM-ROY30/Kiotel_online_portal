@@ -570,7 +570,7 @@ const OpenedTickets = () => {
         user_id: userId,
       });
       setAssignedUsers(prevState => ({ ...prevState, [task_id]: { user_id: userId } }));
-      toast.success("Ticket assigned successfully!");
+      toast.success("Tasks assigned successfully!");
     } catch (error) {
       toast.error("Error assigning ticket.");
       console.error("Error assigning ticket:", error);
@@ -585,7 +585,7 @@ const OpenedTickets = () => {
         taskstatus_id: id,
       });
       setTicketState(prevState => ({ ...prevState, [task_id]: { taskstatus_id: id } }));
-      toast.success("Ticket state updated!");
+      toast.success("Tasks state updated!");
     } catch (error) {
       toast.error("Error updating ticket state.");
       console.error("Error updating ticket state:", error);
@@ -600,7 +600,7 @@ const OpenedTickets = () => {
         priority_id: priorityId,
       });
       setTicketPriority(prevState => ({ ...prevState, [task_id]: { priority_id: priorityId } }));
-      toast.success("Ticket priority updated!");
+      toast.success("Tasks priority updated!");
     } catch (error) {
       toast.error("Error updating ticket priority.");
       console.error("Error updating ticket priority:", error);
