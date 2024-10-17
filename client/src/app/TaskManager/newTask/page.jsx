@@ -45,7 +45,7 @@ export default function TicketCreateForm() {
       });
 
       // Show success toast
-      toast.success("Ticket created successfully!", {
+      toast.success("Task created successfully!", {
         position: "top-center", // Use string instead of constant
         autoClose: 3000, // Automatically close after 3 seconds
         theme: "colored",

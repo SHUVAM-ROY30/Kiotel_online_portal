@@ -578,13 +578,13 @@ const OpenedTickets = () => {
   };
 
   // Update ticket state
-  const handleStateChange = async (task_id, id) => {
+  const handleStateChange = async (task_id, taskstatus_id) => {
     try {
       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_state`, {
         task_id: task_id,
-        taskstatus_id: id,
+        taskstatus_id: taskstatus_id,
       });
-      setTicketState(prevState => ({ ...prevState, [task_id]: { taskstatus_id: id } }));
+      setTicketState(prevState => ({ ...prevState, [task_id]: { taskstatus_id: taskstatus_id } }));
       toast.success("Tasks state updated!");
     } catch (error) {
       toast.error("Error updating ticket state.");
@@ -621,7 +621,7 @@ const OpenedTickets = () => {
               src="/Kiotel logo.jpg"
               alt="Dashboard Logo"
               className="h-11 w-auto mx-auto cursor-pointer hover:opacity-80 transition duration-200"
-              onClick={() => router.push('/Helpdesk')}
+              onClick={() => router.push('/TaskManager')}
             />
           </div>
         </div>
@@ -637,7 +637,7 @@ const OpenedTickets = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assign Ticket</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assign Task</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
               </tr>

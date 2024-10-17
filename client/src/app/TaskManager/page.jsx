@@ -131,7 +131,7 @@ function Home() {
             />
             <nav className="flex space-x-4 mt-2 sm:mt-0">
               <a
-                href="../Helpdesk"
+                href="../TaskManager"
                 className="text-gray-700 hover:text-blue-800 hover:underline underline-offset-4 transition duration-200"
               >
                 Overview
