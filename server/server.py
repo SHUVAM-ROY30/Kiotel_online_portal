@@ -2375,6 +2375,67 @@ def get_task_created_by_me():
 
 
 
+@app.route('/api/delete-ticket', methods=['POST'])
+def delete_ticket():
+    # Extract ticket_id from request
+    ticket_id = request.json.get('ticket_id')
+    if not ticket_id:
+        return jsonify({"error": "Ticket ID is required"}), 400
+
+    # Create database connection
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Call the stored procedure to soft delete the ticket
+            cursor.callproc('Proc_tbltickets_DeleteTicket', [ticket_id])
+
+            # Commit the changes to the database
+            connection.commit()
+
+        return jsonify({"message": "Ticket deleted successfully"}), 200
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        connection.close()
+
+
+@app.route('/api/delete-task', methods=['POST'])
+def delete_task():
+    # Extract ticket_id from request
+    ticket_id = request.json.get('ticket_id')
+    if not ticket_id:
+        return jsonify({"error": "Ticket ID is required"}), 400
+
+    # Create database connection
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Call the stored procedure to soft delete the ticket
+            cursor.callproc('Proc_tbltasks_Deletetask', [ticket_id])
+
+            # Commit the changes to the database
+            connection.commit()
+
+        return jsonify({"message": "Ticket deleted successfully"}), 200
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        connection.close()
+
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
 
