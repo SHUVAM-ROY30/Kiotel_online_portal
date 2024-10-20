@@ -267,7 +267,7 @@ import ProtectedRoute from "../../context/ProtectedRoute"; // Your authenticatio
               Admin
             </Link>
           )}
-          {userRole === 1 && ( // Display Admin button only if role_id is 1
+          { ( // Display Admin button only if role_id is 1
             <Link href="/TaskManager" className="block p-4 bg-green-500 text-white text-center rounded-lg shadow hover:bg-green-600">
               Task Manager
             </Link>
