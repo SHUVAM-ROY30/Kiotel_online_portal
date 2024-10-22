@@ -22,6 +22,7 @@ from werkzeug.utils import secure_filename
 
 
 
+
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 # CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
@@ -34,6 +35,10 @@ app.config["SESSION_TYPE"] = "filesystem"
 UPLOAD_FOLDER = './uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Ensure the upload directory exists
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
+
+
 
 
 
@@ -116,7 +121,7 @@ def get_user_email():
             cursor.execute("SELECT * FROM tblusers WHERE id = %s", (user_id,))
             user = cursor.fetchone()
             if user:
-                return jsonify({"name": user['fname'], "role": user["role_id"]})
+                return jsonify({"name": user['fname'], "role": user["role_id"],"email": user['emailid']})
             else:
                 return jsonify({"error": "User not found"}), 404
     except pymysql.MySQLError as e:
@@ -380,70 +385,83 @@ def generate_unique_name(filename):
     unique_name = hashlib.sha256(unique_str.encode()).hexdigest() + ext  # Encrypt the UUID and append the extension
     return unique_name
 
-@app.route("/api/ticket", methods=["POST"])
-@login_required
-def create_ticket():
-    user_id = session.get("user_id")
+# @app.route("/api/ticket", methods=["POST"])
+# @login_required
+# def create_ticket():
+#     user_id = session.get("user_id")
 
-    if user_id is None:
-        return jsonify({"error": "User ID not found in session"}), 400
+#     if user_id is None:
+#         return jsonify({"error": "User ID not found in session"}), 400
 
-    title = request.form.get("title")
-    description = request.form.get("description")
-    attachments = request.files.getlist("attachments")
+#     title = request.form.get("title")
+#     description = request.form.get("description")
+#     attachments = request.files.getlist("attachments")
     
-    if not title or not description:
-        return jsonify({"error": "Title and description are required"}), 400
+#     if not title or not description:
+#         return jsonify({"error": "Title and description are required"}), 400
 
-    connection = create_connection()
-    if connection is None:
-        return jsonify({"error": "Failed to connect to the database"}), 500
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
 
-    try:
-        attachment_filenames = []
-        upload_folder = app.config['UPLOAD_FOLDER']
+#     try:
+#         attachment_filenames = []
+#         upload_folder = app.config['UPLOAD_FOLDER']
 
-        with connection.cursor() as cursor:
-            if attachments:
-                for attachment in attachments:
-                    original_filename = attachment.filename
+#         with connection.cursor() as cursor:
+#             if attachments:
+#                 for attachment in attachments:
+#                     original_filename = attachment.filename
                     
-                    # Generate unique encrypted name for the file
-                    unique_name = generate_unique_name(original_filename)
+#                     # Generate unique encrypted name for the file
+#                     unique_name = generate_unique_name(original_filename)
                     
-                    # Save the file on the server with the unique encrypted name
-                    file_path = os.path.join(upload_folder, unique_name)
-                    attachment.save(file_path)
+#                     # Save the file on the server with the unique encrypted name
+#                     file_path = os.path.join(upload_folder, unique_name)
+#                     attachment.save(file_path)
                     
-                    # Store only the original filename
-                    attachment_filenames.append(original_filename)
+#                     # Store only the original filename
+#                     attachment_filenames.append(original_filename)
 
-            # Convert attachment filenames to JSON format
-            attachments_json = json.dumps(attachment_filenames)
+#             # Convert attachment filenames to JSON format
+#             attachments_json = json.dumps(attachment_filenames)
 
-            # Set the session variable for the current user ID
-            cursor.execute("SET @current_user_id = %s", (user_id,))
+#             # Set the session variable for the current user ID
+#             cursor.execute("SET @current_user_id = %s", (user_id,))
 
-            # Set status_id to 1 (assumed 'Open' status)
-            status_id = 1
+#             # Set status_id to 1 (assumed 'Open' status)
+#             status_id = 1
 
-            # Call the stored procedure with the parameters, including the attachments JSON and status_id
-            cursor.callproc('Proc_tbltickets_UpsertTicket', (0, title, description, attachments_json, unique_name if attachments else None, status_id))
-            connection.commit()
+#             # Call the stored procedure with the parameters, including the attachments JSON and status_id
+#             cursor.callproc('Proc_tbltickets_UpsertTicket', (0, title, description, attachments_json, unique_name if attachments else None, status_id))
+#             connection.commit()
 
-            # Fetch the last inserted ticket ID
-            cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
-            ticket_id = cursor.fetchone()["ticket_id"]
+#             # Fetch the last inserted ticket ID
+#             cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
+#             ticket_id = cursor.fetchone()["ticket_id"]
 
-            return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
-    except pymysql.MySQLError as e:
-        print(f"The error '{e}' occurred")
-        return jsonify({"error": "Database query failed"}), 500
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        connection.close()
+#             return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         connection.close()
+
+
+# import os
+
+
+
+
+# Configure your email settings for smtplib
+
+
+
+
+
 
 
 @app.route("/api/tickets/<int:ticket_id>", methods=["GET"])
@@ -2433,6 +2451,9 @@ def delete_task():
 
     finally:
         connection.close()
+
+# Helper function to send email
+
 
 
 

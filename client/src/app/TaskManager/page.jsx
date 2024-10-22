@@ -30,7 +30,7 @@ function Home() {
     const fetchUserRole = async () => {
       try {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`, { withCredentials: true });
-        const role = response.data.role;
+        const role = response.data.email;
         console.log("Fetched Role ID:", role); // Debugging statement
         setUserRole(role);
       } catch (error) {
@@ -109,7 +109,7 @@ function Home() {
 
   // Function to handle redirect based on user role
   const handleRedirect = (link) => {
-    if (userRole === 1 || userRole === 3) {
+    if (userRole === "user@example.com" || userRole === "my-kiotel@kiotel.co") {
       router.push(link);
     } else {
       alert("You do not have permission to access this page.");
@@ -178,7 +178,7 @@ function Home() {
       </header>
 
       {/* Buttons for Opened and Closed Tickets */}
-      {userRole === 1 || userRole === 3 ? (
+      {userRole === "user@example.com" || userRole === "my-kiotel@kiotel.co" ? (
         <div className="flex justify-center mt-4 space-x-4">
           <button
             onClick={() => handleRedirect("/TaskManager/openTasks")}
