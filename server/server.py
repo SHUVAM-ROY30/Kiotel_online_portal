@@ -16,6 +16,13 @@ import hashlib
 import uuid
 
 from werkzeug.utils import secure_filename
+from flask_mail import Mail, Message
+import smtplib, ssl
+from email.mime.multipart import MIMEMultipart  # Add this import
+from email.mime.text import MIMEText  # Add this import
+from email.mime.base import MIMEBase  # Add this import
+from email import encoders  # Add this for encoding attachments
+from flask_mail import Mail, Message
 
 
 
@@ -36,7 +43,21 @@ UPLOAD_FOLDER = './uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Ensure the upload directory exists
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+# app.config['MAIL_SERVER'] = 'mail.bluehost.com'  # Example: Using Bluehost SMTP server
+# app.config['MAIL_PORT'] = 465
+# app.config['MAIL_USE_SSL'] = True
+# app.config['MAIL_USERNAME'] = 'shuvam.r@kiotel.co'  # Your email
+# app.config['MAIL_PASSWORD'] = 'Kiotel123!'  # Your email password
+# app.config['MAIL_DEFAULT_SENDER'] = 'shuvam.r@kiotel.co'
+# app.config['MAIL_DEBUG'] = True
 
+# mail = Mail(app)
+
+SMTP_SERVER = "mail.kiotel.co"
+SMTP_PORT = 465  # Using TLS
+SMTP_USERNAME = "shuvam.r@kiotel.co"  # Replace with your Gmail
+SMTP_PASSWORD = "Kiotel123!"  # Replace with your Gmail password
+SENDER_EMAIL = "shuvam.r@kiotel.co"  # Replace with the sender's email
 
 
 
@@ -457,6 +478,201 @@ def generate_unique_name(filename):
 
 
 # Configure your email settings for smtplib
+# def send_email_notification(title, description, ticket_id):
+#     try:
+#         # Create the email message
+#         msg = MIMEMultipart()
+#         msg['From'] = app.config['shuvam.r@kiotel.co']
+#         msg['To'] = 'shuvam.r@kiotel.co'  # Replace with your recipient's email
+#         msg['Subject'] = "New Ticket Created"
+
+#         # Add body text
+#         body = f"New Ticket Created\n\nTicket ID: {ticket_id}\nTitle: {title}\nDescription: {description}"
+#         msg.attach(MIMEText(body, 'plain'))
+
+#         # SMTP settings
+#         smtp_server = app.config['MAIL_SERVER']
+#         smtp_port = app.config['MAIL_PORT']
+#         sender_email = app.config['MAIL_USERNAME']
+#         sender_password = app.config['MAIL_PASSWORD']
+#         receiver_email = 'shuvam.r@kiotel.co'  # Replace with your recipient's email
+
+#         # Create secure connection with the server and send the email
+#         context = ssl.create_default_context()
+#         with smtplib.SMTP_SSL(smtp_server, smtp_port, context=context) as server:
+#             server.login(sender_email, sender_password)
+#             server.sendmail(sender_email, receiver_email, msg.as_string())
+
+#         print("Email sent successfully")
+#     except Exception as e:
+#         print(f"Email sending failed: {e}")
+
+# @app.route("/api/ticket", methods=["POST"])
+# def create_ticket():
+#     user_id = session.get("user_id")
+
+#     if user_id is None:
+#         return jsonify({"error": "User ID not found in session"}), 400
+
+#     title = request.form.get("title")
+#     description = request.form.get("description")
+#     attachments = request.files.getlist("attachments")
+
+#     if not title or not description:
+#         return jsonify({"error": "Title and description are required"}), 400
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         attachment_filenames = []
+#         upload_folder = app.config['UPLOAD_FOLDER']
+
+#         with connection.cursor() as cursor:
+#             if attachments:
+#                 for attachment in attachments:
+#                     original_filename = attachment.filename
+
+#                     # Save the file on the server with the original name
+#                     file_path = os.path.join(upload_folder, original_filename)
+#                     attachment.save(file_path)
+
+#                     attachment_filenames.append(original_filename)
+
+#             attachments_json = json.dumps(attachment_filenames)
+
+#             cursor.execute("SET @current_user_id = %s", (user_id,))
+
+#             # Set status_id to 1 (assumed 'Open' status)
+#             status_id = 1
+
+#             cursor.callproc('Proc_tbltickets_UpsertTicket', (0, title, description, attachments_json, None, status_id))
+#             connection.commit()
+
+#             cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
+#             ticket_id = cursor.fetchone()["ticket_id"]
+
+#             # Send email notification via smtplib
+#             send_email_notification(title, description, ticket_id)
+
+#             return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         connection.close()
+
+@app.route("/api/ticket", methods=["POST"])
+def create_ticket():
+    user_id = session.get("user_id")
+
+    if user_id is None:
+        return jsonify({"error": "User ID not found in session"}), 400
+
+    title = request.form.get("title")
+    description = request.form.get("description")
+    attachments = request.files.getlist("attachments")
+
+    if not title or not description:
+        return jsonify({"error": "Title and description are required"}), 400
+
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        attachment_filenames = []
+        upload_folder = app.config['UPLOAD_FOLDER']
+
+        with connection.cursor() as cursor:
+            if attachments:
+                for attachment in attachments:
+                    original_filename = attachment.filename
+
+                    # Save the file on the server with the original name
+                    file_path = os.path.join(upload_folder, original_filename)
+                    attachment.save(file_path)
+
+                    attachment_filenames.append(original_filename)
+
+            attachments_json = json.dumps(attachment_filenames)
+
+            cursor.execute("SET @current_user_id = %s", (user_id,))
+
+            # Set status_id to 1 (assumed 'Open' status)
+            status_id = 1
+
+            cursor.callproc('Proc_tbltickets_UpsertTicket', (0, title, description, attachments_json, None, status_id))
+            connection.commit()
+
+            cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
+            ticket_id = cursor.fetchone()["ticket_id"]
+
+            # Send email notification via smtplib
+            send_email_notification(title, description, ticket_id)
+
+            return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        connection.close()
+
+# Function to send email notification
+def send_email_notification(title, description, ticket_id):
+    try:
+        # Create the email message
+        msg = MIMEMultipart()
+        msg['From'] = SMTP_USERNAME
+        msg['To'] = 'kshiti.u@kiotel.co'  # Replace with recipient's email
+        msg['Subject'] = "New Ticket Created"
+
+        # Add body text
+        body = f"New Ticket Created\n\nTicket ID: {ticket_id}\nTitle: {title}\nDescription: {description}"
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Create secure connection with the server and send the email
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, context=context) as server:
+            server.set_debuglevel(1)  # Enable debug output to troubleshoot
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.sendmail(SMTP_USERNAME, 'kshiti.u@kiotel.co', msg.as_string())
+
+        print("Email sent successfully")
+    except Exception as e:
+        print(f"Email sending failed: {e}")
+
+
+
+def send_email(recipient, subject, body):
+    msg = Message(subject, recipients=[recipient])
+    msg.body = body
+    mail.send(msg)
+@app.route('/api/send-email', methods=['POST'])
+def send_notification_email():
+    data = request.json
+    title = data.get('title')
+    description = data.get('description')
+    
+    # Predefined email or logic to fetch based on conditions
+    recipient_email = "shuvam.r@kiotel.co"  # Can be a static support team email
+    
+    subject = f"New Ticket Created: {title}"
+    body = f"Description: {description}"
+    
+    try:
+        send_email(recipient_email, subject, body)
+        return jsonify({"message": "Email sent successfully"}), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "Failed to send email"}), 500
 
 
 

@@ -302,9 +302,9 @@ export default function TicketCreateForm() {
         });
       }
 
-      // setTimeout(() => {
-      //   router.push("/Helpdesk");
-      // }, 3000);
+      setTimeout(() => {
+        router.push("/Helpdesk");
+      }, 3000);
     } catch (error) {
       console.error("Error creating the ticket!", error);
       const errorMessage =
