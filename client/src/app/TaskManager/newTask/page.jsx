@@ -256,12 +256,242 @@
 // }
 
 
+// "use client";
+
+// import { useState, useEffect } from "react";
+// import { useRouter } from "next/navigation";
+// import axios from "axios";
+// import { ToastContainer, toast } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
+
+// export default function TicketCreateForm() {
+//   const router = useRouter();
+//   const [title, setTitle] = useState("");
+//   const [description, setDescription] = useState("");
+//   const [attachments, setAttachments] = useState(null);
+//   const [users, setUsers] = useState([]);
+//   const [assignedUser, setAssignedUser] = useState(""); // Single user selection
+//   const [taskStates, setTaskStates] = useState([]); // Task state options
+//   const [priorities, setPriorities] = useState([]); // Priority options
+//   const [ticketState, setTicketState] = useState(""); // Selected state
+//   const [ticketPriority, setTicketPriority] = useState(""); // Selected priority
+
+//   // Fetch users for assigning the task (excluding clients)
+//   useEffect(() => {
+//     const fetchUsers = async () => {
+//       try {
+//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`);
+//         const filteredUsers = response.data.filter((user) => user.role !== "Client");
+//         setUsers(filteredUsers);
+//       } catch (error) {
+//         console.error("Error fetching users:", error);
+//       }
+//     };
+
+//     fetchUsers();
+//   }, []);
+
+//   // Fetch task states for the dropdown
+//   useEffect(() => {
+//     const fetchTaskStates = async () => {
+//       try {
+//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/taskstate`);
+//         setTaskStates(response.data);
+//       } catch (error) {
+//         console.error("Error fetching task states:", error);
+//       }
+//     };
+
+//     fetchTaskStates();
+//   }, []);
+
+//   // Fetch priorities for the dropdown
+//   useEffect(() => {
+//     const fetchPriorities = async () => {
+//       try {
+//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/priority`);
+//         setPriorities(response.data);
+//       } catch (error) {
+//         console.error("Error fetching priorities:", error);
+//       }
+//     };
+
+//     fetchPriorities();
+//   }, []);
+
+//   const handleAttachmentsChange = (e) => {
+//     setAttachments(e.target.files);
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+
+//     // Create form data
+//     const formData = new FormData();
+//     formData.append("title", title);
+//     formData.append("description", description);
+//     formData.append("assignedUser", assignedUser);
+//     formData.append("ticketState", ticketState);
+//     formData.append("ticketPriority", ticketPriority);
+
+//     if (attachments) {
+//       for (let i = 0; i < attachments.length; i++) {
+//         formData.append("attachments", attachments[i]);
+//       }
+//     }
+
+//     try {
+//       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task`, formData, {
+//         withCredentials: true, // Important for sending/receiving cookies
+//         headers: {
+//           "Content-Type": "multipart/form-data",
+//         },
+//       });
+
+//       // Show success toast
+//       toast.success("Task created successfully!", {
+//         position: "top-center",
+//         autoClose: 3000, // Close after 3 seconds
+//         theme: "colored",
+//       });
+
+//       // Redirect to TaskManager after success
+//       setTimeout(() => {
+//         router.push("/TaskManager");
+//       }, 3000); // 3-second delay before redirection
+//     } catch (error) {
+//       console.error("Error creating the ticket:", error);
+//       if (error.response) {
+//         console.error("Error response data:", error.response.data);
+//       }
+
+//       // Show error toast
+//       toast.error("Failed to create the ticket!", {
+//         position: "top-center",
+//         autoClose: 5000,
+//         theme: "colored",
+//       });
+//     }
+//   };
+
+//   return (
+//     <div className="min-h-screen flex items-center justify-center bg-gray-100">
+//       <form
+//         onSubmit={handleSubmit}
+//         className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full"
+//       >
+//         <h2 className="text-2xl font-bold mb-6 text-center">Create New Task</h2>
+
+//         <div className="mb-4">
+//           <label className="block text-gray-700 text-sm font-bold mb-2">Title</label>
+//           <input
+//             type="text"
+//             value={title}
+//             onChange={(e) => setTitle(e.target.value)}
+//             className="w-full px-3 py-2 border rounded-lg text-gray-700"
+//             required
+//           />
+//         </div>
+
+//         <div className="mb-4">
+//           <label className="block text-gray-700 text-sm font-bold mb-2">Description</label>
+//           <textarea
+//             value={description}
+//             onChange={(e) => setDescription(e.target.value)}
+//             className="w-full px-3 py-2 border rounded-lg"
+//             rows="4"
+//             required
+//           ></textarea>
+//         </div>
+
+//         <div className="mb-4">
+//           <label className="block text-gray-700 text-sm font-bold mb-2">Attachments</label>
+//           <input
+//             type="file"
+//             multiple
+//             onChange={handleAttachmentsChange}
+//             className="w-full px-3 py-2 border rounded-lg"
+//           />
+//         </div>
+
+//         {/* User Assignment */}
+//         <div className="mb-4">
+//         <label className="block text-gray-700 text-sm font-bold mb-2">Assign To User</label>
+//           <select
+//             className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
+//             value={assignedUser}
+//             onChange={(e) => setAssignedUser(e.target.value)} // Handle single user assignment
+//             required
+//           >
+//             <option value="">Select User</option>
+//             {users.map((user) => (
+//               <option key={user.id} value={user.id}>
+//                 {`${user.fname} ${user.lname}`}
+//               </option>
+//             ))}
+//           </select>
+//         </div>
+
+//         {/* Task State */}
+//         <div className="mb-4">
+//         <label className="block text-gray-700 text-sm font-bold mb-2">State of Task</label>
+//           <select
+//             className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
+//             value={ticketState}
+//             onChange={(e) => setTicketState(e.target.value)} // Handle state selection
+//             required
+//           >
+//             <option value="">Select State</option>
+//             {taskStates.map((state) => (
+//               <option key={state.Id} value={state.Id}>
+//                 {state.status_name}
+//               </option>
+//             ))}
+//           </select>
+//         </div>
+
+//         {/* Task Priority */}
+//         <div className="mb-4">
+//         <label className="block text-gray-700 text-sm font-bold mb-2">Priority of Task</label>
+//           <select
+//             className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
+//             value={ticketPriority}
+//             onChange={(e) => setTicketPriority(e.target.value)} // Handle priority selection
+//             required
+//           >
+//             <option value="">Select Priority</option>
+//             {priorities.map((priority) => (
+//               <option key={priority.Id} value={priority.Id}>
+//                 {priority.priority_name}
+//               </option>
+//             ))}
+//           </select>
+//         </div>
+
+//         <div className="flex justify-center">
+//           <button
+//             type="submit"
+//             className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+//           >
+//             Submit
+//           </button>
+//         </div>
+//       </form>
+
+//       {/* Toast Container for showing notifications */}
+//       <ToastContainer />
+//     </div>
+//   );
+// }
+
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
+import Select from "react-select"; // Import react-select
 import "react-toastify/dist/ReactToastify.css";
 
 export default function TicketCreateForm() {
@@ -270,33 +500,34 @@ export default function TicketCreateForm() {
   const [description, setDescription] = useState("");
   const [attachments, setAttachments] = useState(null);
   const [users, setUsers] = useState([]);
-  const [assignedUser, setAssignedUser] = useState(""); // Single user selection
-  const [taskStates, setTaskStates] = useState([]); // Task state options
-  const [priorities, setPriorities] = useState([]); // Priority options
-  const [ticketState, setTicketState] = useState(""); // Selected state
-  const [ticketPriority, setTicketPriority] = useState(""); // Selected priority
+  const [assignedUsers, setAssignedUsers] = useState([]); // Multiple user selection
+  const [taskStates, setTaskStates] = useState([]);
+  const [priorities, setPriorities] = useState([]);
+  const [ticketState, setTicketState] = useState("");
+  const [ticketPriority, setTicketPriority] = useState("");
 
-  // Fetch users for assigning the task (excluding clients)
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`);
-        const filteredUsers = response.data.filter((user) => user.role !== "Client");
+        const filteredUsers = response.data
+          .filter((user) => user.role !== "Client")
+          .map((user) => ({ value: user.id, label: `${user.fname} ${user.lname}` })); // Format for react-select
         setUsers(filteredUsers);
       } catch (error) {
         console.error("Error fetching users:", error);
       }
     };
-
+  
     fetchUsers();
   }, []);
 
-  // Fetch task states for the dropdown
   useEffect(() => {
     const fetchTaskStates = async () => {
       try {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/taskstate`);
         setTaskStates(response.data);
+        console.log("Fetched users:", response.data);
       } catch (error) {
         console.error("Error fetching task states:", error);
       }
@@ -304,8 +535,9 @@ export default function TicketCreateForm() {
 
     fetchTaskStates();
   }, []);
+  
 
-  // Fetch priorities for the dropdown
+
   useEffect(() => {
     const fetchPriorities = async () => {
       try {
@@ -323,14 +555,17 @@ export default function TicketCreateForm() {
     setAttachments(e.target.files);
   };
 
+  const handleAssignedUsersChange = (selectedOptions) => {
+    setAssignedUsers(selectedOptions);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Create form data
     const formData = new FormData();
     formData.append("title", title);
     formData.append("description", description);
-    formData.append("assignedUser", assignedUser);
+    assignedUsers.forEach((user) => formData.append("assignedUsers[]", user.value));
     formData.append("ticketState", ticketState);
     formData.append("ticketPriority", ticketPriority);
 
@@ -342,30 +577,23 @@ export default function TicketCreateForm() {
 
     try {
       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task`, formData, {
-        withCredentials: true, // Important for sending/receiving cookies
+        withCredentials: true,
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      // Show success toast
       toast.success("Task created successfully!", {
         position: "top-center",
-        autoClose: 3000, // Close after 3 seconds
+        autoClose: 3000,
         theme: "colored",
       });
 
-      // Redirect to TaskManager after success
       setTimeout(() => {
         router.push("/TaskManager");
-      }, 3000); // 3-second delay before redirection
+      }, 3000);
     } catch (error) {
       console.error("Error creating the ticket:", error);
-      if (error.response) {
-        console.error("Error response data:", error.response.data);
-      }
-
-      // Show error toast
       toast.error("Failed to create the ticket!", {
         position: "top-center",
         autoClose: 5000,
@@ -414,31 +642,27 @@ export default function TicketCreateForm() {
           />
         </div>
 
-        {/* User Assignment */}
+        {/* User Assignment (Multiple Selection with react-select) */}
         <div className="mb-4">
-        <label className="block text-gray-700 text-sm font-bold mb-2">Assign To User</label>
-          <select
-            className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
-            value={assignedUser}
-            onChange={(e) => setAssignedUser(e.target.value)} // Handle single user assignment
-            required
-          >
-            <option value="">Select User</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {`${user.fname} ${user.lname}`}
-              </option>
-            ))}
-          </select>
+          <label className="block text-gray-700 text-sm font-bold mb-2">Assign To Users</label>
+          <Select
+  isMulti
+  options={users} // This should be an array of { value, label } objects
+  value={assignedUsers}
+  onChange={handleAssignedUsersChange}
+  className="text-gray-700"
+  placeholder="Select Users"
+  required
+/>
         </div>
 
         {/* Task State */}
         <div className="mb-4">
-        <label className="block text-gray-700 text-sm font-bold mb-2">State of Task</label>
+          <label className="block text-gray-700 text-sm font-bold mb-2">State of Task</label>
           <select
             className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
             value={ticketState}
-            onChange={(e) => setTicketState(e.target.value)} // Handle state selection
+            onChange={(e) => setTicketState(e.target.value)}
             required
           >
             <option value="">Select State</option>
@@ -452,11 +676,11 @@ export default function TicketCreateForm() {
 
         {/* Task Priority */}
         <div className="mb-4">
-        <label className="block text-gray-700 text-sm font-bold mb-2">Priority of Task</label>
+          <label className="block text-gray-700 text-sm font-bold mb-2">Priority of Task</label>
           <select
             className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
             value={ticketPriority}
-            onChange={(e) => setTicketPriority(e.target.value)} // Handle priority selection
+            onChange={(e) => setTicketPriority(e.target.value)}
             required
           >
             <option value="">Select Priority</option>

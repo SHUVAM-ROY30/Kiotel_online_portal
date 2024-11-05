@@ -15,14 +15,14 @@ import traceback
 import hashlib
 import uuid
 
-from werkzeug.utils import secure_filename
-from flask_mail import Mail, Message
+# from werkzeug.utils import secure_filename
+# from flask_mail import Mail, Message
 import smtplib, ssl
 from email.mime.multipart import MIMEMultipart  # Add this import
 from email.mime.text import MIMEText  # Add this import
 from email.mime.base import MIMEBase  # Add this import
 from email import encoders  # Add this for encoding attachments
-from flask_mail import Mail, Message
+# from flask_mail import Mail, Message
 
 
 
@@ -53,11 +53,11 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # mail = Mail(app)
 
-SMTP_SERVER = "mail.kiotel.co"
-SMTP_PORT = 465  # Using TLS
-SMTP_USERNAME = "shuvam.r@kiotel.co"  # Replace with your Gmail
-SMTP_PASSWORD = "Kiotel123!"  # Replace with your Gmail password
-SENDER_EMAIL = "shuvam.r@kiotel.co"  # Replace with the sender's email
+# SMTP_SERVER = "mail.kiotel.co"
+# SMTP_PORT = 465  # Using TLS
+# SMTP_USERNAME = "shuvam.r@kiotel.co"  # Replace with your Gmail
+# SMTP_PASSWORD = "Kiotel123!"  # Replace with your Gmail password
+# SENDER_EMAIL = "shuvam.r@kiotel.co"  # Replace with the sender's email
 
 
 
@@ -566,6 +566,96 @@ def generate_unique_name(filename):
 #     finally:
 #         connection.close()
 
+# @app.route("/api/ticket", methods=["POST"])
+# def create_ticket():
+#     user_id = session.get("user_id")
+
+#     if user_id is None:
+#         return jsonify({"error": "User ID not found in session"}), 400
+
+#     title = request.form.get("title")
+#     description = request.form.get("description")
+#     attachments = request.files.getlist("attachments")
+
+#     if not title or not description:
+#         return jsonify({"error": "Title and description are required"}), 400
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         attachment_filenames = []
+#         upload_folder = app.config['UPLOAD_FOLDER']
+
+#         with connection.cursor() as cursor:
+#             if attachments:
+#                 for attachment in attachments:
+#                     original_filename = attachment.filename
+
+#                     # Save the file on the server with the original name
+#                     file_path = os.path.join(upload_folder, original_filename)
+#                     attachment.save(file_path)
+
+#                     attachment_filenames.append(original_filename)
+
+#             attachments_json = json.dumps(attachment_filenames)
+
+#             cursor.execute("SET @current_user_id = %s", (user_id,))
+
+#             # Set status_id to 1 (assumed 'Open' status)
+#             status_id = 1
+
+#             cursor.callproc('Proc_tbltickets_UpsertTicket', (0, title, description, attachments_json, None, status_id))
+#             connection.commit()
+
+#             cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
+#             ticket_id = cursor.fetchone()["ticket_id"]
+
+#             # Send email notification via smtplib
+#             send_email_notification(title, description, ticket_id)
+
+#             return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         connection.close()
+
+# # Function to send email notification
+# def send_email_notification(title, description, ticket_id):
+#     try:
+       
+#         receiver_email = "shuvam.r@kiotel.co"  # Replace with the recipient's email
+#          # Replace with the actual password
+
+#         # Create the email message
+#         msg = MIMEMultipart()
+#         msg['From'] = sender_email
+#         msg['To'] = receiver_email
+#         msg['Subject'] = "New Ticket Created"
+
+#         # Add body text
+#         body = f"New Ticket Created\n\nTicket ID: {ticket_id}\nTitle: {title}\nDescription: {description}"
+#         msg.attach(MIMEText(body, 'plain'))
+
+#         # Create secure connection with server and send the email
+#         context = ssl.create_default_context()
+#         with smtplib.SMTP(smtp_server, port) as server:
+#             server.ehlo()  # Can be omitted
+#             server.starttls(context=context)
+#             server.ehlo()  # Can be omitted
+#             server.login(sender_email, password)
+#             server.sendmail(sender_email, receiver_email, msg.as_string())
+
+#         print("Email sent successfully")
+#     except Exception as e:
+#         print(f"Email sending failed: {e}")
+
+
 @app.route("/api/ticket", methods=["POST"])
 def create_ticket():
     user_id = session.get("user_id")
@@ -589,14 +679,12 @@ def create_ticket():
         upload_folder = app.config['UPLOAD_FOLDER']
 
         with connection.cursor() as cursor:
+            # Save attachments if any
             if attachments:
                 for attachment in attachments:
                     original_filename = attachment.filename
-
-                    # Save the file on the server with the original name
                     file_path = os.path.join(upload_folder, original_filename)
                     attachment.save(file_path)
-
                     attachment_filenames.append(original_filename)
 
             attachments_json = json.dumps(attachment_filenames)
@@ -612,8 +700,16 @@ def create_ticket():
             cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
             ticket_id = cursor.fetchone()["ticket_id"]
 
-            # Send email notification via smtplib
-            send_email_notification(title, description, ticket_id)
+            # Fetch creator's email
+            cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
+            creator_email = cursor.fetchone()["emailid"]
+
+            # Fetch emails of users with roleid as 3
+            cursor.execute("SELECT emailid FROM tblusers WHERE role_id = 3 AND IFNULL(IsDeleted, 0) = 0;")
+            role_3_emails = [row["emailid"] for row in cursor.fetchall()]
+
+            # Send email notification
+            send_email_notification(title, description, ticket_id, [creator_email] + role_3_emails)
 
             return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
     except pymysql.MySQLError as e:
@@ -625,54 +721,38 @@ def create_ticket():
     finally:
         connection.close()
 
+
 # Function to send email notification
-def send_email_notification(title, description, ticket_id):
+def send_email_notification(title, description, ticket_id, recipient_emails):
     try:
+
+
         # Create the email message
         msg = MIMEMultipart()
-        msg['From'] = SMTP_USERNAME
-        msg['To'] = 'kshiti.u@kiotel.co'  # Replace with recipient's email
+        msg['From'] = sender_email
+        msg['To'] = ', '.join(recipient_emails)
         msg['Subject'] = "New Ticket Created"
 
         # Add body text
         body = f"New Ticket Created\n\nTicket ID: {ticket_id}\nTitle: {title}\nDescription: {description}"
         msg.attach(MIMEText(body, 'plain'))
 
-        # Create secure connection with the server and send the email
+        # Create secure connection with server and send the email
         context = ssl.create_default_context()
-        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, context=context) as server:
-            server.set_debuglevel(1)  # Enable debug output to troubleshoot
-            server.login(SMTP_USERNAME, SMTP_PASSWORD)
-            server.sendmail(SMTP_USERNAME, 'kshiti.u@kiotel.co', msg.as_string())
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.ehlo()
+            server.login(sender_email, password)
+            server.sendmail(sender_email, recipient_emails, msg.as_string())
 
-        print("Email sent successfully")
+        print("Email sent successfully to all recipients")
     except Exception as e:
         print(f"Email sending failed: {e}")
 
 
 
-def send_email(recipient, subject, body):
-    msg = Message(subject, recipients=[recipient])
-    msg.body = body
-    mail.send(msg)
-@app.route('/api/send-email', methods=['POST'])
-def send_notification_email():
-    data = request.json
-    title = data.get('title')
-    description = data.get('description')
-    
-    # Predefined email or logic to fetch based on conditions
-    recipient_email = "shuvam.r@kiotel.co"  # Can be a static support team email
-    
-    subject = f"New Ticket Created: {title}"
-    body = f"Description: {description}"
-    
-    try:
-        send_email(recipient_email, subject, body)
-        return jsonify({"message": "Email sent successfully"}), 200
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"error": "Failed to send email"}), 500
+
 
 
 
@@ -807,6 +887,68 @@ def get_roles():
 
 
 
+# @app.route("/api/tickets/<int:ticket_id>/reply", methods=["POST"])
+# def reply_to_ticket(ticket_id):
+#     print(f"Received request for ticket ID: {ticket_id}")
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         description = request.form.get("description")
+#         status_id = int(request.form.get("status_id", 1))  # Convert to integer and default to 1 if missing
+
+#         # Fetch user_id from the session
+#         user_id = session.get('user_id')
+#         if user_id is None:
+#             return jsonify({"error": "User not logged in"}), 401
+
+#         # Process attachments
+#         attachments = request.files.getlist("attachments")
+#         original_filenames = []
+#         unique_names = []
+#         upload_folder = 'uploads/replies'
+#         if not os.path.exists(upload_folder):
+#             os.makedirs(upload_folder)
+
+#         for file in attachments:
+#             if file:
+#                 original_filename = file.filename
+#                 unique_name = generate_unique_name(original_filename)
+#                 file_path = os.path.join(upload_folder, unique_name)
+#                 file.save(file_path)
+#                 # Store only the original filename
+#                 original_filenames.append(original_filename)
+#                 unique_names.append(unique_name)
+
+#         # Convert the list of original filenames to a JSON string
+#         attachment_json = json.dumps(original_filenames)
+
+#         with connection.cursor() as cursor:
+#             # Call stored procedure to insert or update reply
+#             cursor.callproc('Proc_tblreplies_UpsertReply', [
+#                 0,  # Assuming 0 means a new reply, adjust if necessary
+#                 ticket_id,
+#                 description,
+#                 user_id,
+#                 status_id,
+#                 attachment_json,
+#                 unique_names[0] if unique_names else None  # Include the unique name of the first attachment if any
+#             ])
+#             connection.commit()
+
+#         return jsonify({"message": "Reply submitted successfully"}), 201
+
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         connection.close()
+
+
 @app.route("/api/tickets/<int:ticket_id>/reply", methods=["POST"])
 def reply_to_ticket(ticket_id):
     print(f"Received request for ticket ID: {ticket_id}")
@@ -857,6 +999,20 @@ def reply_to_ticket(ticket_id):
             ])
             connection.commit()
 
+            # Fetch email address of the ticket creator
+            cursor.execute("SELECT emailid FROM tblusers WHERE id = (SELECT created_by FROM tbltickets WHERE id = %s)", (ticket_id,))
+            creator_email_result = cursor.fetchone()
+            creator_email = creator_email_result["emailid"] if creator_email_result else None
+
+            # Fetch email address of the replier
+            cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
+            replier_email_result = cursor.fetchone()
+            replier_email = replier_email_result["emailid"] if replier_email_result else None
+
+            if creator_email and replier_email:
+                # Send email notification to both creator and replier
+                send_email_notification_reply(ticket_id, description, creator_email, replier_email)
+
         return jsonify({"message": "Reply submitted successfully"}), 201
 
     except pymysql.MySQLError as e:
@@ -867,6 +1023,35 @@ def reply_to_ticket(ticket_id):
         return jsonify({"error": str(e)}), 500
     finally:
         connection.close()
+
+# Function to send email notification to ticket creator and replier
+def send_email_notification_reply(ticket_id, description, creator_email, replier_email):
+    try:
+
+        # Create the email message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = creator_email  # Set ticket creator's email as main recipient
+        msg['Cc'] = replier_email  # Set replier's email in CC
+        msg['Subject'] = f"New Reply Submitted for Ticket ID {ticket_id}"
+
+        # Add body text
+        body = f"A new reply has been added to Ticket ID: {ticket_id}.\n\nDescription: {description}"
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Create secure connection with server and send the email
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.ehlo()
+            server.login(sender_email, password)
+            server.sendmail(sender_email, [creator_email, replier_email], msg.as_string())
+
+        print("Email sent successfully to both ticket creator and replier")
+    except Exception as e:
+        print(f"Email sending failed: {e}")
+
 
 
 
@@ -960,6 +1145,33 @@ def get_users():
 
 # ---------------on 11 09 2024 -------------
 
+# @app.route('/api/assign_ticket', methods=['POST'])
+# def assign_ticket():
+#     data = request.json
+#     ticket_id = data.get('ticket_id')
+#     user_id = data.get('user_id')
+
+#     if not ticket_id or not user_id:
+#         return jsonify({"error": "Missing required fields"}), 400
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         with connection.cursor() as cursor:
+#             # Update the assigned user for the ticket
+#             cursor.callproc('Proc_tbltickets_UpdateAssignedTo', (ticket_id, user_id))
+#             connection.commit()
+#             return jsonify({"message": "Ticket assigned successfully"})
+            
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Failed to assign ticket"}), 500
+#     finally:
+#         connection.close()
+
+
 @app.route('/api/assign_ticket', methods=['POST'])
 def assign_ticket():
     data = request.json
@@ -978,13 +1190,58 @@ def assign_ticket():
             # Update the assigned user for the ticket
             cursor.callproc('Proc_tbltickets_UpdateAssignedTo', (ticket_id, user_id))
             connection.commit()
+
+            # Fetch the assigned user's email address
+            cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
+            assigned_user_email_result = cursor.fetchone()
+            assigned_user_email = assigned_user_email_result["emailid"] if assigned_user_email_result else None
+
+            if assigned_user_email:
+                # Fetch ticket details to include in the email
+                cursor.execute("SELECT title, description FROM tbltickets WHERE id = %s", (ticket_id,))
+                ticket_details = cursor.fetchone()
+                title = ticket_details["title"] if ticket_details else "Ticket"
+                description = ticket_details["description"] if ticket_details else ""
+
+                # Send email notification to assigned user
+                send_email_notification_assignment(ticket_id, title, description, assigned_user_email)
+
             return jsonify({"message": "Ticket assigned successfully"})
-            
+
     except pymysql.MySQLError as e:
         print(f"The error '{e}' occurred")
         return jsonify({"error": "Failed to assign ticket"}), 500
     finally:
         connection.close()
+
+
+# Function to send email notification to assigned user
+def send_email_notification_assignment(ticket_id, title, description, assigned_user_email):
+    try:
+
+
+        # Create the email message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = assigned_user_email  # Set assigned user's email as main recipient
+        msg['Subject'] = f"You have been assigned a new Ticket ID {ticket_id}"
+
+        # Add body text
+        body = f"You have been assigned to a new ticket.\n\nTicket ID: {ticket_id}\nTitle: {title}\nDescription: {description}"
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Create secure connection with server and send the email
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.ehlo()
+            server.login(sender_email, password)
+            server.sendmail(sender_email, assigned_user_email, msg.as_string())
+
+        print("Email sent successfully to the assigned user")
+    except Exception as e:
+        print(f"Email sending failed: {e}")
 
 
 
@@ -1988,6 +2245,269 @@ def get_locktypes():
 #         connection.close()
 
 
+# @app.route("/api/task", methods=["POST"])
+# @login_required
+# def create_task():
+#     user_id = session.get("user_id")
+
+#     if user_id is None:
+#         return jsonify({"error": "User ID not found in session"}), 400
+
+#     title = request.form.get("title")
+#     description = request.form.get("description")
+#     assigned_user = request.form.get("assignedUser")  # Assigned to user ID
+#     task_state = request.form.get("ticketState")  # Task status ID
+#     task_priority = request.form.get("ticketPriority")  # Priority ID
+#     attachments = request.files.getlist("attachments")
+
+#     # Validation: Ensure title and description are provided
+#     if not title or not description:
+#         return jsonify({"error": "Title and description are required"}), 400
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         attachment_filenames = []
+#         upload_folder = app.config['UPLOAD_FOLDER']
+
+#         with connection.cursor() as cursor:
+#             # Handle file attachments if present
+#             if attachments:
+#                 for attachment in attachments:
+#                     original_filename = attachment.filename
+                    
+#                     # Generate unique encrypted name for the file
+#                     unique_name = generate_unique_name(original_filename)
+                    
+#                     # Save the file on the server with the unique encrypted name
+#                     file_path = os.path.join(upload_folder, unique_name)
+#                     attachment.save(file_path)
+                    
+#                     # Store only the original filename
+#                     attachment_filenames.append(original_filename)
+
+#             # Convert attachment filenames to JSON format
+#             attachments_json = json.dumps(attachment_filenames)
+
+#             # Set the session variable for the current user ID
+#             cursor.execute("SET @current_user_id = %s", (user_id,))
+
+#             # Set status_id to the provided task state, defaulting to 1 if not provided
+#             status_id = task_state if task_state else 1  # Default status ID to 1 (assumed 'Open')
+
+#             # Set priority_id to the provided priority, defaulting to 1 if not provided
+#             priority_id = task_priority if task_priority else 4  # Default priority ID to 1 (assumed default priority)
+
+#             # Call the stored procedure with the parameters, including the attachments JSON, status_id, priority_id, and assigned_user
+#             cursor.callproc('Proc_tbltasks_Upsert', (
+#                 0,  # 0 for new task (assuming)
+#                 title, 
+#                 description, 
+#                 attachments_json, 
+#                 unique_name if attachments else None, 
+#                 status_id, 
+#                 assigned_user,
+#                 priority_id
+#             ))
+#             connection.commit()
+
+#             # Fetch the last inserted ticket ID
+#             cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
+#             ticket_id = cursor.fetchone()["ticket_id"]
+
+#             return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
+
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         connection.close()
+port = 587  # For starttls
+smtp_server = "mail.kiotel.co"
+sender_email = "noreply@kiotel.co"
+password = "7w2wmr336L3aPyR"
+
+# @app.route("/api/task", methods=["POST"])
+# @login_required
+# def create_task():
+#     user_id = session.get("user_id")
+
+#     if user_id is None:
+#         return jsonify({"error": "User ID not found in session"}), 400
+
+#     title = request.form.get("title")
+#     description = request.form.get("description")
+#     assigned_user = request.form.get("assignedUser")  # Assigned to user ID
+#     task_state = request.form.get("ticketState")  # Task status ID
+#     task_priority = request.form.get("ticketPriority")  # Priority ID
+#     attachments = request.files.getlist("attachments")
+
+#     # Validation: Ensure title and description are provided
+#     if not title or not description:
+#         return jsonify({"error": "Title and description are required"}), 400
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         attachment_filenames = []
+#         upload_folder = app.config['UPLOAD_FOLDER']
+
+#         with connection.cursor() as cursor:
+#             # Handle file attachments if present
+#             if attachments:
+#                 for attachment in attachments:
+#                     original_filename = attachment.filename
+                    
+#                     # Generate unique encrypted name for the file
+#                     unique_name = generate_unique_name(original_filename)
+                    
+#                     # Save the file on the server with the unique encrypted name
+#                     file_path = os.path.join(upload_folder, unique_name)
+#                     attachment.save(file_path)
+                    
+#                     # Store only the original filename
+#                     attachment_filenames.append(original_filename)
+
+#             # Convert attachment filenames to JSON format
+#             attachments_json = json.dumps(attachment_filenames)
+
+#             # Set the session variable for the current user ID
+#             cursor.execute("SET @current_user_id = %s", (user_id,))
+
+#             # Set status_id to the provided task state, defaulting to 1 if not provided
+#             status_id = task_state if task_state else 1  # Default status ID to 1 (assumed 'Open')
+
+#             # Set priority_id to the provided priority, defaulting to 1 if not provided
+#             priority_id = task_priority if task_priority else 4  # Default priority ID to 1 (assumed default priority)
+
+#             # Call the stored procedure with the parameters, including the attachments JSON, status_id, priority_id, and assigned_user
+#             cursor.callproc('Proc_tbltasks_Upsert', (
+#                 0,  # 0 for new task (assuming)
+#                 title, 
+#                 description, 
+#                 attachments_json, 
+#                 unique_name if attachments else None, 
+#                 status_id, 
+#                 assigned_user,
+#                 priority_id
+#             ))
+#             connection.commit()
+
+#             # Fetch the last inserted ticket ID
+#             cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
+#             ticket_id = cursor.fetchone()["ticket_id"]
+
+#             # Fetch the user's email address (task creator) from the users table using their user_id
+#             cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
+#             creator_email = cursor.fetchone()["emailid"]
+
+#             # Fetch the assigned user's email address from the users table using the assigned_user ID
+#             cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (assigned_user,))
+#             assigned_user_email = cursor.fetchone()["emailid"]
+
+#             # Send the email notification to both the task creator and the assigned user
+#             send_email_notification_new_task(title, description, ticket_id, creator_email, assigned_user_email)
+
+#             return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
+
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         connection.close()
+
+# @app.route("/api/task", methods=["POST"])
+# @login_required
+# def create_task():
+#     user_id = session.get("user_id")
+
+#     if user_id is None:
+#         return jsonify({"error": "User ID not found in session"}), 400
+
+#     title = request.form.get("title")
+#     description = request.form.get("description")
+#     assigned_users = request.form.getlist("assignedUsers[]")  # Receive multiple assigned user IDs as a list
+#     task_state = request.form.get("ticketState")  # Task status ID
+#     task_priority = request.form.get("ticketPriority")  # Priority ID
+#     attachments = request.files.getlist("attachments")
+
+#     # Validation: Ensure title and description are provided
+#     if not title or not description:
+#         return jsonify({"error": "Title and description are required"}), 400
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         attachment_filenames = []
+#         upload_folder = app.config['UPLOAD_FOLDER']
+
+#         with connection.cursor() as cursor:
+#             # Handle file attachments if present
+#             if attachments:
+#                 for attachment in attachments:
+#                     original_filename = attachment.filename
+                    
+#                     # Generate unique encrypted name for the file
+#                     unique_name = generate_unique_name(original_filename)
+                    
+#                     # Save the file on the server with the unique encrypted name
+#                     file_path = os.path.join(upload_folder, unique_name)
+#                     attachment.save(file_path)
+                    
+#                     # Store only the original filename
+#                     attachment_filenames.append(original_filename)
+
+#             # Convert attachment filenames to JSON format
+#             attachments_json = json.dumps(attachment_filenames)
+
+#             # Set the session variable for the current user ID
+#             cursor.execute("SET @current_user_id = %s", (user_id,))
+
+#             # Set status_id to the provided task state, defaulting to 1 if not provided
+#             status_id = task_state if task_state else 1  # Default status ID to 1 (assumed 'Open')
+
+#             # Set priority_id to the provided priority, defaulting to 1 if not provided
+#             priority_id = task_priority if task_priority else 4  # Default priority ID to 1 (assumed default priority)
+
+#             # Call the stored procedure with the parameters, including the attachments JSON, status_id, priority_id, and assigned users as JSON
+#             cursor.callproc('Proc_tbltasks_Upsert_test', (
+#                 0,  # 0 for new task (assuming)
+#                 title, 
+#                 description, 
+#                 attachments_json, 
+#                 unique_name if attachments else None, 
+#                 status_id, 
+#                 json.dumps(assigned_users),  # Pass the assigned users array as JSON
+#                 priority_id
+#             ))
+#             connection.commit()
+
+            
+
+#             return jsonify({"message": "Task created successfully"}), 201
+
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         connection.close()
+
+
 @app.route("/api/task", methods=["POST"])
 @login_required
 def create_task():
@@ -1998,7 +2518,7 @@ def create_task():
 
     title = request.form.get("title")
     description = request.form.get("description")
-    assigned_user = request.form.get("assignedUser")  # Assigned to user ID
+    assigned_users = request.form.getlist("assignedUsers[]")  # List of assigned user IDs
     task_state = request.form.get("ticketState")  # Task status ID
     task_priority = request.form.get("ticketPriority")  # Priority ID
     attachments = request.files.getlist("attachments")
@@ -2041,26 +2561,35 @@ def create_task():
             status_id = task_state if task_state else 1  # Default status ID to 1 (assumed 'Open')
 
             # Set priority_id to the provided priority, defaulting to 1 if not provided
-            priority_id = task_priority if task_priority else 4  # Default priority ID to 1 (assumed default priority)
+            priority_id = task_priority if task_priority else 4  # Default priority ID to 4 (assumed default priority)
 
-            # Call the stored procedure with the parameters, including the attachments JSON, status_id, priority_id, and assigned_user
-            cursor.callproc('Proc_tbltasks_Upsert', (
+            # Call the stored procedure to create the task
+            cursor.callproc('Proc_tbltasks_Upsert_test', (
                 0,  # 0 for new task (assuming)
                 title, 
                 description, 
                 attachments_json, 
                 unique_name if attachments else None, 
                 status_id, 
-                assigned_user,
+                json.dumps(assigned_users),  # Pass the assigned users array as JSON
                 priority_id
             ))
             connection.commit()
 
-            # Fetch the last inserted ticket ID
-            cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
-            ticket_id = cursor.fetchone()["ticket_id"]
+            # Fetch the emails of assigned users
+            assigned_user_emails = []
+            if assigned_users:
+                cursor.execute("SELECT emailid FROM tblusers WHERE id IN (%s)" % ','.join(map(str, assigned_users)))
+                assigned_user_emails = [row['emailid'] for row in cursor.fetchall()]
 
-            return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
+            # Fetch creator's email
+            cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
+            creator_email = cursor.fetchone()['emailid']
+
+            # Send email notification to the creator and all assigned users
+            send_email_notification_new_task(title, description, cursor.lastrowid, creator_email, assigned_user_emails)
+
+            return jsonify({"message": "Task created successfully"}), 201
 
     except pymysql.MySQLError as e:
         print(f"The error '{e}' occurred")
@@ -2070,6 +2599,183 @@ def create_task():
         return jsonify({"error": str(e)}), 500
     finally:
         connection.close()
+
+
+def send_email_notification_new_task(title, description, ticket_id, creator_email, assigned_user_emails):
+    try:
+        # Create the email message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = creator_email  # Set the task creator's email as the main recipient
+        msg['Cc'] = ', '.join(assigned_user_emails)  # Add all assigned users to CC
+        msg['Subject'] = "New Task Created and Assigned"
+
+        # Add body text
+        body = f"New Task Created\n\nTask ID: {ticket_id}\nTitle: {title}\nDescription: {description}"
+        msg.attach(MIMEText(body, 'plain'))
+
+        # List of recipients (task creator and assigned users)
+        recipients = [creator_email] + assigned_user_emails
+
+        # Create secure connection with the server and send the email
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.ehlo()  # Optional
+            server.starttls(context=context)
+            server.ehlo()  # Optional
+            server.login(sender_email, password)
+            server.sendmail(sender_email, recipients, msg.as_string())
+
+        print("Email sent successfully to the task creator and assigned users")
+    except Exception as e:
+        print(f"Email sending failed: {e}")
+
+
+# Updated email notification function to send email to both task creator and assigned user
+# def send_email_notification_new_task(title, description, ticket_id, creator_email, assigned_user_email):
+#     try:
+#         # Create the email message
+#         msg = MIMEMultipart()
+#         msg['From'] = sender_email
+#         msg['To'] = creator_email  # Set the task creator's email as the main recipient
+#         msg['Cc'] = assigned_user_email  # Set the assigned user's email in CC
+#         msg['Subject'] = "New Task Created and assigned"
+
+#         # Add body text
+#         body = f"New Task Created\n\nTask ID: {ticket_id}\nTitle: {title}\nDescription: {description}"
+#         msg.attach(MIMEText(body, 'plain'))
+
+#         # Create secure connection with the server and send the email
+#         context = ssl.create_default_context()
+#         with smtplib.SMTP(smtp_server, port) as server:
+#             server.ehlo()  # Optional
+#             server.starttls(context=context)
+#             server.ehlo()  # Optional
+#             server.login(sender_email, password)
+#             server.sendmail(sender_email, [creator_email, assigned_user_email], msg.as_string())
+
+#         print("Email sent successfully to both task creator and assigned user")
+#     except Exception as e:
+#         print(f"Email sending failed: {e}")
+
+# @app.route("/api/task", methods=["POST"])
+# @login_required
+# def create_task():
+#     user_id = session.get("user_id")
+
+#     if user_id is None:
+#         return jsonify({"error": "User ID not found in session"}), 400
+
+#     title = request.form.get("title")
+#     description = request.form.get("description")
+#     assigned_user = request.form.get("assignedUser")  # Assigned to user ID
+#     task_state = request.form.get("ticketState")  # Task status ID
+#     task_priority = request.form.get("ticketPriority")  # Priority ID
+#     attachments = request.files.getlist("attachments")
+
+#     # Validation: Ensure title and description are provided
+#     if not title or not description:
+#         return jsonify({"error": "Title and description are required"}), 400
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         attachment_filenames = []
+#         upload_folder = app.config['UPLOAD_FOLDER']
+
+#         with connection.cursor() as cursor:
+#             # Handle file attachments if present
+#             if attachments:
+#                 for attachment in attachments:
+#                     original_filename = attachment.filename
+                    
+#                     # Generate unique encrypted name for the file
+#                     unique_name = generate_unique_name(original_filename)
+                    
+#                     # Save the file on the server with the unique encrypted name
+#                     file_path = os.path.join(upload_folder, unique_name)
+#                     attachment.save(file_path)
+                    
+#                     # Store only the original filename
+#                     attachment_filenames.append(original_filename)
+
+#             # Convert attachment filenames to JSON format
+#             attachments_json = json.dumps(attachment_filenames)
+
+#             # Set the session variable for the current user ID
+#             cursor.execute("SET @current_user_id = %s", (user_id,))
+
+#             # Set status_id to the provided task state, defaulting to 1 if not provided
+#             status_id = task_state if task_state else 1  # Default status ID to 1 (assumed 'Open')
+
+#             # Set priority_id to the provided priority, defaulting to 1 if not provided
+#             priority_id = task_priority if task_priority else 4  # Default priority ID to 1 (assumed default priority)
+
+#             # Call the stored procedure with the parameters, including the attachments JSON, status_id, priority_id, and assigned_user
+#             cursor.callproc('Proc_tbltasks_Upsert', (
+#                 0,  # 0 for new task (assuming)
+#                 title, 
+#                 description, 
+#                 attachments_json, 
+#                 unique_name if attachments else None, 
+#                 status_id, 
+#                 assigned_user,
+#                 priority_id
+#             ))
+#             connection.commit()
+
+#             # Fetch the last inserted ticket ID
+#             cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
+#             ticket_id = cursor.fetchone()["ticket_id"]
+
+#             # Fetch the user's email address (task creator) from the users table using their user_id
+#             cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
+#             creator_email = cursor.fetchone()["emailid"]
+
+#             # Fetch the assigned user's email address from the users table using the assigned_user ID
+#             cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (assigned_user,))
+#             assigned_user_email = cursor.fetchone()["emailid"]
+
+#             # Send the email notification to both the task creator and the assigned user
+#             send_email_notification_new_task(title, description, ticket_id, creator_email, assigned_user_email)
+
+#             return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
+
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         connection.close()
+
+# # Updated email notification function to send email to both task creator and assigned user
+# def send_email_notification_new_task(title, description, ticket_id, creator_email, assigned_user_email):
+#     try:
+#         # Create the email message
+#         msg = MIMEMultipart()
+#         msg['From'] = SMTP_USERNAME
+#         msg['To'] = creator_email  # Set the task creator's email as the main recipient
+#         msg['Cc'] = assigned_user_email  # Set the assigned user's email in CC
+#         msg['Subject'] = "New Task Created and assigned"
+
+#         # Add body text
+#         body = f"New Task Created\n\nTask ID: {ticket_id}\nTitle: {title}\nDescription: {description}"
+#         msg.attach(MIMEText(body, 'plain'))
+
+#         # Create secure connection with the server and send the email
+#         context = ssl.create_default_context()
+#         with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, context=context) as server:
+#             server.set_debuglevel(1)  # Enable debug output to troubleshoot
+#             server.login(SMTP_USERNAME, SMTP_PASSWORD)
+#             server.sendmail(SMTP_USERNAME, [creator_email, assigned_user_email], msg.as_string())
+
+#         print("Email sent successfully to both task creator and assigned user")
+#     except Exception as e:
+#         print(f"Email sending failed: {e}")
 
 
 
@@ -2150,6 +2856,69 @@ def get_task(task_id):
 
 
 
+# @app.route("/api/task/<int:task_id>/reply", methods=["POST"])
+# def reply_to_task(task_id):
+#     print(f"Received request for ticket ID: {task_id}")
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         description = request.form.get("description")
+#         # status_id = int(request.form.get("status_id", 1))  # Convert to integer and default to 1 if missing
+
+#         # Fetch user_id from the session
+#         user_id = session.get('user_id')
+#         if user_id is None:
+#             return jsonify({"error": "User not logged in"}), 401
+
+#         # Process attachments
+#         attachments = request.files.getlist("attachments")
+#         original_filenames = []
+#         unique_names = []
+#         upload_folder = 'uploads/replies'
+#         if not os.path.exists(upload_folder):
+#             os.makedirs(upload_folder)
+
+#         for file in attachments:
+#             if file:
+#                 original_filename = file.filename
+#                 unique_name = generate_unique_name(original_filename)
+#                 file_path = os.path.join(upload_folder, unique_name)
+#                 file.save(file_path)
+#                 # Store only the original filename
+#                 original_filenames.append(original_filename)
+#                 unique_names.append(unique_name)
+
+#         # Convert the list of original filenames to a JSON string
+#         attachment_json = json.dumps(original_filenames)
+
+#         with connection.cursor() as cursor:
+#             # Call stored procedure to insert or update reply
+#             cursor.callproc('Proc_tbltasksreplies_UpsertReply', [
+#                 0,  # Assuming 0 means a new reply, adjust if necessary
+#                 task_id,
+#                 description,
+#                 user_id,
+#                 # status_id,
+#                 attachment_json,
+#                 unique_names[0] if unique_names else None  # Include the unique name of the first attachment if any
+#             ])
+#             connection.commit()
+
+#         return jsonify({"message": "Reply submitted successfully"}), 201
+
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         connection.close()
+
+
+
 @app.route("/api/task/<int:task_id>/reply", methods=["POST"])
 def reply_to_task(task_id):
     print(f"Received request for ticket ID: {task_id}")
@@ -2159,7 +2928,6 @@ def reply_to_task(task_id):
 
     try:
         description = request.form.get("description")
-        # status_id = int(request.form.get("status_id", 1))  # Convert to integer and default to 1 if missing
 
         # Fetch user_id from the session
         user_id = session.get('user_id')
@@ -2188,17 +2956,30 @@ def reply_to_task(task_id):
         attachment_json = json.dumps(original_filenames)
 
         with connection.cursor() as cursor:
+            # Retrieve the task creator's email
+            cursor.execute("SELECT created_by FROM tbltasks WHERE id = %s", (task_id,))
+            creator_id = cursor.fetchone()["created_by"]
+
+            cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (creator_id,))
+            creator_email = cursor.fetchone()["emailid"]
+
+            # Retrieve the email of the user replying to the task
+            cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
+            replier_email = cursor.fetchone()["emailid"]
+
             # Call stored procedure to insert or update reply
             cursor.callproc('Proc_tbltasksreplies_UpsertReply', [
                 0,  # Assuming 0 means a new reply, adjust if necessary
                 task_id,
                 description,
                 user_id,
-                # status_id,
                 attachment_json,
                 unique_names[0] if unique_names else None  # Include the unique name of the first attachment if any
             ])
             connection.commit()
+
+            # Send email notification to the creator and the replier
+            send_email_notification_reply(task_id, description, creator_email, replier_email)
 
         return jsonify({"message": "Reply submitted successfully"}), 201
 
@@ -2210,6 +2991,35 @@ def reply_to_task(task_id):
         return jsonify({"error": str(e)}), 500
     finally:
         connection.close()
+
+# Function to send email notification about the reply
+def send_email_notification_reply(task_id, description, creator_email, replier_email):
+    try:
+
+
+        # Create the email message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = creator_email  # Set task creator's email as main recipient
+        msg['Cc'] = replier_email  # Set replier's email in CC
+        msg['Subject'] = f"New Reply Submitted for Task ID {task_id}"
+
+        # Add body text
+        body = f"A new reply has been added to Task ID: {task_id}.\n\nDescription: {description}"
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Create secure connection with server and send the email
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.ehlo()  # Optional
+            server.starttls(context=context)
+            server.ehlo()  # Optional
+            server.login(sender_email, password)
+            server.sendmail(sender_email, [creator_email, replier_email], msg.as_string())
+
+        print("Email sent successfully to both task creator and replier")
+    except Exception as e:
+        print(f"Email sending failed: {e}")
 
 
 
@@ -2316,56 +3126,196 @@ def get_taskstate():
         conn.close()
 
 
+# @app.route('/api/update_task_state', methods=['POST'])
+# def update_task_state():
+#     try:
+#         # Get data from the request
+#         data = request.json
+        
+#         # Debugging step: print received data
+#         print("Received data:", data)
+
+#         if not data:
+#             return jsonify({'error': 'No JSON data provided'}), 400
+        
+#         task_id = data.get('task_id')
+#         taskstatus_id = data.get('taskstatus_id')
+
+#         if not task_id or not taskstatus_id:
+#             return jsonify({'error': 'Task ID and Task Status ID are required'}), 400
+
+#         # Open database cursor
+#         conn = create_connection()
+#         cur = conn.cursor()
+
+#         # Call the stored procedure with correct parameters
+#         cur.callproc('Proc_tbltasks_UpdateTaskStatus', [task_id, taskstatus_id])
+
+#         # Commit the transaction
+#         conn.commit()
+
+#         # Close cursor
+#         cur.close()
+#         conn.close()
+
+#         return jsonify({'message': 'Task state updated successfully'}), 200
+
+#     except pymysql.MySQLError as e:
+#         # MySQL error handling
+#         return jsonify({'error': f"MySQL Error: {str(e)}"}), 500
+
+#     except Exception as e:
+#         # Generic error handling
+#         return jsonify({'error': f"Error: {str(e)}"}), 500
 @app.route('/api/update_task_state', methods=['POST'])
 def update_task_state():
     try:
         # Get data from the request
         data = request.json
-        
-        # Debugging step: print received data
         print("Received data:", data)
 
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
-        
+
         task_id = data.get('task_id')
         taskstatus_id = data.get('taskstatus_id')
 
         if not task_id or not taskstatus_id:
             return jsonify({'error': 'Task ID and Task Status ID are required'}), 400
 
-        # Open database cursor
+        # Open database connection and cursor
         conn = create_connection()
+        if conn is None:
+            print("Failed to establish a database connection.")
+            return jsonify({"error": "Database connection failed"}), 500
+
         cur = conn.cursor()
 
-        # Call the stored procedure with correct parameters
+        # Call the stored procedure to update task status
+        print(f"Updating task status in the database for task_id={task_id} and taskstatus_id={taskstatus_id}")
         cur.callproc('Proc_tbltasks_UpdateTaskStatus', [task_id, taskstatus_id])
-
-        # Commit the transaction
         conn.commit()
 
-        # Close cursor
+        # Fetch the assigned user's ID for notification
+        cur.execute("SELECT AssignedTo FROM tbltasks WHERE id = %s", (task_id,))
+        assigned_user_row = cur.fetchone()
+        
+        if not assigned_user_row:
+            print(f"No assigned user found for task_id={task_id}")
+            return jsonify({"error": "Assigned user not found"}), 404
+
+        assigned_user_id = assigned_user_row["AssignedTo"]
+        print(f"Assigned user ID: {assigned_user_id}")
+
+        # Fetch assigned user's email
+        cur.execute("SELECT emailid FROM tblusers WHERE id = %s", (assigned_user_id,))
+        assigned_user_email_row = cur.fetchone()
+
+        if not assigned_user_email_row:
+            print(f"No email found for assigned user ID: {assigned_user_id}")
+            return jsonify({"error": "Email for assigned user not found"}), 404
+
+        assigned_user_email = assigned_user_email_row["emailid"]
+        print(f"Assigned user email: {assigned_user_email}")
+
+        # Close cursor and connection
         cur.close()
         conn.close()
+
+        # Send email notification
+        send_email_notification_task_state_update(task_id, taskstatus_id, assigned_user_email)
 
         return jsonify({'message': 'Task state updated successfully'}), 200
 
     except pymysql.MySQLError as e:
-        # MySQL error handling
+        print(f"MySQL Error occurred: {e}")
         return jsonify({'error': f"MySQL Error: {str(e)}"}), 500
 
     except Exception as e:
-        # Generic error handling
+        print(f"Error occurred: {e}")
         return jsonify({'error': f"Error: {str(e)}"}), 500
+
+# Email function to send notification
+def send_email_notification_task_state_update(task_id, taskstatus_id, assigned_user_email):
+    try:
+
+
+        # Create the email message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = assigned_user_email  # Send to the assigned user
+        msg['Subject'] = f"Task Status Updated for Task ID {task_id}"
+
+        # Add body text
+        body = f"The status of Task ID: {task_id} has been updated."
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Create secure connection with server and send the email
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.ehlo()  # Optional
+            server.starttls(context=context)
+            server.ehlo()  # Optional
+            server.login(sender_email, password)
+            server.sendmail(sender_email, assigned_user_email, msg.as_string())
+
+        print("Email sent successfully to assigned user regarding task status update.")
+    except Exception as e:
+        print(f"Email sending failed: {e}")
     
+
+
+
+
+# @app.route('/api/update_task_priority', methods=['POST'])
+# def update_task_priority():
+#     try:
+#         # Get data from the request
+#         data = request.json
+        
+#         # Debugging step: print received data
+#         print("Received data:", data)
+
+#         if not data:
+#             return jsonify({'error': 'No JSON data provided'}), 400
+        
+#         task_id = data.get('task_id')
+#         priority_id = data.get('priority_id')
+
+#         if not task_id or not priority_id:
+#             return jsonify({'error': 'Task ID and Task Status ID are required'}), 400
+
+#         # Open database cursor
+#         conn = create_connection()
+#         cur = conn.cursor()
+
+#         # Call the stored procedure with correct parameters
+#         cur.callproc('Proc_tbltasks_UpdatePriority', [task_id, priority_id])
+
+#         # Commit the transaction
+#         conn.commit()
+
+#         # Close cursor
+#         cur.close()
+#         conn.close()
+
+#         return jsonify({'message': 'Task state updated successfully'}), 200
+
+#     except pymysql.MySQLError as e:
+#         # MySQL error handling
+#         return jsonify({'error': f"MySQL Error: {str(e)}"}), 500
+
+#     except Exception as e:
+#         # Generic error handling
+#         return jsonify({'error': f"Error: {str(e)}"}), 500
+
+
 @app.route('/api/update_task_priority', methods=['POST'])
 def update_task_priority():
     try:
         # Get data from the request
         data = request.json
-        
-        # Debugging step: print received data
-        print("Received data:", data)
+        print("Received JSON data:", data)
 
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
@@ -2374,40 +3324,164 @@ def update_task_priority():
         priority_id = data.get('priority_id')
 
         if not task_id or not priority_id:
-            return jsonify({'error': 'Task ID and Task Status ID are required'}), 400
+            return jsonify({'error': 'Task ID and Priority ID are required'}), 400
 
-        # Open database cursor
+        # Open database connection
         conn = create_connection()
+        if conn is None:
+            print("Failed to establish a database connection.")
+            return jsonify({"error": "Database connection failed"}), 500
+
         cur = conn.cursor()
 
-        # Call the stored procedure with correct parameters
+        # Call the stored procedure to update task priority
+        print(f"Updating task priority in the database for task_id={task_id} and priority_id={priority_id}")
         cur.callproc('Proc_tbltasks_UpdatePriority', [task_id, priority_id])
-
-        # Commit the transaction
         conn.commit()
 
-        # Close cursor
+        # Fetch the assigned user's ID for notification
+        cur.execute("SELECT AssignedTo FROM tbltasks WHERE id = %s", (task_id,))
+        assigned_user_row = cur.fetchone()
+        
+        if not assigned_user_row:
+            print(f"No assigned user found for task_id={task_id}")
+            return jsonify({"error": "Assigned user not found"}), 404
+
+        assigned_user_id = assigned_user_row["AssignedTo"]
+        print(f"Assigned user ID: {assigned_user_id}")
+
+        # Fetch assigned user's email
+        cur.execute("SELECT emailid FROM tblusers WHERE id = %s", (assigned_user_id,))
+        assigned_user_email_row = cur.fetchone()
+
+        if not assigned_user_email_row:
+            print(f"No email found for assigned user ID: {assigned_user_id}")
+            return jsonify({"error": "Email for assigned user not found"}), 404
+
+        assigned_user_email = assigned_user_email_row["emailid"]
+        print(f"Assigned user email: {assigned_user_email}")
+
+        # Close cursor and connection
         cur.close()
         conn.close()
 
-        return jsonify({'message': 'Task state updated successfully'}), 200
+        # Send email notification
+        send_email_notification_priority_change(task_id, priority_id, assigned_user_email)
+
+        return jsonify({'message': 'Task priority updated successfully'}), 200
 
     except pymysql.MySQLError as e:
-        # MySQL error handling
+        print(f"MySQL Error occurred: {e}")
         return jsonify({'error': f"MySQL Error: {str(e)}"}), 500
 
     except Exception as e:
-        # Generic error handling
+        print(f"Error occurred: {e}")
         return jsonify({'error': f"Error: {str(e)}"}), 500
+
+# Email function remains the same
+
+
+# Email notification function for priority change
+def send_email_notification_priority_change(task_id, priority_id, assigned_user_email):
+    try:
+
+
+        # Create the email message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = assigned_user_email
+        msg['Subject'] = f"Priority Update for Task ID {task_id}"
+
+        # Add body text
+        body = f"The priority of Task ID {task_id} has been updated."
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Create secure connection with server and send the email
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.ehlo()  # Optional
+            server.starttls(context=context)
+            server.ehlo()  # Optional
+            server.login(sender_email, password)
+            server.sendmail(sender_email, assigned_user_email, msg.as_string())
+
+        print("Email sent successfully to the assigned user")
+    except Exception as e:
+        print(f"Email sending failed: {e}")
+
+
+
+
+# @app.route('/api/assign_task', methods=['POST'])
+# def assign_task():
+#     data = request.json
+#     ticket_id = data.get('ticket_id')
+#     user_id = data.get('user_id')
+#     print("Received data:", data)
+#     if not ticket_id or not user_id:
+#         return jsonify({"error": "Missing required fields"}), 400
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         with connection.cursor() as cursor:
+#             # Update the assigned user for the ticket
+#             cursor.callproc('Proc_tbltasks_UpdateAssignedTo', (ticket_id, user_id))
+#             connection.commit()
+#             return jsonify({"message": "Ticket assigned successfully"})
+            
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Failed to assign ticket"}), 500
+#     finally:
+#         connection.close()
+
+# @app.route('/api/assign_task', methods=['POST'])
+# def assign_task():
+#     data = request.json
+#     ticket_id = data.get('ticket_id')
+#     user_id = data.get('user_id')
+#     print("Received data:", data)
+    
+#     if not ticket_id or not user_id:
+#         return jsonify({"error": "Missing required fields"}), 400
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         with connection.cursor() as cursor:
+#             # Update the assigned user for the ticket
+#             cursor.callproc('Proc_tbltasks_UpdateAssignedTo', (ticket_id, user_id))
+#             connection.commit()
+            
+#             # Fetch the assigned user's email
+#             cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
+#             assigned_user_email = cursor.fetchone()["emailid"]
+
+#             # Send an email notification to the assigned user
+#             send_email_notification_task_assignment(ticket_id, assigned_user_email)
+
+#             return jsonify({"message": "Ticket assigned successfully"})
+
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Failed to assign ticket"}), 500
+#     finally:
+#         connection.close()
 
 @app.route('/api/assign_task', methods=['POST'])
 def assign_task():
     data = request.json
     ticket_id = data.get('ticket_id')
-    user_id = data.get('user_id')
+    user_ids = data.get('user_ids')  # Expecting a list of user IDs
     print("Received data:", data)
-    if not ticket_id or not user_id:
-        return jsonify({"error": "Missing required fields"}), 400
+    
+    if not ticket_id or not user_ids or not isinstance(user_ids, list):
+        return jsonify({"error": "Missing required fields or invalid format"}), 400
 
     connection = create_connection()
     if connection is None:
@@ -2415,16 +3489,63 @@ def assign_task():
 
     try:
         with connection.cursor() as cursor:
-            # Update the assigned user for the ticket
-            cursor.callproc('Proc_tbltasks_UpdateAssignedTo', (ticket_id, user_id))
-            connection.commit()
-            return jsonify({"message": "Ticket assigned successfully"})
+            # Iterate over each user ID and assign the ticket to them
+            for user_id in user_ids:
+                cursor.callproc('Proc_tbltasks_UpdateAssignedTo', (ticket_id, user_id))
+                
+                # Fetch the assigned user's email
+                cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
+                result = cursor.fetchone()
+                assigned_user_email = result["emailid"] if result else None
+
+                if assigned_user_email:
+                    # Send an email notification to each assigned user
+                    send_email_notification_task_assignment(ticket_id, assigned_user_email)
+                else:
+                    print(f"Email not found for user ID: {user_id}")
             
+            # Commit the transaction after all assignments are complete
+            connection.commit()
+            return jsonify({"message": "Ticket assigned successfully to all specified users"})
+
     except pymysql.MySQLError as e:
-        print(f"The error '{e}' occurred")
-        return jsonify({"error": "Failed to assign ticket"}), 500
+        print(f"Database error occurred: {e}")
+        return jsonify({"error": "Failed to assign ticket due to a database error"}), 500
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
     finally:
         connection.close()
+
+
+
+def send_email_notification_task_assignment(ticket_id, assigned_user_email):
+    try:
+       
+
+        # Create the email message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = assigned_user_email
+        msg['Subject'] = f"New Task Assigned to You - Task ID {ticket_id}"
+
+        # Add body text
+        body = f"A new task with Ticket ID {ticket_id} has been assigned to you. Please check your task dashboard for details."
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Create secure connection with server and send the email
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.ehlo()  # Optional
+            server.starttls(context=context)
+            server.ehlo()  # Optional
+            server.login(sender_email, password)
+            server.sendmail(sender_email, assigned_user_email, msg.as_string())
+
+        print("Email sent successfully to the assigned user")
+    except Exception as e:
+        print(f"Email sending failed: {e}")
+
 
 
 @app.route('/api/get_assigned_user_for_task/<int:task_id>', methods=['GET'])
