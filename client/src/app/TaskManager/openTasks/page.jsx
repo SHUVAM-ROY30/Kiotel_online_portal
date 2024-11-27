@@ -981,10 +981,10 @@ const OpenedTickets = () => {
                     className="px-2 py-1 border rounded-md"
                     required
                   >
-                    <option value="">Select state</option>
-//                       {taskStates.map(state => (
+                    {/* <option value="">Select state</option> */}
+                       {taskStates.map(state => (
                         <option key={state.Id} value={state.Id}>  {/* Use state.taskstatus_id as the value */}
-                          {state.status_name}  {/* Display the name */}
+                          {`${state.status_name}`}  {/* Display the name */}
                         </option>
                       ))}
                     </select>
@@ -998,10 +998,10 @@ const OpenedTickets = () => {
                     className="px-2 py-1 border rounded-md"
                     required
                   >
-                    <option value="">Select priority</option>
-//                       {priorities.map(priority => (
+                    {/* <option value="">Select priority</option> */}
+                      {priorities.map(priority => (
                         <option key={priority.Id} value={priority.Id}>
-                          {priority.priority_name}
+                          {`${priority.priority_name}`}
                         </option>
                       ))}
                     </select>
