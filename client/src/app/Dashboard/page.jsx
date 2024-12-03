@@ -256,22 +256,20 @@ import ProtectedRoute from "../../context/ProtectedRoute"; // Your authenticatio
           <Link href="/Helpdesk" className="block p-4 bg-blue-500 text-white text-center rounded-lg shadow hover:bg-blue-600">
             Helpdesk
           </Link>
-          {/* <Link href="/accounts" className="block p-4 bg-green-500 text-white text-center rounded-lg shadow hover:bg-green-600">
-            My account
-          </Link> */}
-          {/* <Link href="/components/Admin" className="block p-4 bg-red-500 text-white text-center rounded-lg shadow hover:bg-red-600">
-            Admin
-          </Link> */}
+          <Link href="/accounts" className="block p-4 bg-green-500 text-white text-center rounded-lg shadow hover:bg-green-600">
+            My Kiosk
+          </Link>
+          
           {userRole === 1 && ( // Display Admin button only if role_id is 1
             <Link href="/components/Admin" className="block p-4 bg-red-500 text-white text-center rounded-lg shadow hover:bg-red-600">
               Admin
             </Link>
           )}
-          {/* {userRole === 1 && ( // Display Admin button only if role_id is 1
+          {userRole === 1 && ( // Display Admin button only if role_id is 1
             <Link href="../accounts/admin" className="block p-4 bg-red-500 text-white text-center rounded-lg shadow hover:bg-red-600">
               MyKiosk Admin
             </Link>
-          )} */}
+          )}
           { ( // Display Admin button only if role_id is 1
             <Link href="/TaskManager" className="block p-4 bg-green-500 text-white text-center rounded-lg shadow hover:bg-green-600">
               Task Manager

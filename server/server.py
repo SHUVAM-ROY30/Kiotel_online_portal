@@ -550,9 +550,9 @@ def get_ticket(ticket_id):
         connection.close()
 
 
-@app.route("/api/forms/<int:ticket_id>", methods=["GET"])
+@app.route("/api/forms_ThirdPartyEquipment/<int:ticket_id>", methods=["GET"])
 @login_required
-def get_form(ticket_id):
+def get_form_ThirdPartyEquipment(ticket_id):
     connection = create_connection()
     if connection is None:
         return jsonify({"error": "Failed to connect to the database"}), 500
@@ -560,6 +560,44 @@ def get_form(ticket_id):
     try:
         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.callproc("Proc_tblthirdpartyequipment_selectcreatedby", (ticket_id,))
+            result = cursor.fetchall()
+
+            # Debugging: Print result for verification
+            # print("Query Result:", result)
+
+            if not result:
+                return jsonify({"error": "Ticket not found"}), 404
+
+            ticket = result[0]
+
+            for key, value in ticket.items():
+                if isinstance(value, bytes):
+                    ticket[key] = value.decode("utf-8")
+
+            if 'attachments' in ticket and isinstance(ticket['attachments'], str):
+                ticket['attachments'] = json.loads(ticket['attachments'])
+
+            return jsonify(ticket), 200
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+    finally:
+        connection.close()
+
+
+@app.route("/api/forms_PropertyOnBoardingForm/<int:ticket_id>", methods=["GET"])
+@login_required
+def get_form_PropertyOnBoardingForm(ticket_id):
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.callproc("Proc_tblhotelinformation_selectcreatedby", (ticket_id,))
             result = cursor.fetchall()
 
             # Debugging: Print result for verification
@@ -1482,7 +1520,7 @@ def hotel_information():
     
     # Extract data from the request
     p_id = data.get('id', 0)
-    p_date_submitted = data.get('currentDate')
+    p_date_submitted = data.get('formattedDate')
     p_hotelName = data.get('hotelName')
     p_hotelPhone = data.get('hotelPhone')
     p_hotelEmail = data.get('hotelEmail')
@@ -1934,6 +1972,39 @@ def get_thirdpartyequipment_info():
         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
             # Call the stored procedure
             cursor.callproc("Proc_tblthirdpartyequipment_Select")
+            
+            # Fetch the result
+            opened_tickets = cursor.fetchall()
+            
+            # Print raw result for debugging
+            # print("Raw result:", opened_tickets)
+
+            # Decode bytes fields to strings, if any
+            for ticket in opened_tickets:
+                for key, value in ticket.items():
+                    if isinstance(value, bytes):
+                        ticket[key] = value.decode("utf-8")
+
+            return jsonify(opened_tickets), 200
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({"error": "Database query failed"}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+    finally:
+        connection.close()
+@app.route("/api/propertyOnboarding", methods=["GET"])
+@login_required
+def get_propertyOnboarding_info():
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            # Call the stored procedure
+            cursor.callproc("Proc_tblHotelInformation_Select")
             
             # Fetch the result
             opened_tickets = cursor.fetchall()
@@ -2501,7 +2572,8 @@ def get_opened_tasks():
     try:
         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
             # Call the stored procedure
-            cursor.callproc("Proc_tbltasks_DisplayOpenedtasks")
+            # cursor.callproc("Proc_tbltasks_DisplayOpenedtasks")
+            cursor.callproc("Proc_test_task")
             
             # Fetch the result
             opened_tickets = cursor.fetchall()

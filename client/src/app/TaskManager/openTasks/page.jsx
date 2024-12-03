@@ -936,6 +936,7 @@ const OpenedTickets = () => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task Title</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assiged Users</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assign Users</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
@@ -950,7 +951,9 @@ const OpenedTickets = () => {
                     {ticket.title}
                   </Link>
                 </td>
-                
+                <td key={ticket.id} className="hover:bg-gray-100 transition duration-200">
+                {ticket.assigned_to}
+                </td>
                 {/* Assign Users */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <Select
