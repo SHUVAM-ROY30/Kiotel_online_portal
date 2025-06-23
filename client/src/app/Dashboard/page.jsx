@@ -329,7 +329,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FaBell, FaUserCircle } from "react-icons/fa";
+import { FaBell, FaUserCircle, FaSignOutAlt } from "react-icons/fa";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "../../context/ProtectedRoute"; // Your authentication wrapper
@@ -501,6 +501,14 @@ function Dashboard() {
               My Kiosk
             </h2>
           </Link>
+          <Link
+            href="http://hr.kiotel.co"
+            className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-green-300"
+          >
+            <h2 className="text-lg font-semibold text-gray-800 group-hover:text-green-600 transition-colors">
+              Kiotel Employee dashboard
+            </h2>
+          </Link>
 
           {/* Task Manager */}
           <Link
@@ -513,6 +521,16 @@ function Dashboard() {
           </Link>
 
           {/* Admin Panel - Only visible if role is 1 */}
+          {userRole === 1 && (
+            <Link
+              href="http://hr.kiotel.co/admin"
+              className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
+            >
+              <h2 className="text-lg font-semibold text-gray-800 group-hover:text-red-600 transition-colors">
+                Kiotel Hr Admin Panel
+              </h2>
+            </Link>
+          )}
           {userRole === 1 && (
             <Link
               href="/components/Admin"
