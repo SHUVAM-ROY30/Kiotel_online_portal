@@ -1,5 +1,5 @@
 from ssl import SSLError
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify, session, Response
 from flask_cors import CORS
 import pymysql
 import json
@@ -715,66 +715,6 @@ def get_roles():
 
 
 
-# @app.route("/api/tickets/<int:ticket_id>/reply", methods=["POST"])
-# def reply_to_ticket(ticket_id):
-#     print(f"Received request for ticket ID: {ticket_id}")
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         description = request.form.get("description")
-#         status_id = int(request.form.get("status_id", 1))  # Convert to integer and default to 1 if missing
-
-#         # Fetch user_id from the session
-#         user_id = session.get('user_id')
-#         if user_id is None:
-#             return jsonify({"error": "User not logged in"}), 401
-
-#         # Process attachments
-#         attachments = request.files.getlist("attachments")
-#         original_filenames = []
-#         unique_names = []
-#         upload_folder = 'uploads/replies'
-#         if not os.path.exists(upload_folder):
-#             os.makedirs(upload_folder)
-
-#         for file in attachments:
-#             if file:
-#                 original_filename = file.filename
-#                 unique_name = generate_unique_name(original_filename)
-#                 file_path = os.path.join(upload_folder, unique_name)
-#                 file.save(file_path)
-#                 # Store only the original filename
-#                 original_filenames.append(original_filename)
-#                 unique_names.append(unique_name)
-
-#         # Convert the list of original filenames to a JSON string
-#         attachment_json = json.dumps(original_filenames)
-
-#         with connection.cursor() as cursor:
-#             # Call stored procedure to insert or update reply
-#             cursor.callproc('Proc_tblreplies_UpsertReply', [
-#                 0,  # Assuming 0 means a new reply, adjust if necessary
-#                 ticket_id,
-#                 description,
-#                 user_id,
-#                 status_id,
-#                 attachment_json,
-#                 unique_names[0] if unique_names else None  # Include the unique name of the first attachment if any
-#             ])
-#             connection.commit()
-
-#         return jsonify({"message": "Reply submitted successfully"}), 201
-
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Database query failed"}), 500
-#     except Exception as e:
-#         print(f"An unexpected error occurred: {e}")
-#         return jsonify({"error": str(e)}), 500
-#     finally:
-#         connection.close()
 
 
 @app.route("/api/tickets/<int:ticket_id>/reply", methods=["POST"])
@@ -973,31 +913,7 @@ def get_users():
 
 # ---------------on 11 09 2024 -------------
 
-# @app.route('/api/assign_ticket', methods=['POST'])
-# def assign_ticket():
-#     data = request.json
-#     ticket_id = data.get('ticket_id')
-#     user_id = data.get('user_id')
 
-#     if not ticket_id or not user_id:
-#         return jsonify({"error": "Missing required fields"}), 400
-
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         with connection.cursor() as cursor:
-#             # Update the assigned user for the ticket
-#             cursor.callproc('Proc_tbltickets_UpdateAssignedTo', (ticket_id, user_id))
-#             connection.commit()
-#             return jsonify({"message": "Ticket assigned successfully"})
-            
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Failed to assign ticket"}), 500
-#     finally:
-#         connection.close()
 
 
 @app.route('/api/assign_ticket', methods=['POST'])
@@ -1805,34 +1721,7 @@ def hotel_information():
 
 
 
-#test
-# @app.route('/save-test', methods=['POST'])
-# def save_test():
-#     data = request.get_json()
 
-#     is_yes = data.get('isYes', 0)
-#     is_no = data.get('isNo', 0)
-#     is_other = data.get('isOther', 0)
-#     other_text = data.get('otherText', None)
-
-#     try:
-#         connection = create_connection()
-#         cursor = connection.cursor()
-#         query = """
-#             INSERT INTO test (IsYes, IsNo, IsOther, otherText)
-#             VALUES (%s, %s, %s, %s)
-#         """
-#         cursor.execute(query, (is_yes, is_no, is_other, other_text))
-#         connection.commit()  # Commit using the connection object
-
-#         return jsonify({'message': 'Test record saved successfully.'}), 201
-
-#     except Exception as e:
-#         return jsonify({'message': 'Failed to save test record.', 'error': str(e)}), 500
-
-#     finally:
-#         cursor.close()
-#         connection.close()
 
 
 @app.route('/save-test', methods=['POST'])
@@ -1960,6 +1849,43 @@ def submit_equipment_form():
         return jsonify({"error": "Failed to submit form"}), 500
         return jsonify({"message": "Form submitted successfully!"}), 200
 
+@app.route('/api/shift', methods=['POST'])
+def manage_shift():
+    """API endpoint to insert/update shift information."""
+    data = request.json
+    p_id = data.get("id", 0)  # Default to 0 if not provided
+    p_hotelId = data.get("hotelId")
+    p_userId = data.get("userId")
+    p_selectDate = data.get("selectDate")
+    p_startTime = data.get("startTime")
+    p_endTime = data.get("endTime")
+
+    if not all([p_hotelId, p_userId, p_selectDate, p_startTime, p_endTime]):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+
+        # Call the stored procedure
+        cursor.callproc('YourStoredProcedureName', 
+                        [p_id, p_hotelId, p_userId, p_selectDate, p_startTime, p_endTime])
+
+        # Fetch the result
+        result = cursor.fetchall()
+
+        # Commit the transaction
+        conn.commit()
+
+        return jsonify({"success": True, "data": result}), 200
+
+    except pymysql.MySQLError as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
 
 @app.route("/api/thirdpartyequipment", methods=["GET"])
 @login_required
@@ -1994,6 +1920,7 @@ def get_thirdpartyequipment_info():
         return jsonify({"error": "An unexpected error occurred"}), 500
     finally:
         connection.close()
+
 @app.route("/api/propertyOnboarding", methods=["GET"])
 @login_required
 def get_propertyOnboarding_info():
@@ -2110,333 +2037,13 @@ def get_locktypess():
 #----------------------TASK MANGAGER--------------------
 
 
-# @app.route("/api/task", methods=["POST"])
-# @login_required
-# def create_task():
-#     user_id = session.get("user_id")
 
-#     if user_id is None:
-#         return jsonify({"error": "User ID not found in session"}), 400
-
-#     title = request.form.get("title")
-#     description = request.form.get("description")
-#     attachments = request.files.getlist("attachments")
-    
-#     if not title or not description:
-#         return jsonify({"error": "Title and description are required"}), 400
-
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         attachment_filenames = []
-#         upload_folder = app.config['UPLOAD_FOLDER']
-
-#         with connection.cursor() as cursor:
-#             if attachments:
-#                 for attachment in attachments:
-#                     original_filename = attachment.filename
-                    
-#                     # Generate unique encrypted name for the file
-#                     unique_name = generate_unique_name(original_filename)
-                    
-#                     # Save the file on the server with the unique encrypted name
-#                     file_path = os.path.join(upload_folder, unique_name)
-#                     attachment.save(file_path)
-                    
-#                     # Store only the original filename
-#                     attachment_filenames.append(original_filename)
-
-#             # Convert attachment filenames to JSON format
-#             attachments_json = json.dumps(attachment_filenames)
-
-#             # Set the session variable for the current user ID
-#             cursor.execute("SET @current_user_id = %s", (user_id,))
-
-#             # Set status_id to 1 (assumed 'Open' status)
-#             status_id = 1
-
-#             # Call the stored procedure with the parameters, including the attachments JSON and status_id
-#             cursor.callproc('Proc_tbltasks_Upsert', (0, title, description, attachments_json, unique_name if attachments else None, status_id))
-#             connection.commit()
-
-#             # Fetch the last inserted ticket ID
-#             cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
-#             ticket_id = cursor.fetchone()["ticket_id"]
-
-#             return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Database query failed"}), 500
-#     except Exception as e:
-#         print(f"An unexpected error occurred: {e}")
-#         return jsonify({"error": str(e)}), 500
-#     finally:
-#         connection.close()
-
-
-# @app.route("/api/task", methods=["POST"])
-# @login_required
-# def create_task():
-#     user_id = session.get("user_id")
-
-#     if user_id is None:
-#         return jsonify({"error": "User ID not found in session"}), 400
-
-#     title = request.form.get("title")
-#     description = request.form.get("description")
-#     assigned_user = request.form.get("assignedUser")  # Assigned to user ID
-#     task_state = request.form.get("ticketState")  # Task status ID
-#     task_priority = request.form.get("ticketPriority")  # Priority ID
-#     attachments = request.files.getlist("attachments")
-
-#     # Validation: Ensure title and description are provided
-#     if not title or not description:
-#         return jsonify({"error": "Title and description are required"}), 400
-
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         attachment_filenames = []
-#         upload_folder = app.config['UPLOAD_FOLDER']
-
-#         with connection.cursor() as cursor:
-#             # Handle file attachments if present
-#             if attachments:
-#                 for attachment in attachments:
-#                     original_filename = attachment.filename
-                    
-#                     # Generate unique encrypted name for the file
-#                     unique_name = generate_unique_name(original_filename)
-                    
-#                     # Save the file on the server with the unique encrypted name
-#                     file_path = os.path.join(upload_folder, unique_name)
-#                     attachment.save(file_path)
-                    
-#                     # Store only the original filename
-#                     attachment_filenames.append(original_filename)
-
-#             # Convert attachment filenames to JSON format
-#             attachments_json = json.dumps(attachment_filenames)
-
-#             # Set the session variable for the current user ID
-#             cursor.execute("SET @current_user_id = %s", (user_id,))
-
-#             # Set status_id to the provided task state, defaulting to 1 if not provided
-#             status_id = task_state if task_state else 1  # Default status ID to 1 (assumed 'Open')
-
-#             # Set priority_id to the provided priority, defaulting to 1 if not provided
-#             priority_id = task_priority if task_priority else 4  # Default priority ID to 1 (assumed default priority)
-
-#             # Call the stored procedure with the parameters, including the attachments JSON, status_id, priority_id, and assigned_user
-#             cursor.callproc('Proc_tbltasks_Upsert', (
-#                 0,  # 0 for new task (assuming)
-#                 title, 
-#                 description, 
-#                 attachments_json, 
-#                 unique_name if attachments else None, 
-#                 status_id, 
-#                 assigned_user,
-#                 priority_id
-#             ))
-#             connection.commit()
-
-#             # Fetch the last inserted ticket ID
-#             cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
-#             ticket_id = cursor.fetchone()["ticket_id"]
-
-#             return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
-
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Database query failed"}), 500
-#     except Exception as e:
-#         print(f"An unexpected error occurred: {e}")
-#         return jsonify({"error": str(e)}), 500
-#     finally:
-#         connection.close()
 port = 587  # For starttls
-smtp_server = "mail.kiotel.co"
+smtp_server = "smtp.gmail.com"
 sender_email = "noreply@kiotel.co"
-password = "7w2wmr336L3aPyR"
+password = "tfyr kugr sjpj ayvh"
 
-# @app.route("/api/task", methods=["POST"])
-# @login_required
-# def create_task():
-#     user_id = session.get("user_id")
 
-#     if user_id is None:
-#         return jsonify({"error": "User ID not found in session"}), 400
-
-#     title = request.form.get("title")
-#     description = request.form.get("description")
-#     assigned_user = request.form.get("assignedUser")  # Assigned to user ID
-#     task_state = request.form.get("ticketState")  # Task status ID
-#     task_priority = request.form.get("ticketPriority")  # Priority ID
-#     attachments = request.files.getlist("attachments")
-
-#     # Validation: Ensure title and description are provided
-#     if not title or not description:
-#         return jsonify({"error": "Title and description are required"}), 400
-
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         attachment_filenames = []
-#         upload_folder = app.config['UPLOAD_FOLDER']
-
-#         with connection.cursor() as cursor:
-#             # Handle file attachments if present
-#             if attachments:
-#                 for attachment in attachments:
-#                     original_filename = attachment.filename
-                    
-#                     # Generate unique encrypted name for the file
-#                     unique_name = generate_unique_name(original_filename)
-                    
-#                     # Save the file on the server with the unique encrypted name
-#                     file_path = os.path.join(upload_folder, unique_name)
-#                     attachment.save(file_path)
-                    
-#                     # Store only the original filename
-#                     attachment_filenames.append(original_filename)
-
-#             # Convert attachment filenames to JSON format
-#             attachments_json = json.dumps(attachment_filenames)
-
-#             # Set the session variable for the current user ID
-#             cursor.execute("SET @current_user_id = %s", (user_id,))
-
-#             # Set status_id to the provided task state, defaulting to 1 if not provided
-#             status_id = task_state if task_state else 1  # Default status ID to 1 (assumed 'Open')
-
-#             # Set priority_id to the provided priority, defaulting to 1 if not provided
-#             priority_id = task_priority if task_priority else 4  # Default priority ID to 1 (assumed default priority)
-
-#             # Call the stored procedure with the parameters, including the attachments JSON, status_id, priority_id, and assigned_user
-#             cursor.callproc('Proc_tbltasks_Upsert', (
-#                 0,  # 0 for new task (assuming)
-#                 title, 
-#                 description, 
-#                 attachments_json, 
-#                 unique_name if attachments else None, 
-#                 status_id, 
-#                 assigned_user,
-#                 priority_id
-#             ))
-#             connection.commit()
-
-#             # Fetch the last inserted ticket ID
-#             cursor.execute("SELECT LAST_INSERT_ID() AS ticket_id")
-#             ticket_id = cursor.fetchone()["ticket_id"]
-
-#             # Fetch the user's email address (task creator) from the users table using their user_id
-#             cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
-#             creator_email = cursor.fetchone()["emailid"]
-
-#             # Fetch the assigned user's email address from the users table using the assigned_user ID
-#             cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (assigned_user,))
-#             assigned_user_email = cursor.fetchone()["emailid"]
-
-#             # Send the email notification to both the task creator and the assigned user
-#             send_email_notification_new_task(title, description, ticket_id, creator_email, assigned_user_email)
-
-#             return jsonify({"message": "Ticket created successfully", "ticket_id": ticket_id}), 201
-
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Database query failed"}), 500
-#     except Exception as e:
-#         print(f"An unexpected error occurred: {e}")
-#         return jsonify({"error": str(e)}), 500
-#     finally:
-#         connection.close()
-
-# @app.route("/api/task", methods=["POST"])
-# @login_required
-# def create_task():
-#     user_id = session.get("user_id")
-
-#     if user_id is None:
-#         return jsonify({"error": "User ID not found in session"}), 400
-
-#     title = request.form.get("title")
-#     description = request.form.get("description")
-#     assigned_users = request.form.getlist("assignedUsers[]")  # Receive multiple assigned user IDs as a list
-#     task_state = request.form.get("ticketState")  # Task status ID
-#     task_priority = request.form.get("ticketPriority")  # Priority ID
-#     attachments = request.files.getlist("attachments")
-
-#     # Validation: Ensure title and description are provided
-#     if not title or not description:
-#         return jsonify({"error": "Title and description are required"}), 400
-
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         attachment_filenames = []
-#         upload_folder = app.config['UPLOAD_FOLDER']
-
-#         with connection.cursor() as cursor:
-#             # Handle file attachments if present
-#             if attachments:
-#                 for attachment in attachments:
-#                     original_filename = attachment.filename
-                    
-#                     # Generate unique encrypted name for the file
-#                     unique_name = generate_unique_name(original_filename)
-                    
-#                     # Save the file on the server with the unique encrypted name
-#                     file_path = os.path.join(upload_folder, unique_name)
-#                     attachment.save(file_path)
-                    
-#                     # Store only the original filename
-#                     attachment_filenames.append(original_filename)
-
-#             # Convert attachment filenames to JSON format
-#             attachments_json = json.dumps(attachment_filenames)
-
-#             # Set the session variable for the current user ID
-#             cursor.execute("SET @current_user_id = %s", (user_id,))
-
-#             # Set status_id to the provided task state, defaulting to 1 if not provided
-#             status_id = task_state if task_state else 1  # Default status ID to 1 (assumed 'Open')
-
-#             # Set priority_id to the provided priority, defaulting to 1 if not provided
-#             priority_id = task_priority if task_priority else 4  # Default priority ID to 1 (assumed default priority)
-
-#             # Call the stored procedure with the parameters, including the attachments JSON, status_id, priority_id, and assigned users as JSON
-#             cursor.callproc('Proc_tbltasks_Upsert_test', (
-#                 0,  # 0 for new task (assuming)
-#                 title, 
-#                 description, 
-#                 attachments_json, 
-#                 unique_name if attachments else None, 
-#                 status_id, 
-#                 json.dumps(assigned_users),  # Pass the assigned users array as JSON
-#                 priority_id
-#             ))
-#             connection.commit()
-
-            
-
-#             return jsonify({"message": "Task created successfully"}), 201
-
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Database query failed"}), 500
-#     except Exception as e:
-#         print(f"An unexpected error occurred: {e}")
-#         return jsonify({"error": str(e)}), 500
-#     finally:
-#         connection.close()
 
 
 @app.route("/api/task", methods=["POST"])
@@ -3514,7 +3121,30 @@ def delete_task():
         connection.close()
 
 # Helper function to send email
-
+import requests # type: ignore
+@app.route('/proxy', methods=['GET'])
+def proxy():
+    target_url = request.args.get('url')
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.199 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.google.com',
+    }
+    session = requests.Session()
+    session.headers.update(headers)
+    try:
+        response = session.get(target_url)
+        return Response(
+            response.content,
+            status=response.status_code,
+            content_type=response.headers.get('Content-Type')
+        )
+    except requests.RequestException as e:
+        return Response(
+            f"Error fetching the target URL: {str(e)}",
+            status=500,
+            content_type="text/plain"
+        )
 
 
 
