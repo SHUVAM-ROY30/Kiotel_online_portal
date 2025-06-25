@@ -1945,8 +1945,8 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
                 <li>It is necessary to request a festive off before the schedule for that week is live in order to use it.</li>
                 <li>You are limited to using a maximum of two consecutive festive offs.</li>
                 <li>Requests for Festive leaves should be made exclusively through email to the HR.</li>
-                <li>If a request for festive leave is denied for any reason, and it's approaching its expiration date, the expiration cannot be prolonged.</li>
-                <li>Once you've exhausted your six festive offs, taking leave on a festival day later to that will result in Loss of Pay (LOP).</li>
+                <li>If a request for festive leave is denied for any reason, and its approaching its expiration date, the expiration cannot be prolonged.</li>
+                <li>Once you have exhausted your six festive offs, taking leave on a festival day later to that will result in Loss of Pay (LOP).</li>
               </ol>
             </div>
 
@@ -1960,7 +1960,7 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
                 <li>It is necessary to request a casual leave before the schedule for that week is live in order to use it.</li>
                 <li>Casual leaves are not permissible during the training / notice period and cannot be encashed.</li>
                 <li>Casual leaves remain valid until the end of the year and will not be carried forward.</li>
-                <li>If a request for Casual leave is denied for any reason, and it's approaching its expiration date, the expiration cannot be prolonged.</li>
+                <li>If a request for Casual leave is denied for any reason, and its approaching its expiration date, the expiration cannot be prolonged.</li>
               </ul>
             </div>
 
@@ -1981,7 +1981,7 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
             <div>
               <h3 className="text-lg font-semibold text-red-700 mb-2">LEAVES DURING NOTICE PERIOD</h3>
               <p className="text-sm text-gray-700">
-                Any leave taken during the notice period will result in a deduction of 2 days' pay.
+                Any leave taken during the notice period will result in a deduction of 2 days pay.
               </p>
             </div>
           </div>
