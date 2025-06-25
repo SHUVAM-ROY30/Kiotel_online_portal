@@ -79,6 +79,22 @@ def create_connection():
         print(f"The error '{e}' occurred")
         return None
 
+
+def create_connection2():
+    try:
+        connection = pymysql.connect(
+            host="64.227.6.9",
+            user="kshiti",
+            password="Kiotel123!",
+            database="Kiotel_Hr",  # Second DB
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        print("Successfully connected to the secondary database")
+        return connection
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred in secondary DB")
+        return None
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -194,6 +210,125 @@ def get_user_email():
 #         connection.close()
 
 
+# @app.route("/api/register", methods=["POST"])
+# def register_user():
+#     data = request.json
+#     email = data["email"]
+#     password = data["password"]
+#     fname = data.get("fname")
+#     lname = data.get("lname")
+#     dob = data.get("dob")
+#     address = data.get("address")
+#     account_no = data.get("account_no")
+#     mobileno = data.get("mobileno")
+#     role_id = data.get("role_id", 2)  # Default role_id is 2
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         with connection.cursor() as cursor:
+#             # Check if the user with the given email already exists
+#             cursor.execute("SELECT id FROM tblusers WHERE emailid = %s", (email,))
+#             existing_user = cursor.fetchone()
+
+#             if existing_user:
+#                 # If user exists, return a message to the frontend
+#                 return jsonify({"message": "User with this email already exists"}), 409
+
+#             # If user does not exist, insert a new user
+#             user_id = 0  # For a new user
+#             cursor.callproc('Proc_tblusers_Upsert', (user_id, email, password, fname, lname, dob, address, account_no, mobileno, role_id))
+#             connection.commit()
+
+#             # Fetch the newly created user
+#             cursor.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
+#             user = cursor.fetchone()
+
+#             session["user_id"] = user['id']
+#             session.permanent = True  # Make the session permanent
+
+#             return jsonify({
+#                 "id": user['id'],
+#                 "email": user['emailid']
+#             })
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     finally:
+#         connection.close()
+
+# @app.route("/api/register", methods=["POST"])
+# def register_user():
+#     data = request.json
+#     email = data["email"]
+#     password = data["password"]
+#     fname = data.get("fname")
+#     lname = data.get("lname")
+#     dob = data.get("dob")
+#     address = data.get("address")
+#     account_no = data.get("account_no")
+#     mobileno = data.get("mobileno")
+#     role_id = data.get("role_id", 2)  # Default role_id is 2
+
+#     # Step 1: Connect to both databases
+#     connection1 = create_connection()
+#     if not connection1:
+#         return jsonify({"error": "Failed to connect to primary database"}), 500
+
+#     connection2 = create_connection2()
+#     if not connection2:
+#         return jsonify({"error": "Failed to connect to secondary database"}), 500
+
+#     try:
+#         with connection1.cursor() as cursor1, connection2.cursor() as cursor2:
+#             # Step 2: Check if email or account_no already exists in primary DB
+#             cursor1.execute("SELECT id FROM tblusers WHERE emailid = %s OR account_no = %s", (email, account_no))
+#             existing_user = cursor1.fetchone()
+
+#             if existing_user:
+#                 return jsonify({"message": "Email or Account Number already exists"}), 409
+
+#             # Step 3: Insert into primary DB
+#             user_id = 0  # New user
+#             cursor1.callproc('Proc_tblusers_Upsert', (user_id, email, password, fname, lname, dob, address, account_no, mobileno, role_id))
+#             connection1.commit()
+
+#             # # Step 4: Fetch inserted user from primary DB
+#             cursor1.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
+#             user = cursor1.fetchone()
+
+#             # Step 5: Insert into employees table in secondary DB
+#             cursor2.execute("INSERT INTO employees (unique_id, first_name, last_name, email, date_of_joining,annual_leave, sick_leave, casual_leave, other_leave) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)", (account_no,fname,lname,email,
+#                 dob,
+#                 0,  # annual_leave
+#                 0,  # sick_leave
+#                 0,  # casual_leave
+#                 0   # other_leave
+#                     ))
+#             connection2.commit()
+
+#             session["user_id"] = user['id']
+#             session.permanent = True
+
+#             return jsonify({
+#                 "id": user['id'],
+#                 "email": user['emailid'],
+#                 "message": "User registered and employee record created"
+#             })
+
+#     except pymysql.MySQLError as e:
+#         connection1.rollback()
+#         connection2.rollback()
+#         print(f"Database error: {e}")
+#         return jsonify({"error": "Registration failed due to database error"}), 500
+
+#     finally:
+#         connection1.close()
+#         connection2.close()
+
+
 @app.route("/api/register", methods=["POST"])
 def register_user():
     data = request.json
@@ -205,44 +340,81 @@ def register_user():
     address = data.get("address")
     account_no = data.get("account_no")
     mobileno = data.get("mobileno")
-    role_id = data.get("role_id", 2)  # Default role_id is 2
+    role_id = int(data.get("role_id", 2))  # 👈 Convert to int here
 
-    connection = create_connection()
-    if connection is None:
-        return jsonify({"error": "Failed to connect to the database"}), 500
+    connection1 = create_connection()
+    if not connection1:
+        return jsonify({"error": "Failed to connect to primary database"}), 500
+
+    connection2 = create_connection2() if role_id in (1, 2, 3) else None
 
     try:
-        with connection.cursor() as cursor:
-            # Check if the user with the given email already exists
-            cursor.execute("SELECT id FROM tblusers WHERE emailid = %s", (email,))
-            existing_user = cursor.fetchone()
-
+        with connection1.cursor() as cursor1:
+            # Check existing user
+            cursor1.execute("SELECT id FROM tblusers WHERE emailid = %s OR account_no = %s", (email, account_no))
+            existing_user = cursor1.fetchone()
             if existing_user:
-                # If user exists, return a message to the frontend
-                return jsonify({"message": "User with this email already exists"}), 409
+                return jsonify({"message": "Email or Account Number already exists"}), 409
 
-            # If user does not exist, insert a new user
-            user_id = 0  # For a new user
-            cursor.callproc('Proc_tblusers_Upsert', (user_id, email, password, fname, lname, dob, address, account_no, mobileno, role_id))
-            connection.commit()
+            # Insert into primary DB
+            user_id = 0
+            cursor1.callproc('Proc_tblusers_Upsert', (
+                user_id, email, password, fname, lname, dob, address, account_no, mobileno, role_id
+            ))
+            connection1.commit()
 
-            # Fetch the newly created user
-            cursor.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
-            user = cursor.fetchone()
+            cursor1.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
+            user = cursor1.fetchone()
 
-            session["user_id"] = user['id']
-            session.permanent = True  # Make the session permanent
+            # Only proceed if role_id is 1, 2, or 3
+            if connection2:
+                with connection2.cursor() as cursor2:
+                    if role_id == 1:
+                        # Insert into admins table
+                        cursor2.execute("""
+                            INSERT INTO admins (unique_id, first_name, last_name)
+                            VALUES (%s, %s, %s)
+                        """, (account_no, fname, lname))
+
+                    elif role_id in (2, 3):
+                        # Insert into employees table
+                        cursor2.execute("""
+                            INSERT INTO employees_test (
+                                unique_id,
+                                first_name,
+                                last_name,
+                                email,
+                                date_of_joining,
+                                annual_leave,
+                                sick_leave,
+                                casual_leave,
+                                other_leave
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """, (
+                            account_no, fname, lname, email, dob, 0, 0, 0, 0
+                        ))
+
+                    connection2.commit()
+
+            
 
             return jsonify({
                 "id": user['id'],
-                "email": user['emailid']
+                "email": user['emailid'],
+                "message": "User registered successfully"
             })
-    except pymysql.MySQLError as e:
-        print(f"The error '{e}' occurred")
-        return jsonify({"error": "Database query failed"}), 500
-    finally:
-        connection.close()
 
+    except pymysql.MySQLError as e:
+        connection1.rollback()
+        if connection2:
+            connection2.rollback()
+        print(f"Database error: {e}")
+        return jsonify({"error": "Registration failed due to database error"}), 500
+
+    finally:
+        connection1.close()
+        if connection2:
+            connection2.close()
 
 @app.route("/Dashboard")
 @login_required
@@ -1969,7 +2141,7 @@ def get_states():
             roles_options = cursor.fetchall()
             
             # Print raw result for debugging
-            print("Raw result:", roles_options)
+            # print("Raw result:", roles_options)
 
             return jsonify(roles_options), 200
 
@@ -1994,7 +2166,7 @@ def get_locktypes():
             roles_options = cursor.fetchall()
             
             # Print raw result for debugging
-            print("Raw result:", roles_options)
+            # print("Raw result:", roles_options)
 
             return jsonify(roles_options), 200
 
@@ -2018,7 +2190,7 @@ def get_locktypess():
             roles_options = cursor.fetchall()
             
             # Print raw result for debugging
-            print("Raw result:", roles_options)
+            # print("Raw result:", roles_options)
 
             return jsonify(roles_options), 200
 
@@ -2186,7 +2358,7 @@ def get_opened_tasks():
             opened_tickets = cursor.fetchall()
             
             # Print raw result for debugging
-            print("Raw result:", opened_tickets)
+            # print("Raw result:", opened_tickets)
 
             # Decode bytes fields to strings, if any
             for ticket in opened_tickets:
@@ -2219,7 +2391,7 @@ def get_task(task_id):
             result = cursor.fetchall()
 
             # Debugging: Print result for verification
-            print("Query Result:", result)
+            # print("Query Result:", result)
 
             if not result:
                 return jsonify({"error": "Ticket not found"}), 404
@@ -2365,7 +2537,7 @@ def get_replies_by_task_id(task_id):
         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.callproc("Proc_tbltasksreplies_SelectRepliesByTaskId", (task_id,))
             replies = cursor.fetchall()
-            print("Query Result:", replies)
+            # print("Query Result:", replies)
 
             # Decode bytes fields to strings, if any
             for reply in replies:
@@ -2418,7 +2590,7 @@ def get_priority():
             status_options = cursor.fetchall()
             
             # Print raw result for debugging
-            print("Raw result:", status_options)
+            # print("Raw result:", status_options)
 
             return jsonify(status_options), 200
 
@@ -2443,7 +2615,7 @@ def get_taskstate():
             status_options = cursor.fetchall()
             
             # Print raw result for debugging
-            print("Raw result:", status_options)
+            # print("Raw result:", status_options)
 
             return jsonify(status_options), 200
 
@@ -2554,7 +2726,7 @@ def update_task_state():
         conn.close()
 
         # Send email notification
-        send_email_notification_task_state_update(task_id, taskstatus_id, assigned_user_email)
+        # send_email_notification_task_state_update(task_id, taskstatus_id, assigned_user_email)
 
         return jsonify({'message': 'Task state updated successfully'}), 200
 
@@ -2666,7 +2838,7 @@ def update_task_priority():
         cur = conn.cursor()
 
         # Call the stored procedure to update task priority
-        print(f"Updating task priority in the database for task_id={task_id} and priority_id={priority_id}")
+        # print(f"Updating task priority in the database for task_id={task_id} and priority_id={priority_id}")
         cur.callproc('Proc_tbltasks_UpdatePriority', [task_id, priority_id])
         conn.commit()
 
@@ -2679,7 +2851,7 @@ def update_task_priority():
             return jsonify({"error": "Assigned user not found"}), 404
 
         assigned_user_id = assigned_user_row["AssignedTo"]
-        print(f"Assigned user ID: {assigned_user_id}")
+        # print(f"Assigned user ID: {assigned_user_id}")
 
         # Fetch assigned user's email
         cur.execute("SELECT emailid FROM tblusers WHERE id = %s", (assigned_user_id,))
@@ -2809,7 +2981,7 @@ def assign_task():
     data = request.json
     ticket_id = data.get('ticket_id')
     user_ids = data.get('user_ids')  # Expecting a list of user IDs
-    print("Received data:", data)
+    # print("Received data:", data)
     
     if not ticket_id or not user_ids or not isinstance(user_ids, list):
         return jsonify({"error": "Missing required fields or invalid format"}), 400
@@ -2981,7 +3153,7 @@ def get_user_task_by_id():
             latest_opened_tickets = cursor.fetchall()
             
             # Log the raw result for debugging purposes
-            print("Raw result:", latest_opened_tickets)
+            # print("Raw result:", latest_opened_tickets)
 
             # Decode any bytes to strings if necessary
             for ticket in latest_opened_tickets:
@@ -3034,7 +3206,7 @@ def get_task_created_by_me():
             created_tickets = cursor.fetchall()
             
             # Log the raw result for debugging purposes
-            print("Raw result:", created_tickets)
+            # print("Raw result:", created_tickets)
 
             # Decode any bytes to strings if necessary
             for ticket in created_tickets:

@@ -493,16 +493,16 @@ function Dashboard() {
           </Link>
 
           {/* My Kiosk */}
-          <Link
+          {/* <Link
             href="/accounts"
             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-green-300"
           >
             <h2 className="text-lg font-semibold text-gray-800 group-hover:text-green-600 transition-colors">
               My Kiosk
             </h2>
-          </Link>
+          </Link> */}
           <Link
-            href="http://hr.kiotel.co"
+            href="/verify"
             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-green-300"
           >
             <h2 className="text-lg font-semibold text-gray-800 group-hover:text-green-600 transition-colors">
@@ -523,7 +523,7 @@ function Dashboard() {
           {/* Admin Panel - Only visible if role is 1 */}
           {userRole === 1 && (
             <Link
-              href="http://hr.kiotel.co/admin"
+              href="/admin"
               className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
             >
               <h2 className="text-lg font-semibold text-gray-800 group-hover:text-red-600 transition-colors">
