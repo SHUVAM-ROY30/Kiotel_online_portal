@@ -338,7 +338,10 @@ def register_user():
     lname = data.get("lname")
     dob = data.get("dob")
     address = data.get("address")
+    address2 = data.get("address2")
+    entity_name = data.get("entity_name")
     account_no = data.get("account_no")
+    account_no2 = data.get("account_no2")
     mobileno = data.get("mobileno")
     role_id = int(data.get("role_id", 2))  # 👈 Convert to int here
 
@@ -2680,8 +2683,8 @@ def update_task_state():
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
 
-        task_id = data.get('task_id')
-        taskstatus_id = data.get('taskstatus_id')
+        task_id = data.get('ticketId')
+        taskstatus_id = data.get('status_id')
 
         if not task_id or not taskstatus_id:
             return jsonify({'error': 'Task ID and Task Status ID are required'}), 400
@@ -2700,26 +2703,26 @@ def update_task_state():
         conn.commit()
 
         # Fetch the assigned user's ID for notification
-        cur.execute("SELECT AssignedTo FROM tbltasks WHERE id = %s", (task_id,))
-        assigned_user_row = cur.fetchone()
+        # cur.execute("SELECT AssignedTo FROM tbltasks WHERE id = %s", (task_id,))
+        # assigned_user_row = cur.fetchone()
         
-        if not assigned_user_row:
-            print(f"No assigned user found for task_id={task_id}")
-            return jsonify({"error": "Assigned user not found"}), 404
+        # if not assigned_user_row:
+        #     print(f"No assigned user found for task_id={task_id}")
+        #     return jsonify({"error": "Assigned user not found"}), 404
 
-        assigned_user_id = assigned_user_row["AssignedTo"]
-        print(f"Assigned user ID: {assigned_user_id}")
+        # assigned_user_id = assigned_user_row["AssignedTo"]
+        # print(f"Assigned user ID: {assigned_user_id}")
 
         # Fetch assigned user's email
-        cur.execute("SELECT emailid FROM tblusers WHERE id = %s", (assigned_user_id,))
-        assigned_user_email_row = cur.fetchone()
+        # cur.execute("SELECT emailid FROM tblusers WHERE id = %s", (assigned_user_id,))
+        # assigned_user_email_row = cur.fetchone()
 
-        if not assigned_user_email_row:
-            print(f"No email found for assigned user ID: {assigned_user_id}")
-            return jsonify({"error": "Email for assigned user not found"}), 404
+        # if not assigned_user_email_row:
+        #     print(f"No email found for assigned user ID: {assigned_user_id}")
+        #     return jsonify({"error": "Email for assigned user not found"}), 404
 
-        assigned_user_email = assigned_user_email_row["emailid"]
-        print(f"Assigned user email: {assigned_user_email}")
+        # assigned_user_email = assigned_user_email_row["emailid"]
+        # print(f"Assigned user email: {assigned_user_email}")
 
         # Close cursor and connection
         cur.close()
@@ -2823,7 +2826,7 @@ def update_task_priority():
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
         
-        task_id = data.get('task_id')
+        task_id = data.get('ticketId')
         priority_id = data.get('priority_id')
 
         if not task_id or not priority_id:
@@ -2842,34 +2845,34 @@ def update_task_priority():
         cur.callproc('Proc_tbltasks_UpdatePriority', [task_id, priority_id])
         conn.commit()
 
-        # Fetch the assigned user's ID for notification
-        cur.execute("SELECT AssignedTo FROM tbltasks WHERE id = %s", (task_id,))
-        assigned_user_row = cur.fetchone()
+        # # Fetch the assigned user's ID for notification
+        # cur.execute("SELECT AssignedTo FROM tbltasks WHERE id = %s", (task_id,))
+        # assigned_user_row = cur.fetchone()
         
-        if not assigned_user_row:
-            print(f"No assigned user found for task_id={task_id}")
-            return jsonify({"error": "Assigned user not found"}), 404
+        # if not assigned_user_row:
+        #     print(f"No assigned user found for task_id={task_id}")
+        #     return jsonify({"error": "Assigned user not found"}), 404
 
-        assigned_user_id = assigned_user_row["AssignedTo"]
-        # print(f"Assigned user ID: {assigned_user_id}")
+        # assigned_user_id = assigned_user_row["AssignedTo"]
+        # # print(f"Assigned user ID: {assigned_user_id}")
 
-        # Fetch assigned user's email
-        cur.execute("SELECT emailid FROM tblusers WHERE id = %s", (assigned_user_id,))
-        assigned_user_email_row = cur.fetchone()
+        # # Fetch assigned user's email
+        # cur.execute("SELECT emailid FROM tblusers WHERE id = %s", (assigned_user_id,))
+        # assigned_user_email_row = cur.fetchone()
 
-        if not assigned_user_email_row:
-            print(f"No email found for assigned user ID: {assigned_user_id}")
-            return jsonify({"error": "Email for assigned user not found"}), 404
+        # if not assigned_user_email_row:
+        #     print(f"No email found for assigned user ID: {assigned_user_id}")
+        #     return jsonify({"error": "Email for assigned user not found"}), 404
 
-        assigned_user_email = assigned_user_email_row["emailid"]
-        print(f"Assigned user email: {assigned_user_email}")
+        # assigned_user_email = assigned_user_email_row["emailid"]
+        # print(f"Assigned user email: {assigned_user_email}")
 
         # Close cursor and connection
         cur.close()
         conn.close()
 
         # Send email notification
-        send_email_notification_priority_change(task_id, priority_id, assigned_user_email)
+        # send_email_notification_priority_change(task_id, priority_id, assigned_user_email)
 
         return jsonify({'message': 'Task priority updated successfully'}), 200
 
