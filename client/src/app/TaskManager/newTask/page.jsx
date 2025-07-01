@@ -633,7 +633,7 @@ export default function TicketCreateForm() {
         </div>
 
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2">Attachments</label>
+          <label className="block text-gray-700 text-sm font-bold mb-2">Attachments (Upto 50MB only)</label>
           <input
             type="file"
             multiple
