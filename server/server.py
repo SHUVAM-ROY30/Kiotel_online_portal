@@ -1004,6 +1004,7 @@ def get_users():
                     "lname": user['lname'],
                     "emailid": user['emailid'],
                     "role": user['role'],
+                    "account_no": user['account_no']
                     # Add other fields as necessary
                 })
 

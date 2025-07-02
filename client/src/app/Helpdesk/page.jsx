@@ -404,12 +404,12 @@ function Home() {
               className="border border-gray-300 rounded-lg px-3 py-1 w-full sm:w-auto transition duration-200 ease-in-out focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
             />
             <nav className="flex space-x-4 mt-2 sm:mt-0">
-              <a
+              {/* <a
                 href="../Helpdesk"
                 className="text-gray-700 hover:text-blue-800 hover:underline underline-offset-4 transition duration-200"
               >
                 Overview
-              </a>
+              </a> */}
               <a
                 href="../Helpdesk/newtickets"
                 className="text-gray-700 hover:text-blue-800 hover:underline underline-offset-4 transition duration-200"
@@ -432,11 +432,11 @@ function Home() {
                 />
                 {isProfileMenuOpen && (
                   <div className="absolute left-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-20">
-                    <Link href="/components/updateProfile" legacyBehavior>
+                    {/* <Link href="/components/updateProfile" legacyBehavior>
                       <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         Update Profile
                       </a>
-                    </Link>
+                    </Link> */}
                     <a
                     onClick={handleLogout}
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"

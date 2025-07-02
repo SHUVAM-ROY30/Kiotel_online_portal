@@ -874,7 +874,7 @@ const generateUniqueEID = () => {
           {/* Account 2 - New Field */}
           {isFieldVisible("account2") && (
             <div>
-              <label htmlFor="account2" className="block text-sm font-medium text-gray-700 mb-1">Account 2</label>
+              <label htmlFor="account2" className="block text-sm font-medium text-gray-700 mb-1">Account </label>
               <input
                 id="account2"
                 type="text"
