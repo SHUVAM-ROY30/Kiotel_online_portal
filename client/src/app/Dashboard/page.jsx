@@ -502,11 +502,11 @@ function Dashboard() {
             </h2>
           </Link> */}
           <Link
-            href="/verify"
+            href="/emp-dashboard"
             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-green-300"
           >
             <h2 className="text-lg font-semibold text-gray-800 group-hover:text-green-600 transition-colors">
-              Kiotel Employee dashboard
+              HR
             </h2>
           </Link>
 
@@ -523,11 +523,11 @@ function Dashboard() {
           {/* Admin Panel - Only visible if role is 1 */}
           {userRole === 1 && (
             <Link
-              href="/admin"
+              href="/admin-dashboard"
               className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
             >
               <h2 className="text-lg font-semibold text-gray-800 group-hover:text-red-600 transition-colors">
-                Kiotel Hr Admin Panel
+                HR (Admin)
               </h2>
             </Link>
           )}

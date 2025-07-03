@@ -224,7 +224,7 @@ export default function Sidebar({ setActiveComponent }) {
   const handleLogout = () => {
     localStorage.removeItem("uniqueId"); // Clear user session
     localStorage.removeItem("userRole"); // Clear user session
-    router.push("/login"); // Redirect to the login page
+    router.push("/sign-in"); // Redirect to the login page
   };
 
   return (

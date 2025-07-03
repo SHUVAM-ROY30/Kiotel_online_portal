@@ -91,6 +91,44 @@ def login_required(f):
 
 
 
+# @app.route("/api/signin", methods=["POST"])
+# def login_user():
+#     email = request.json.get("email")
+#     password = request.json.get("password")
+
+#     if not email or not password:
+#         return jsonify({"error": "Email and password are required"}), 400
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+#             cursor.callproc('Proc_tblUsers_CheckCredentials', (email, password, 0))
+#             cursor.execute("SELECT @_Proc_tblUsers_CheckCredentials_2")
+#             result = cursor.fetchone()
+#             credentials_valid = result.get('@_Proc_tblUsers_CheckCredentials_2')
+
+#             if credentials_valid == 1:
+#                 cursor.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
+#                 user = cursor.fetchone()
+#                 session["user_id"] = user['id']
+#                 session.permanent = True  # Make the session permanent (cookie won't be deleted after the browser is closed)
+#                 return jsonify({
+#                     "id": user['id'],
+#                     "email": user['emailid']
+#                 })
+#             else:
+#                 return jsonify({"error": "Unauthorized"}), 401
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     finally:
+#         connection.close()
+
+
+
 @app.route("/api/signin", methods=["POST"])
 def login_user():
     email = request.json.get("email")
@@ -105,19 +143,29 @@ def login_user():
 
     try:
         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            # Call stored procedure to check credentials
             cursor.callproc('Proc_tblUsers_CheckCredentials', (email, password, 0))
-            cursor.execute("SELECT @_Proc_tblUsers_CheckCredentials_2")
+            cursor.execute("SELECT @_Proc_tblUsers_CheckCredentials_2 AS result")
             result = cursor.fetchone()
-            credentials_valid = result.get('@_Proc_tblUsers_CheckCredentials_2')
+            credentials_valid = result['result']
 
             if credentials_valid == 1:
+                # Fetch user data including account_no
                 cursor.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
                 user = cursor.fetchone()
+
+                if not user:
+                    return jsonify({"error": "User not found"}), 404
+
+                # Save user_id to session
                 session["user_id"] = user['id']
-                session.permanent = True  # Make the session permanent (cookie won't be deleted after the browser is closed)
+                session.permanent = True  # Make session persistent
+
+                # Return user data including account_no
                 return jsonify({
                     "id": user['id'],
-                    "email": user['emailid']
+                    "email": user['emailid'],
+                    "account_no": user['account_no']  # 👈 Added account_no
                 })
             else:
                 return jsonify({"error": "Unauthorized"}), 401

@@ -143,7 +143,7 @@ export default function Navbar({ employee }) {
   // Handle logout
   const handleLogout = () => {
     localStorage.removeItem("uniqueId");
-    router.push("/login"); // Redirect to the login page
+    router.push("/sign-in"); // Redirect to the login page
   };
 
   return (
