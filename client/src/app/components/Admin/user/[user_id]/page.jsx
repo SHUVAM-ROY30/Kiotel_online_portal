@@ -284,6 +284,8 @@ export default function UserProfile({ params }) {
     const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
+    const [showPassword, setShowPassword] = useState(false);
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -398,16 +400,26 @@ export default function UserProfile({ params }) {
                             {errors.emailid && <p className="mt-1 text-sm text-red-600">{errors.emailid}</p>}
                         </div>
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                            <input
-                                id="password"
-                                type="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                            />
-                        </div>
+  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+  <div className="relative">
+    <input
+      id="password"
+      type={showPassword ? "text" : "password"}
+      name="password"
+      value={formData.password}
+      onChange={handleChange}
+      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none pr-10"
+    />
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm text-gray-600 focus:outline-none"
+    >
+      {showPassword ? "Hide" : "Show"}
+    </button>
+  </div>
+</div>
+
                     </div>
 
                     {/* First Name & Last Name */}
