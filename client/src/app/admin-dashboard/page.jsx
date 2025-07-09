@@ -352,6 +352,8 @@ import NewAdmin from "../../components/NewAdmin";
 import AdminList from "../../components/AdminList";
 import BroadcastMessage from "../../components/BroadcastMessage";
 import Shiftallotment from "../../components/Shiftallotment"; // Already imported ✅
+// import Shiftassignment from "../../components/ShiftAssignmentForm"; // Already imported ✅
+import ShiftAssignmentForm from "../../components/ShiftAssignmentForm";
 
 export default function AdminDashboard() {
   const [activeComponent, setActiveComponent] = useState("employees");
@@ -411,7 +413,9 @@ export default function AdminDashboard() {
             ? "Broadcast Message"
             : activeComponent === "shift-allotment" // ✅ New case added
             ? "Shift Allotment"
-            : "New Admin"}
+            : activeComponent === "assignment" // ✅ New case added
+            ? "Assignment"
+            : "New"}
         </h1>
 
         {/* Conditional Rendering of Components */}
@@ -423,6 +427,7 @@ export default function AdminDashboard() {
         {activeComponent === "admin-list" && <AdminList />}
         {activeComponent === "broadcast-message" && <BroadcastMessage />}
         {activeComponent === "shift-allotment" && <Shiftallotment />} {/* ✅ Render Shift Allotment Component */}
+        {activeComponent === "assignment" && <ShiftAssignmentForm />} {/* ✅ Render Shift Allotment Component */}
       </div>
     </div>
   );

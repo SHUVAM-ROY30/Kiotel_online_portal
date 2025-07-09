@@ -460,11 +460,11 @@ function Dashboard() {
               {isProfileMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 animate-fadeIn">
                   <ul className="py-2 text-sm text-gray-700">
-                    {/* <li>
+                    <li>
                       <Link href="/components/updateProfile" legacyBehavior>
                         <a className="block px-4 py-2 hover:bg-gray-100 transition">Update Profile</a>
                       </Link>
-                    </li> */}
+                    </li>
                     <li>
                       <button
                         onClick={handleLogout}
@@ -521,7 +521,7 @@ function Dashboard() {
           </Link>
 
           {/* Admin Panel - Only visible if role is 1 */}
-          {userRole === 1 && (
+          {(userRole === 1 || userRole === 5 ) && (
             <Link
               href="/admin-dashboard"
               className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"

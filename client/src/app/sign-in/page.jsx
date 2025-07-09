@@ -599,9 +599,9 @@ const SignIn = () => {
             </button>
 
             <div className="flex justify-between py-4">
-              <a href="/forgotpassword" className="text-blue-500 hover:underline">
+              {/* <a href="/forgotpassword" className="text-blue-500 hover:underline">
                 Forgot Password?
-              </a>
+              </a> */}
             </div>
           </form>
         </div>

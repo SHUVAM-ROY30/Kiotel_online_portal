@@ -569,7 +569,7 @@ const UpdateProfile = () => {
 
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
+            <label className="block text-sm font-medium text-gray-700">Date of Joining</label>
             <DatePicker
               selected={formData.dob}
               onChange={(date) => setFormData({ ...formData, dob: date })}
@@ -579,7 +579,7 @@ const UpdateProfile = () => {
             />
           </div>
 
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700">Address</label>
             <input
               type="text"
@@ -591,12 +591,12 @@ const UpdateProfile = () => {
                 userRole === 2 || userRole === 3 || userRole === 4 ? "border-gray-300 bg-gray-100" : "border-gray-300"
               } rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
-          </div>
+          </div> */}
         </div>
 
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Account Number</label>
+            <label className="block text-sm font-medium text-gray-700">EId Number</label>
             <input
               type="text"
               name="account_no"

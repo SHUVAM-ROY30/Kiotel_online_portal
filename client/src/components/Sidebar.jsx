@@ -208,6 +208,7 @@ export default function Sidebar({ setActiveComponent }) {
   // Shift Management Section
   const shiftManagementItems = [
     { id: "shift-allotment", icon: faClock, label: "Shift Allotment" },
+    { id: "assignment", icon: faClock, label: "assignment" },
   ];
 
   // Broadcast Message Item
