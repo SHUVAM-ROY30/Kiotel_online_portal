@@ -470,6 +470,8 @@ const SignIn = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+
   const router = useRouter();
 
   // Validation function
@@ -572,7 +574,7 @@ const SignIn = () => {
                   <p className="text-red-500 text-sm mt-1">{errors.email}</p>
                 )}
               </div>
-              <div>
+              {/* <div>
                 <label className="block text-gray-700 font-medium">
                   Password
                 </label>
@@ -588,7 +590,34 @@ const SignIn = () => {
                 {errors.password && (
                   <p className="text-red-500 text-sm mt-1">{errors.password}</p>
                 )}
-              </div>
+              </div> */}
+              <div>
+  <label className="block text-gray-700 font-medium">
+    Password
+  </label>
+  <div className="relative">
+    <input
+      type={showPassword ? 'text' : 'password'}
+      name="password"
+      value={password}
+      onChange={handleChange}
+      className={`w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition duration-200 ${
+        errors.password ? 'border-red-500' : 'border-gray-300'
+      } pr-10`} // Add padding-right for the button
+    />
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm text-gray-600 focus:outline-none"
+    >
+      {showPassword ? 'Hide' : 'Show'}
+    </button>
+  </div>
+  {errors.password && (
+    <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+  )}
+</div>
+
             </div>
 
             <button
