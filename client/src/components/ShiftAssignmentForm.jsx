@@ -57,7 +57,7 @@ export default function ShiftAssignmentForm() {
     };
 
     try {
-      const res = await axios.post("/api/shifts/assign", payload);
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/shift/shifts/assign`, payload);
       setMessage({ type: "success", text: "Shift assigned successfully!" });
       setTimeout(() => setMessage({ type: "", text: "" }), 5000);
     } catch (err) {
