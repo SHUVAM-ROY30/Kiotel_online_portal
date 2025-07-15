@@ -3032,30 +3032,58 @@ def send_email_notification_task_assignment(ticket_id, assigned_user_email):
 
 
 
+# @app.route('/api/get_assigned_user_for_task/<int:task_id>', methods=['GET'])
+# def get_assigned_user_for_task(task_id):
+#     # Create database connection
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         with connection.cursor() as cursor:
+#             # Call the stored procedure to fetch the assigned user for the given ticket ID
+#             cursor.callproc('Proc_tbltasks_GetAssignedUser', [task_id])
+#             result = cursor.fetchone()  # Assuming the stored procedure returns one row
+            
+#             if result:
+#                 return jsonify(result), 200
+#             else:
+#                 return jsonify({"message": "No user assigned to this ticket"}), 404
+
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({'error': 'Failed to fetch assigned user'}), 500
+
+#     finally:
+#         connection.close()
+
 @app.route('/api/get_assigned_user_for_task/<int:task_id>', methods=['GET'])
 def get_assigned_user_for_task(task_id):
-    # Create database connection
     connection = create_connection()
     if connection is None:
         return jsonify({"error": "Failed to connect to the database"}), 500
 
     try:
         with connection.cursor() as cursor:
-            # Call the stored procedure to fetch the assigned user for the given ticket ID
+            # Call the stored procedure
             cursor.callproc('Proc_tbltasks_GetAssignedUser', [task_id])
-            result = cursor.fetchone()  # Assuming the stored procedure returns one row
-            
+
+            # Fetch ALL results
+            result = cursor.fetchall()  # <-- Changed from fetchone() to fetchall()
+
             if result:
                 return jsonify(result), 200
             else:
-                return jsonify({"message": "No user assigned to this ticket"}), 404
+                return jsonify([]), 200  # Return empty array if no users found
 
     except pymysql.MySQLError as e:
         print(f"The error '{e}' occurred")
-        return jsonify({'error': 'Failed to fetch assigned user'}), 500
+        return jsonify({'error': 'Failed to fetch assigned users'}), 500
 
     finally:
         connection.close()
+
+
 @app.route('/api/get_assigned_state_for_task/<int:task_id>', methods=['GET'])
 def get_assigned_state_for_task(task_id):
     # Create database connection
@@ -3080,6 +3108,8 @@ def get_assigned_state_for_task(task_id):
 
     finally:
         connection.close()
+
+
 @app.route('/api/get_assigned_priority_for_task/<int:task_id>', methods=['GET'])
 def get_assigned_priority_for_task(task_id):
     # Create database connection

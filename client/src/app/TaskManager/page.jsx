@@ -216,7 +216,7 @@ function Home() {
                       >
                         <Link href={`/TaskManager/task/${ticket.id}`} legacyBehavior>
                           <a className="text-blue-600 hover:underline font-semibold">
-                            {`Ticket #${ticket.id}: ${ticket.title}`}
+                            {`Task #${ticket.id}: ${ticket.title}`}
                           </a>
                         </Link>
                         <p className="text-gray-600">

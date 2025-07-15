@@ -398,11 +398,11 @@ function Home() {
             Helpdesk
           </h1>
           <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto mt-4 sm:mt-0">
-            <input
+            {/* <input
               type="text"
               placeholder="Search..."
               className="border border-gray-300 rounded-lg px-3 py-1 w-full sm:w-auto transition duration-200 ease-in-out focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-            />
+            /> */}
             <nav className="flex space-x-4 mt-2 sm:mt-0">
               {/* <a
                 href="../Helpdesk"
@@ -411,10 +411,10 @@ function Home() {
                 Overview
               </a> */}
               <a
-                href="../Helpdesk/newtickets"
-                className="text-gray-700 hover:text-blue-800 hover:underline underline-offset-4 transition duration-200"
+                href=""
+                className="text-red-700 hover:text-red-800 hover:underline underline-offset-4 transition duration-200"
               >
-                New Ticket
+                Please Dont Create any New Ticket, Use only Task Manager...!
               </a>
             </nav>
             <div className="flex space-x-4 items-center">
