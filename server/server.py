@@ -3331,6 +3331,38 @@ def proxy():
 
 
 
+@app.route('/api/assign_user_to_task', methods=['POST'])
+def assign_user_to_task():
+    data = request.json
+    task_id = data.get('task_id')
+    assigned_to = data.get('assigned_to')
+
+    if not task_id or not assigned_to:
+        return jsonify({'success': False, 'error': 'Missing task_id or assigned_to'}), 400
+
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO tblTaskAssignments (task_id, AssignedTo) VALUES (%s, %s)",
+                (task_id, assigned_to)
+            )
+            connection.commit()
+
+        return jsonify({'success': True}), 200
+
+    except pymysql.MySQLError as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+    finally:
+        connection.close()
+
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
 
