@@ -911,7 +911,7 @@ const OpenedTickets = () => {
           >
             <option value="">All</option>
             {taskStates.map(state => (
-              <option key={state.taskstatus_id} value={state.taskstatus_id}>{state.taskstatus}</option>
+              <option key={state.Id} value={state.Id}>{state.status_name}</option>
             ))}
           </select>
         </div>
@@ -925,7 +925,7 @@ const OpenedTickets = () => {
           >
             <option value="">All</option>
             {priorities.map(priority => (
-              <option key={priority.priority_id} value={priority.priority_id}>{priority.priority}</option>
+              <option key={priority.Id} value={priority.Id}>{priority.priority_name}</option>
             ))}
           </select>
         </div>
@@ -937,7 +937,7 @@ const OpenedTickets = () => {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task Title</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assiged Users</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assign Users</th>
+              {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assign Users</th> */}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -954,27 +954,7 @@ const OpenedTickets = () => {
                 <td key={ticket.id} className="hover:bg-gray-100 transition duration-200">
                 {ticket.assigned_to}
                 </td>
-                {/* Assign Users */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <Select
-                    isMulti
-                    options={users}
-                    value={assignedUsers[ticket.id] || []}
-                    onChange={(selectedOptions) => setAssignedUsers(prevState => ({
-                      ...prevState,
-                      [ticket.id]: selectedOptions
-                    }))}
-                    className="text-gray-700"
-                    placeholder="Select Users"
-                    required
-                  />
-                  <button
-                    onClick={() => handleAssignTicket(ticket.id, assignedUsers[ticket.id] || [])}
-                    className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mt-2"
-                  >
-                    Assign
-                  </button>
-                </td>
+                
 
                 {/* Task State */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

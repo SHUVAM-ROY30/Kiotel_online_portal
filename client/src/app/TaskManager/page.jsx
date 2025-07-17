@@ -178,7 +178,7 @@ function Home() {
       </header>
 
       {/* Buttons for Opened and Closed Tickets */}
-      {userRole === "user@example.com" || userRole === "my-kiotel@kiotel.co" ? (
+      {userRole === "shuvam.r@kiotel.co" || userRole === "my-kiotel@kiotel.co"  ? (
         <div className="flex justify-center mt-4 space-x-4">
           <button
             onClick={() => handleRedirect("/TaskManager/openTasks")}

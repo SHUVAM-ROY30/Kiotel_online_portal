@@ -483,14 +483,14 @@ function Dashboard() {
         {/* Main Content */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {/* Helpdesk */}
-          <Link
+          {/* <Link
             href="/Helpdesk"
             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-blue-300"
           >
             <h2 className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
               Helpdesk
             </h2>
-          </Link>
+          </Link> */}
 
           {/* My Kiosk */}
           {/* <Link
