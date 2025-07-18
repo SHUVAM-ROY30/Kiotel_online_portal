@@ -1,291 +1,6 @@
 
 
 
-// "use client";
-
-// import { useRouter } from "next/navigation";
-// import { useState, useEffect } from "react";
-// import Link from "next/link";
-// import axios from "axios";
-// import { Toaster, toast } from "sonner"; // Import from Sonner
-// import ProtectedRoute from "../../../context/ProtectedRoute"; // Your authentication wrapper
-
-// const OpenedTickets = () => {
-//   const router = useRouter();
-//   const [openedTickets, setOpenedTickets] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [users, setUsers] = useState([]);
-//   const [assignedUsers, setAssignedUsers] = useState({});
-//   const [taskStates, setTaskStates] = useState([]); // For task state options
-//   const [priorities, setPriorities] = useState([]); // For priority options
-//   const [ticketState, setTicketState] = useState({}); // Store state details
-//   const [ticketPriority, setTicketPriority] = useState({}); // Store priority details
-
-//   // Fetch opened tickets
-//   useEffect(() => {
-//     const fetchOpenedTickets = async () => {
-//       try {
-//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/opened_task`, {
-//           withCredentials: true,
-//         });
-//         setOpenedTickets(response.data);
-
-//         const assignedUserPromises = response.data.map(ticket =>
-//           axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticket.id}`)
-//         );
-
-//         const assignedStatePromises = response.data.map(ticket =>
-//           axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_state_for_task/${ticket.id}`)
-//         );
-
-//         const assignedPriorityPromises = response.data.map(ticket =>
-//           axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_priority_for_task/${ticket.id}`)
-//         );
-
-//         const [assignedUserResponses, assignedStateResponses, assignedPriorityResponses] = await Promise.all([
-//           Promise.all(assignedUserPromises),
-//           Promise.all(assignedStatePromises),
-//           Promise.all(assignedPriorityPromises),
-//         ]);
-
-//         const initialAssignedUsers = assignedUserResponses.reduce((acc, res, index) => {
-//           const ticketId = response.data[index].id;
-//           acc[ticketId] = res.data;
-//           return acc;
-//         }, {});
-
-//         const initialAssignedStates = assignedStateResponses.reduce((acc, res, index) => {
-//           const ticketId = response.data[index].id;
-//           acc[ticketId] = res.data;
-//           return acc;
-//         }, {});
-
-//         const initialAssignedPriorities = assignedPriorityResponses.reduce((acc, res, index) => {
-//           const ticketId = response.data[index].id;
-//           acc[ticketId] = res.data;
-//           return acc;
-//         }, {});
-
-//         setAssignedUsers(initialAssignedUsers);
-//         setTicketState(initialAssignedStates);  // Set the initial states
-//         setTicketPriority(initialAssignedPriorities);  // Set the initial priorities
-//       } catch (error) {
-//         console.error("Error fetching opened tickets:", error);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchOpenedTickets();
-//   }, []);
-
-//   // Fetch users for the dropdown
-//   useEffect(() => {
-//     const fetchUsers = async () => {
-//       try {
-//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`);
-//         const filteredUsers = response.data.filter(user => user.role !== "Client");
-//         setUsers(filteredUsers);
-//       } catch (error) {
-//         console.error("Error fetching users:", error);
-//       }
-//     };
-
-//     fetchUsers();
-//   }, []);
-
-//   // Fetch task states for the dropdown
-//   useEffect(() => {
-//     const fetchTaskStates = async () => {
-//       try {
-//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/taskstate`);
-//         setTaskStates(response.data);
-//       } catch (error) {
-//         console.error("Error fetching task states:", error);
-//       }
-//     };
-
-//     fetchTaskStates();
-//   }, []);
-
-//   // Fetch priorities for the dropdown
-//   useEffect(() => {
-//     const fetchPriorities = async () => {
-//       try {
-//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/priority`);
-//         setPriorities(response.data);
-//       } catch (error) {
-//         console.error("Error fetching priorities:", error);
-//       }
-//     };
-
-//     fetchPriorities();
-//   }, []);
-
-//   // Assign user to the ticket
-//   const handleAssignTicket = async (task_id, userId) => {
-//     try {
-//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/assign_task`, {
-//         ticket_id: task_id,
-//         user_id: userId,
-//       });
-//       setAssignedUsers(prevState => ({ ...prevState, [task_id]: { user_id: userId } }));
-//       toast.success("Tasks assigned successfully!");
-//     } catch (error) {
-//       toast.error("Error assigning ticket.");
-//       console.error("Error assigning ticket:", error);
-//     }
-//   };
-
-//   // Update ticket state
-//   const handleStateChange = async (task_id, taskstatus_id) => {
-//     try {
-//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_state`, {
-//         task_id: task_id,
-//         taskstatus_id: taskstatus_id,
-//       });
-//       setTicketState(prevState => ({ ...prevState, [task_id]: { taskstatus_id: taskstatus_id } }));
-//       toast.success("Tasks state updated!");
-//     } catch (error) {
-//       toast.error("Error updating ticket state.");
-//       console.error("Error updating ticket state:", error);
-//     }
-//   };
-
-//   // Update ticket priority
-//   const handlePriorityChange = async (task_id, priorityId) => {
-//     try {
-//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_priority`, {
-//         task_id: task_id,
-//         priority_id: priorityId,
-//       });
-//       setTicketPriority(prevState => ({ ...prevState, [task_id]: { priority_id: priorityId } }));
-//       toast.success("Tasks priority updated!");
-//     } catch (error) {
-//       toast.error("Error updating ticket priority.");
-//       console.error("Error updating ticket priority:", error);
-//     }
-//   };
-
-//   if (loading) return <p className="text-center text-gray-700">Loading...</p>;
-
-//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300 p-6">
-//       <Toaster position="top-center" />
-
-//       <header className="bg-white shadow-lg rounded-lg mb-6">
-//         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-//           <h1 className="text-3xl font-extrabold text-gray-900 tracking-wide">All Tasks</h1>
-//           <div className="flex-grow text-center">
-//             <img
-//               src="/Kiotel logo.jpg"
-//               alt="Dashboard Logo"
-//               className="h-11 w-auto mx-auto cursor-pointer hover:opacity-80 transition duration-200"
-//               onClick={() => router.push('/TaskManager')}
-//             />
-//           </div>
-//         </div>
-//       </header>
-
-//       {/* <div className="max-w-7xl mx-auto bg-white shadow-xl rounded-lg p-6"> */}
-//         <div className="overflow-x-auto">
-//           <table className="min-w-full divide-y divide-gray-300">
-//             <thead className="bg-gray-50">
-//               <tr>
-//                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task ID</th>
-//                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-//                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-//                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-//                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-//                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assign Task</th>
-//                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
-//                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-//               </tr>
-//             </thead>
-//             <tbody className="bg-white divide-y divide-gray-200">
-//               {openedTickets.map(ticket => (
-//                 <tr key={ticket.id} className="hover:bg-gray-100 transition duration-200">
-//                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ticket.id}</td>
-//                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ticket.title}</td>
-//                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ticket.created_by}</td>
-//                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//                   {new Date(ticket.created_at).toLocaleString("en-US", {
-//                         timeZone: "America/Chicago",
-//                         weekday: "short",
-//                         year: "numeric",
-//                         month: "short",
-//                         day: "numeric",
-//                         hour: "2-digit",
-//                         minute: "2-digit",
-//                       })} CST
-//                   </td>
-//                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//                     <Link href={`/TaskManager/task/${ticket.id}`}>
-//                       <button className="text-indigo-600 hover:text-indigo-900">View</button>
-//                     </Link>
-//                   </td>
-//                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//                     <select
-//                       className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
-//                       value={assignedUsers[ticket.id]?.user_id || ''}  // Ensure current state is based on user_id
-//                       onChange={e => handleAssignTicket(ticket.id, parseInt(e.target.value))}  // Ensure it passes the ID as an integer
-//                     >
-//                       <option value="">Select User</option>
-//                       {users.map(user => (
-//                         <option key={user.id} value={user.id}>
-//                           {`${user.fname} ${user.lname}`}
-//                         </option>
-//                       ))}
-//                     </select>
-//                   </td>
-//                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//                     <select
-//                       className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
-//                       value={ticketState[ticket.id]?.taskstatus_id || ''}  // Ensure current state is based on taskstatus_id
-//                       onChange={e => handleStateChange(ticket.id, parseInt(e.target.value))}  // Ensure it passes the ID as an integer
-//                     >
-//                       <option value="">Select state</option>
-//                       {taskStates.map(state => (
-//                         <option key={state.Id} value={state.Id}>  {/* Use state.taskstatus_id as the value */}
-//                           {state.status_name}  {/* Display the name */}
-//                         </option>
-//                       ))}
-//                     </select>
-//                   </td>
-//                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//                     <select
-//                       className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
-//                       value={ticketPriority[ticket.id]?.priority_id || ''}
-//                       onChange={e => handlePriorityChange(ticket.id, parseInt(e.target.value))}
-//                     >
-//                       <option value="">Select priority</option>
-//                       {priorities.map(priority => (
-//                         <option key={priority.Id} value={priority.Id}>
-//                           {priority.priority_name}
-//                         </option>
-//                       ))}
-//                     </select>
-//                   </td>
-//                 </tr>
-//               ))}
-//             </tbody>
-//           </table>
-//         </div>
-//       </div>
-//     // </div>
-//   );
-// };
-
-// // Wrap with ProtectedRoute for authentication
-// export default function OpenedTicketsWrapper() {
-//   return (
-//     <ProtectedRoute>
-//       <OpenedTickets />
-//     </ProtectedRoute>
-//   );
-// }
-
-
 
 // "use client";
 
@@ -293,44 +8,23 @@
 // import { useState, useEffect } from "react";
 // import Link from "next/link";
 // import axios from "axios";
-// import { Toaster, toast } from "sonner"; // Import from Sonner
-// import ProtectedRoute from "../../../context/ProtectedRoute"; // Your authentication wrapper
+// import { Toaster, toast } from "sonner";
 // import Select from "react-select";
 
-// const OpenedTickets = () => {
+// export default function OpenedTickets() {
 //   const router = useRouter();
 //   const [openedTickets, setOpenedTickets] = useState([]);
 //   const [loading, setLoading] = useState(true);
 //   const [users, setUsers] = useState([]);
-//   const [assignedUsers, setAssignedUsers] = useState({});
-//   const [taskStates, setTaskStates] = useState([]); // For task state options
-//   const [priorities, setPriorities] = useState([]); // For priority options
-//   const [ticketState, setTicketState] = useState({}); // Store state details
+//   const [allAssignedUsers, setAllAssignedUsers] = useState({});
+//   const [taskStates, setTaskStates] = useState([]);     // For task state options
+//   const [priorities, setPriorities] = useState([]);     // For priority options
+//   const [ticketState, setTicketState] = useState({});   // Store state details
 //   const [ticketPriority, setTicketPriority] = useState({}); // Store priority details
-
-//   // New state for filters
 //   const [selectedState, setSelectedState] = useState(""); // To filter by state
 //   const [selectedPriority, setSelectedPriority] = useState(""); // To filter by priority
-//   const [userRole, setUserRole] = useState(null);
+//   const [selectedUser, setSelectedUser] = useState(null); // New filter by user
 
-//   // Fetch user role on component mount
-//   useEffect(() => {
-//     const fetchUserRole = async () => {
-//       try {
-//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`, { withCredentials: true });
-//         const role = response.data.role;
-//         console.log("Fetched Role ID:", role); // Debugging statement
-//         setUserRole(role);
-//       } catch (error) {
-//         console.error("Failed to fetch user role:", error);
-//         setUserRole(null);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchUserRole();
-//   }, []);
 //   // Fetch opened tickets
 //   useEffect(() => {
 //     const fetchOpenedTickets = async () => {
@@ -338,47 +32,52 @@
 //         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/opened_task`, {
 //           withCredentials: true,
 //         });
-//         setOpenedTickets(response.data);
+//         const tickets = response.data;
+//         setOpenedTickets(tickets);
 
-//         const assignedUserPromises = response.data.map(ticket =>
-//           axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticket.id}`)
-//         );
-
-//         const assignedStatePromises = response.data.map(ticket =>
-//           axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_state_for_task/${ticket.id}`)
-//         );
-
-//         const assignedPriorityPromises = response.data.map(ticket =>
-//           axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_priority_for_task/${ticket.id}`)
-//         );
-
+//         // Fetch assigned users, states, and priorities for each ticket
 //         const [assignedUserResponses, assignedStateResponses, assignedPriorityResponses] = await Promise.all([
-//           Promise.all(assignedUserPromises),
-//           Promise.all(assignedStatePromises),
-//           Promise.all(assignedPriorityPromises),
+//           Promise.all(tickets.map(ticket =>
+//             axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticket.id}`, {
+//               withCredentials: true,
+//             })
+//           )),
+//           Promise.all(tickets.map(ticket =>
+//             axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_state_for_task/${ticket.id}`, {
+//               withCredentials: true,
+//             })
+//           )),
+//           Promise.all(tickets.map(ticket =>
+//             axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_priority_for_task/${ticket.id}`, {
+//               withCredentials: true,
+//             })
+//           )),
 //         ]);
 
-//         const initialAssignedUsers = assignedUserResponses.reduce((acc, res, index) => {
-//           const ticketId = response.data[index].id;
-//           acc[ticketId] = res.data;
-//           return acc;
-//         }, {});
+//         const allAssignedUsersMap = {};
+//         const allTicketStates = {};
+//         const allTicketPriorities = {};
 
-//         const initialAssignedStates = assignedStateResponses.reduce((acc, res, index) => {
-//           const ticketId = response.data[index].id;
-//           acc[ticketId] = res.data;
-//           return acc;
-//         }, {});
+//         tickets.forEach((ticket, index) => {
+//           const ticketId = ticket.id;
 
-//         const initialAssignedPriorities = assignedPriorityResponses.reduce((acc, res, index) => {
-//           const ticketId = response.data[index].id;
-//           acc[ticketId] = res.data;
-//           return acc;
-//         }, {});
+//           // Assigned users
+//           const assignedUsers = assignedUserResponses[index].data;
+//           allAssignedUsersMap[ticketId] = Array.isArray(assignedUsers) ? assignedUsers : [assignedUsers];
 
-//         setAssignedUsers(initialAssignedUsers);
-//         setTicketState(initialAssignedStates);  // Set the initial states
-//         setTicketPriority(initialAssignedPriorities);  // Set the initial priorities
+//           // Task state
+//           const taskStateData = assignedStateResponses[index].data;
+//           allTicketStates[ticketId] = taskStateData;
+
+//           // Task priority
+//           const taskPriorityData = assignedPriorityResponses[index].data;
+//           allTicketPriorities[ticketId] = taskPriorityData;
+//         });
+
+//         setAllAssignedUsers(allAssignedUsersMap);
+//         setTicketState(allTicketStates);
+//         setTicketPriority(allTicketPriorities);
+
 //       } catch (error) {
 //         console.error("Error fetching opened tickets:", error);
 //       } finally {
@@ -395,16 +94,18 @@
 //       try {
 //         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`);
 //         const filteredUsers = response.data.filter(user => user.role !== "Client");
-//         setUsers(filteredUsers);
+//         setUsers(filteredUsers.map(user => ({
+//           value: user.id,
+//           label: `${user.fname} ${user.lname}`,
+//         })));
 //       } catch (error) {
 //         console.error("Error fetching users:", error);
 //       }
 //     };
-
 //     fetchUsers();
 //   }, []);
 
-//   // Fetch task states for the dropdown
+//   // Fetch task states
 //   useEffect(() => {
 //     const fetchTaskStates = async () => {
 //       try {
@@ -414,11 +115,10 @@
 //         console.error("Error fetching task states:", error);
 //       }
 //     };
-
 //     fetchTaskStates();
 //   }, []);
 
-//   // Fetch priorities for the dropdown
+//   // Fetch priorities
 //   useEffect(() => {
 //     const fetchPriorities = async () => {
 //       try {
@@ -428,109 +128,100 @@
 //         console.error("Error fetching priorities:", error);
 //       }
 //     };
-
 //     fetchPriorities();
 //   }, []);
 
+//   // Filter tickets based on selected state, priority, and assigned user
+//   const filteredTickets = openedTickets.filter(ticket => {
+//     const stateMatch = !selectedState ||
+//       (ticketState[ticket.id]?.status_name &&
+//         ticketState[ticket.id].status_name === taskStates.find(s => s.Id === parseInt(selectedState))?.status_name);
+
+//     const priorityMatch = !selectedPriority ||
+//       (ticketPriority[ticket.id]?.priority_name &&
+//         ticketPriority[ticket.id].priority_name === priorities.find(p => p.Id === parseInt(selectedPriority))?.priority_name);
+
+//     const userMatch = !selectedUser || (allAssignedUsers[ticket.id] || []).some(u => u.id === selectedUser.value);
+
+//     return stateMatch && priorityMatch && userMatch;
+//   });
+
+//   // Delete task
 //   const handleDeleteTicket = async (ticketId) => {
+//     if (!window.confirm("Are you sure you want to delete this task?")) return;
+
 //     try {
 //       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/delete-task`, {
 //         ticket_id: ticketId,
 //       });
-//       setOpenedTickets(prevTickets => prevTickets.filter(ticket => ticket.id !== ticketId));
-
-//       // Trigger notification with Sonner
+//       setOpenedTickets(prev => prev.filter(t => t.id !== ticketId));
 //       toast.success("Task deleted successfully!");
 //     } catch (error) {
-//       toast.error("Error deleting ticket.");
+//       toast.error("Error deleting task.");
 //       console.error("Error deleting ticket:", error);
 //     }
 //   };
 
-//   // Assign user to the ticket
-//   const handleAssignTicket = async (task_id, userId) => {
-//     try {
-//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/assign_task`, {
-//         ticket_id: task_id,
-//         user_id: userId,
-//       });
-//       setAssignedUsers(prevState => ({ ...prevState, [task_id]: { user_id: userId } }));
-//       toast.success("Tasks assigned successfully!");
-//     } catch (error) {
-//       toast.error("Error assigning ticket.");
-//       console.error("Error assigning ticket:", error);
+//   // Badge styling for state and priority
+//   const getStateBadge = (statusName) => {
+//     if (!statusName) return "bg-gray-100 text-gray-800";
+//     switch (statusName) {
+//       case "Open": return "bg-green-100 text-green-800";
+//       case "In Progress": return "bg-yellow-100 text-yellow-800";
+//       case "Resolved": return "bg-blue-100 text-blue-800";
+//       case "Closed": return "bg-red-100 text-red-800";
+//       default: return "bg-gray-100 text-gray-800";
 //     }
 //   };
 
-//   // Update ticket state
-//   const handleStateChange = async (task_id, taskstatus_id) => {
-//     try {
-//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_state`, {
-//         task_id: task_id,
-//         taskstatus_id: taskstatus_id,
-//       });
-//       setTicketState(prevState => ({ ...prevState, [task_id]: { taskstatus_id: taskstatus_id } }));
-//       toast.success("Tasks state updated!");
-//     } catch (error) {
-//       toast.error("Error updating ticket state.");
-//       console.error("Error updating ticket state:", error);
+//   const getPriorityBadge = (priorityName) => {
+//     if (!priorityName) return "bg-gray-100 text-gray-800";
+//     switch (priorityName) {
+//       case "Low": return "bg-green-100 text-green-800";
+//       case "Medium": return "bg-yellow-100 text-yellow-800";
+//       case "High": return "bg-orange-100 text-orange-800";
+//       case "Urgent": return "bg-red-100 text-red-800";
+//       default: return "bg-gray-100 text-gray-800";
 //     }
 //   };
 
-//   // Update ticket priority
-//   const handlePriorityChange = async (task_id, priorityId) => {
-//     try {
-//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_priority`, {
-//         task_id: task_id,
-//         priority_id: priorityId,
-//       });
-//       setTicketPriority(prevState => ({ ...prevState, [task_id]: { priority_id: priorityId } }));
-//       toast.success("Tasks priority updated!");
-//     } catch (error) {
-//       toast.error("Error updating ticket priority.");
-//       console.error("Error updating ticket priority:", error);
-//     }
-//   };
-
-//   // Filter opened tickets based on selected state and priority
-//   const filteredTickets = openedTickets.filter(ticket => {
-//     const matchesState = selectedState === "" || ticketState[ticket.id]?.taskstatus_id === parseInt(selectedState);
-//     const matchesPriority = selectedPriority === "" || ticketPriority[ticket.id]?.priority_id === parseInt(selectedPriority);
-//     return matchesState && matchesPriority;
-//   });
-
-//   if (loading) return <p className="text-center text-gray-700">Loading...</p>;
+//   if (loading) {
+//     return (
+//       <div className="flex justify-center items-center min-h-screen bg-gray-50">
+//         <p className="text-gray-700">Loading...</p>
+//       </div>
+//     );
+//   }
 
 //   return (
-//     <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300 p-6">
+//     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 p-6">
 //       <Toaster position="top-center" />
 
+//       {/* Header */}
 //       <header className="bg-white shadow-lg rounded-lg mb-6">
 //         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
 //           <h1 className="text-3xl font-extrabold text-gray-900 tracking-wide">All Tasks</h1>
-//           <div className="flex-grow text-center">
-//             <img
-//               src="/Kiotel logo.jpg"
-//               alt="Dashboard Logo"
-//               className="h-11 w-auto mx-auto cursor-pointer hover:opacity-80 transition duration-200"
-//               onClick={() => router.push('/TaskManager')}
-//             />
-//           </div>
+//           <img
+//             src="/Kiotel logo.jpg"
+//             alt="Dashboard Logo"
+//             className="h-11 w-auto cursor-pointer hover:opacity-80 transition duration-200"
+//             onClick={() => router.push('/TaskManager')}
+//           />
 //         </div>
 //       </header>
 
-//       {/* Filter dropdowns */}
-//       <div className="flex justify-between mb-4">
-//         {/* State Filter */}
-//         <div className="flex items-center space-x-2">
-//           <label htmlFor="state-filter" className="text-gray-700 font-semibold">Filter by State:</label>
+//       {/* Filters */}
+//       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+//         {/* Filter by State */}
+//         <div>
+//           <label htmlFor="state-filter" className="block text-gray-700 font-semibold mb-1">Filter by State:</label>
 //           <select
 //             id="state-filter"
-//             className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
 //             value={selectedState}
 //             onChange={(e) => setSelectedState(e.target.value)}
+//             className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 //           >
-//             <option value="">All States</option>
+//             <option value="">All</option>
 //             {taskStates.map(state => (
 //               <option key={state.Id} value={state.Id}>
 //                 {state.status_name}
@@ -539,16 +230,16 @@
 //           </select>
 //         </div>
 
-//         {/* Priority Filter */}
-//         <div className="flex items-center space-x-2">
-//           <label htmlFor="priority-filter" className="text-gray-700 font-semibold">Filter by Priority:</label>
+//         {/* Filter by Priority */}
+//         <div>
+//           <label htmlFor="priority-filter" className="block text-gray-700 font-semibold mb-1">Filter by Priority:</label>
 //           <select
 //             id="priority-filter"
-//             className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
 //             value={selectedPriority}
 //             onChange={(e) => setSelectedPriority(e.target.value)}
+//             className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
 //           >
-//             <option value="">All Priorities</option>
+//             <option value="">All</option>
 //             {priorities.map(priority => (
 //               <option key={priority.Id} value={priority.Id}>
 //                 {priority.priority_name}
@@ -556,161 +247,158 @@
 //             ))}
 //           </select>
 //         </div>
+
+//         {/* Filter by Assigned User */}
+//         <div>
+//           <label className="block text-gray-700 font-semibold mb-1">Filter by Assigned User:</label>
+//           <Select
+//             value={selectedUser}
+//             onChange={setSelectedUser}
+//             options={users}
+//             isClearable
+//             placeholder="Select user"
+//             className="text-sm"
+//           />
+//         </div>
+
+//         {/* Clear Filters */}
+//         <div className="flex items-end">
+//           <button
+//             onClick={() => {
+//               setSelectedState("");
+//               setSelectedPriority("");
+//               setSelectedUser(null);
+//             }}
+//             className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md transition"
+//           >
+//             Clear Filters
+//           </button>
+//         </div>
 //       </div>
 
-//       <div className="overflow-x-auto">
+//       {/* Table */}
+//       <div className="overflow-x-auto bg-white shadow-md rounded-lg">
 //         <table className="min-w-full divide-y divide-gray-300">
 //           <thead className="bg-gray-50">
 //             <tr>
-//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task ID</th>
-//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Users</th>
-//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assign Task</th>
-//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
-//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-//               {userRole === 1 && (
-//                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delete Ticket</th>
-//                 )}
+//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+//                 Task Title
+//               </th>
+//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+//                 Assigned Users
+//               </th>
+//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+//                 State
+//               </th>
+//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+//                 Priority
+//               </th>
+//               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+//                 Actions
+//               </th>
 //             </tr>
 //           </thead>
 //           <tbody className="bg-white divide-y divide-gray-200">
-//             {filteredTickets.map(ticket => (
-//               <tr key={ticket.id} className="hover:bg-gray-100 transition duration-200">
-//                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ticket.id}</td>
-//                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ticket.title}</td>
-//                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ticket.created_by}</td>
-//                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//                   {new Date(ticket.created_at).toLocaleString("en-US", {
-//                     timeZone: "America/Chicago",
-//                     weekday: "short",
-//                     year: "numeric",
-//                     month: "short",
-//                     day: "numeric",
-//                     hour: "2-digit",
-//                     minute: "2-digit",
-//                   })} CST
+//             {filteredTickets.length === 0 ? (
+//               <tr>
+//                 <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+//                   No tasks found matching your filters.
 //                 </td>
-//                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//                   <Link href={`/TaskManager/task/${ticket.id}`}>
-//                     <button className="text-indigo-600 hover:text-indigo-900">View</button>
-//                   </Link>
-//                 </td>
-//                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//                   {/* <select
-//                     className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
-//                     value={assignedUsers[ticket.id]?.user_id || ''}  // Ensure current state is based on user_id
-//                     onChange={e => handleAssignTicket(ticket.id, parseInt(e.target.value))}  // Ensure it passes the ID as an integer
-//                   >
-//                     <option value="">Select User</option>
-//                     {users.map(user => (
-//                       <option key={user.id} value={user.id}>
-//                         {`${user.fname} ${user.lname}`}
-//                       </option>
-//                     ))}
-//                   </select> */}
-//                   <Select
-//   isMulti
-//   options={users} // This should be an array of { value, label } objects
-//   value={assignedUsers}
-//   onChange={handleAssignedUsersChange}
-//   className="text-gray-700"
-//   placeholder="Select Users"
-//   required
-// />
-//                 </td>
-//                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//                   <select
-//                     className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
-//                     value={ticketState[ticket.id]?.taskstatus_id || ''}  // Ensure current state is based on taskstatus_id
-//                     onChange={e => handleStateChange(ticket.id, parseInt(e.target.value))}  // Ensure it passes the ID as an integer
-//                   >
-//                     <option value="">Select state</option>
-//                     {taskStates.map(state => (
-//                       <option key={state.Id} value={state.Id}>
-//                         {state.status_name}
-//                       </option>
-//                     ))}
-//                   </select>
-//                 </td>
-//                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//                   <select
-//                     className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:border-gray-500 hover:border-gray-400 transition"
-//                     value={ticketPriority[ticket.id]?.priority_id || ''}
-//                     onChange={e => handlePriorityChange(ticket.id, parseInt(e.target.value))}
-//                   >
-//                     <option value="">Select priority</option>
-//                     {priorities.map(priority => (
-//                       <option key={priority.Id} value={priority.Id}>
-//                         {priority.priority_name}
-//                       </option>
-//                     ))}
-//                   </select>
-//                 </td>
-//                 {userRole === 1 && (
-//                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//                       <button
-//                         className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
-//                         onClick={() => handleDeleteTicket(ticket.id)}
-//                       >
-//                         Delete
-//                       </button>
-//                     </td>
-//                   )}
 //               </tr>
-//             ))}
+//             ) : (
+//               filteredTickets.map(ticket => (
+//                 <tr key={ticket.id} className="hover:bg-gray-50 transition duration-150">
+//                   {/* Task Title */}
+//                   <td className="px-6 py-4 max-w-xs truncate text-sm text-gray-700">
+//                     <Link href={`/TaskManager/task/${ticket.id}`} className="text-blue-600 hover:underline">
+//                       {ticket.title}
+//                     </Link>
+//                   </td>
+
+//                   {/* Assigned Users */}
+//                   <td className="px-6 py-4 text-sm text-gray-700">
+//                     <div className="flex flex-wrap gap-2">
+//                       {allAssignedUsers[ticket.id]?.length > 0 ? (
+//                         allAssignedUsers[ticket.id].map((user, idx) => (
+//                           <span
+//                             key={idx}
+//                             className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+//                           >
+//                             {user.fname} {user.lname || ""}
+//                           </span>
+//                         ))
+//                       ) : (
+//                         <span className="text-gray-400 text-xs italic">No users assigned</span>
+//                       )}
+//                     </div>
+//                   </td>
+
+//                   {/* Task State (read-only badge) */}
+//                   <td className="px-6 py-4 text-sm text-gray-700">
+//                     <span
+//                       className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+//                         getStateBadge(ticketState[ticket.id]?.status_name)
+//                       }`}
+//                     >
+//                       {ticketState[ticket.id]?.status_name || "Unknown"}
+//                     </span>
+//                   </td>
+
+//                   {/* Task Priority (read-only badge) */}
+//                   <td className="px-6 py-4 text-sm text-gray-700">
+//                     <span
+//                       className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+//                         getPriorityBadge(ticketPriority[ticket.id]?.priority_name)
+//                       }`}
+//                     >
+//                       {ticketPriority[ticket.id]?.priority_name || "Not Set"}
+//                     </span>
+//                   </td>
+
+//                   {/* Actions */}
+//                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+//                     <button
+//                       onClick={() => handleDeleteTicket(ticket.id)}
+//                       className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600 transition"
+//                     >
+//                       Delete
+//                     </button>
+//                   </td>
+//                 </tr>
+//               ))
+//             )}
 //           </tbody>
 //         </table>
 //       </div>
 //     </div>
 //   );
-// };
+// }
+
+
+
+
 "use client";
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { Toaster, toast } from "sonner"; // Import from Sonner
-import ProtectedRoute from "../../../context/ProtectedRoute"; // Your authentication wrapper
+import { Toaster, toast } from "sonner";
 import Select from "react-select";
 
-const OpenedTickets = () => {
+export default function OpenedTickets() {
   const router = useRouter();
   const [openedTickets, setOpenedTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
-  const [assignedUsers, setAssignedUsers] = useState({});
+  const [allAssignedUsers, setAllAssignedUsers] = useState({}); // Store assigned users by ticket
   const [taskStates, setTaskStates] = useState([]); // For task state options
   const [priorities, setPriorities] = useState([]); // For priority options
   const [ticketState, setTicketState] = useState({}); // Store state details
   const [ticketPriority, setTicketPriority] = useState({}); // Store priority details
-
-  // New state for filters
-  const [selectedState, setSelectedState] = useState(""); // To filter by state
-  const [selectedPriority, setSelectedPriority] = useState(""); // To filter by priority
-  const [userRole, setUserRole] = useState(null);
-
-  // Fetch user role on component mount
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`, { withCredentials: true });
-        const role = response.data.role;
-        console.log("Fetched Role ID:", role); // Debugging statement
-        setUserRole(role);
-      } catch (error) {
-        console.error("Failed to fetch user role:", error);
-        setUserRole(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserRole();
-  }, []);
+  const [selectedState, setSelectedState] = useState(""); // Filter by state
+  const [selectedPriority, setSelectedPriority] = useState(""); // Filter by priority
+  const [assignedUserSearch, setAssignedUserSearch] = useState(""); // New filter: search by user name
 
   // Fetch opened tickets
   useEffect(() => {
@@ -719,47 +407,53 @@ const OpenedTickets = () => {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/opened_task`, {
           withCredentials: true,
         });
-        setOpenedTickets(response.data);
+        const tickets = response.data;
+        setOpenedTickets(tickets);
 
-        const assignedUserPromises = response.data.map(ticket =>
-          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticket.id}`)
-        );
-
-        const assignedStatePromises = response.data.map(ticket =>
-          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_state_for_task/${ticket.id}`)
-        );
-
-        const assignedPriorityPromises = response.data.map(ticket =>
-          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_priority_for_task/${ticket.id}`)
-        );
-
+        // Fetch assigned users, state, and priority for each ticket
         const [assignedUserResponses, assignedStateResponses, assignedPriorityResponses] = await Promise.all([
-          Promise.all(assignedUserPromises),
-          Promise.all(assignedStatePromises),
-          Promise.all(assignedPriorityPromises),
+          Promise.all(tickets.map(ticket =>
+            axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticket.id}`, {
+              withCredentials: true,
+            })
+          )),
+          Promise.all(tickets.map(ticket =>
+            axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_state_for_task/${ticket.id}`, {
+              withCredentials: true,
+            })
+          )),
+          Promise.all(tickets.map(ticket =>
+            axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_priority_for_task/${ticket.id}`, {
+              withCredentials: true,
+            })
+          )),
         ]);
 
-        const initialAssignedUsers = assignedUserResponses.reduce((acc, res, index) => {
-          const ticketId = response.data[index].id;
-          acc[ticketId] = res.data.map(user => ({ value: user.id, label: `${user.fname} ${user.lname}` }));
-          return acc;
-        }, {});
+        const allAssignedUsersMap = {};
+        const allTicketStates = {};
+        const allTicketPriorities = {};
 
-        const initialAssignedStates = assignedStateResponses.reduce((acc, res, index) => {
-          const ticketId = response.data[index].id;
-          acc[ticketId] = res.data;
-          return acc;
-        }, {});
+        tickets.forEach((ticket, index) => {
+          const ticketId = ticket.id;
 
-        const initialAssignedPriorities = assignedPriorityResponses.reduce((acc, res, index) => {
-          const ticketId = response.data[index].id;
-          acc[ticketId] = res.data;
-          return acc;
-        }, {});
+          // Assigned Users
+          const assignedUsers = Array.isArray(assignedUserResponses[index].data)
+            ? assignedUserResponses[index].data
+            : [assignedUserResponses[index].data];
 
-        setAssignedUsers(initialAssignedUsers);
-        setTicketState(initialAssignedStates);  // Set the initial states
-        setTicketPriority(initialAssignedPriorities);  // Set the initial priorities
+          allAssignedUsersMap[ticketId] = assignedUsers;
+
+          // Task State
+          allTicketStates[ticketId] = assignedStateResponses[index].data;
+
+          // Task Priority
+          allTicketPriorities[ticketId] = assignedPriorityResponses[index].data;
+        });
+
+        setAllAssignedUsers(allAssignedUsersMap);
+        setTicketState(allTicketStates);
+        setTicketPriority(allTicketPriorities);
+
       } catch (error) {
         console.error("Error fetching opened tickets:", error);
       } finally {
@@ -770,22 +464,21 @@ const OpenedTickets = () => {
     fetchOpenedTickets();
   }, []);
 
-  // Fetch users for the dropdown
+  // Fetch users (for display only)
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`);
         const filteredUsers = response.data.filter(user => user.role !== "Client");
-        setUsers(filteredUsers.map(user => ({ value: user.id, label: `${user.fname} ${user.lname}` })));
+        setUsers(filteredUsers);
       } catch (error) {
         console.error("Error fetching users:", error);
       }
     };
-
     fetchUsers();
   }, []);
 
-  // Fetch task states for the dropdown
+  // Fetch task states
   useEffect(() => {
     const fetchTaskStates = async () => {
       try {
@@ -795,11 +488,10 @@ const OpenedTickets = () => {
         console.error("Error fetching task states:", error);
       }
     };
-
     fetchTaskStates();
   }, []);
 
-  // Fetch priorities for the dropdown
+  // Fetch priorities
   useEffect(() => {
     const fetchPriorities = async () => {
       try {
@@ -809,212 +501,224 @@ const OpenedTickets = () => {
         console.error("Error fetching priorities:", error);
       }
     };
-
     fetchPriorities();
   }, []);
 
-  const handleDeleteTicket = async (ticketId) => {
-    try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/delete-task`, {
-        ticket_id: ticketId,
-      });
-      setOpenedTickets(prevTickets => prevTickets.filter(ticket => ticket.id !== ticketId));
-      toast.success("Task deleted successfully!");
-    } catch (error) {
-      toast.error("Error deleting ticket.");
-      console.error("Error deleting ticket:", error);
-    }
-  };
-
-  // Assign users to the ticket
-  const handleAssignTicket = async (task_id, selectedUsers) => {
-    try {
-      const userIds = selectedUsers.map(user => user.value);
-      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/assign_task`, {
-        ticket_id: task_id,
-        user_ids: userIds,
-      });
-      setAssignedUsers(prevState => ({ ...prevState, [task_id]: selectedUsers }));
-      toast.success("Tasks assigned successfully!");
-    } catch (error) {
-      toast.error("Error assigning ticket.");
-      console.error("Error assigning ticket:", error);
-    }
-  };
-
-  // Update ticket state
-  const handleStateChange = async (task_id, taskstatus_id) => {
-    try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_state`, {
-        task_id: task_id,
-        taskstatus_id: taskstatus_id,
-      });
-      setTicketState(prevState => ({ ...prevState, [task_id]: { taskstatus_id: taskstatus_id } }));
-      toast.success("Tasks state updated!");
-    } catch (error) {
-      toast.error("Error updating ticket state.");
-      console.error("Error updating ticket state:", error);
-    }
-  };
-
-  // Update ticket priority
-  const handlePriorityChange = async (task_id, priorityId) => {
-    try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_priority`, {
-        task_id: task_id,
-        priority_id: priorityId,
-      });
-      setTicketPriority(prevState => ({ ...prevState, [task_id]: { priority_id: priorityId } }));
-      toast.success("Tasks priority updated!");
-    } catch (error) {
-      toast.error("Error updating ticket priority.");
-      console.error("Error updating ticket priority:", error);
-    }
-  };
-
-  // Filter opened tickets based on selected state and priority
+  // Filter tickets based on State, Priority, and Assigned User
   const filteredTickets = openedTickets.filter(ticket => {
-    const matchesState = selectedState === "" || ticketState[ticket.id]?.taskstatus_id === parseInt(selectedState);
-    const matchesPriority = selectedPriority === "" || ticketPriority[ticket.id]?.priority_id === parseInt(selectedPriority);
-    return matchesState && matchesPriority;
+    const matchesState = !selectedState ||
+      ticketState[ticket.id]?.status_name === taskStates.find(s => s.Id === parseInt(selectedState))?.status_name;
+
+    const matchesPriority = !selectedPriority ||
+      ticketPriority[ticket.id]?.priority_name === priorities.find(p => p.Id === parseInt(selectedPriority))?.priority_name;
+
+    const assignedUsers = allAssignedUsers[ticket.id] || [];
+    const matchesUser = !assignedUserSearch ||
+      assignedUsers.some(u =>
+        `${u.fname} ${u.lname || ""}`
+          .toLowerCase()
+          .includes(assignedUserSearch.toLowerCase().trim())
+      );
+
+    return matchesState && matchesPriority && matchesUser;
   });
 
-  if (loading) return <p className="text-center text-gray-700">Loading...</p>;
+  // Badge styling
+  const getStateBadge = (statusName) => {
+    switch (statusName) {
+      case "Open": return "bg-green-100 text-green-800";
+      case "In Progress": return "bg-yellow-100 text-yellow-800";
+      case "Resolved": return "bg-blue-100 text-blue-800";
+      case "Closed": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getPriorityBadge = (priorityName) => {
+    switch (priorityName) {
+      case "Low": return "bg-green-100 text-green-800";
+      case "Medium": return "bg-yellow-100 text-yellow-800";
+      case "High": return "bg-orange-100 text-orange-800";
+      case "Urgent": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <p className="text-gray-700">Loading...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 p-6">
       <Toaster position="top-center" />
 
+      {/* Header */}
       <header className="bg-white shadow-lg rounded-lg mb-6">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-wide">All Tasks</h1>
-          <div className="flex-grow text-center">
-            <img
-              src="/Kiotel logo.jpg"
-              alt="Dashboard Logo"
-              className="h-11 w-auto mx-auto cursor-pointer hover:opacity-80 transition duration-200"
-              onClick={() => router.push('/TaskManager')}
-            />
-          </div>
+          <img
+            src="/Kiotel logo.jpg"
+            alt="Dashboard Logo"
+            className="h-11 w-auto cursor-pointer hover:opacity-80 transition duration-200"
+            onClick={() => router.push('/TaskManager')}
+          />
         </div>
       </header>
 
-      {/* Filter dropdowns */}
-      <div className="flex justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <label htmlFor="state-filter" className="text-gray-700 font-semibold">Filter by State:</label>
+      {/* Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {/* Filter by State */}
+        <div>
+          <label htmlFor="state-filter" className="block text-gray-700 font-semibold mb-1">Filter by State:</label>
           <select
             id="state-filter"
             value={selectedState}
             onChange={(e) => setSelectedState(e.target.value)}
-            className="px-3 py-2 border rounded-md"
+            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">All</option>
             {taskStates.map(state => (
-              <option key={state.Id} value={state.Id}>{state.status_name}</option>
+              <option key={state.Id} value={state.Id}>
+                {state.status_name}
+              </option>
             ))}
           </select>
         </div>
-        <div className="flex items-center space-x-2">
-          <label htmlFor="priority-filter" className="text-gray-700 font-semibold">Filter by Priority:</label>
+
+        {/* Filter by Priority */}
+        <div>
+          <label htmlFor="priority-filter" className="block text-gray-700 font-semibold mb-1">Filter by Priority:</label>
           <select
             id="priority-filter"
             value={selectedPriority}
             onChange={(e) => setSelectedPriority(e.target.value)}
-            className="px-3 py-2 border rounded-md"
+            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="">All</option>
             {priorities.map(priority => (
-              <option key={priority.Id} value={priority.Id}>{priority.priority_name}</option>
+              <option key={priority.Id} value={priority.Id}>
+                {priority.priority_name}
+              </option>
             ))}
           </select>
         </div>
+
+        {/* Search by Assigned User */}
+        <div>
+          <label className="block text-gray-700 font-semibold mb-1">Search by Assigned User:</label>
+          <input
+            type="text"
+            value={assignedUserSearch}
+            onChange={(e) => setAssignedUserSearch(e.target.value)}
+            placeholder="Search by name"
+            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          />
+        </div>
+
+        {/* Clear Filters */}
+        <div className="flex items-end">
+          <button
+            onClick={() => {
+              setSelectedState("");
+              setSelectedPriority("");
+              setAssignedUserSearch("");
+            }}
+            className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md transition"
+          >
+            Clear Filters
+          </button>
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Table */}
+      <div className="overflow-x-auto bg-white shadow-md rounded-lg">
         <table className="min-w-full divide-y divide-gray-300">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task Title</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assiged Users</th>
-              {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assign Users</th> */}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Task Title
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Assigned Users
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                State
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Priority
+              </th>
+             
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredTickets.map(ticket => (
-              <tr key={ticket.id} className="hover:bg-gray-100 transition duration-200">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <Link href={`/TaskManager/task/${ticket.id}`} className="text-blue-600 hover:underline">
-                    {ticket.title}
-                  </Link>
-                </td>
-                <td key={ticket.id} className="hover:bg-gray-100 transition duration-200">
-                {ticket.assigned_to}
-                </td>
-                
-
-                {/* Task State */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <select
-                    value={ticketState[ticket.id]?.taskstatus_id || ""}
-                    onChange={(e) => handleStateChange(ticket.id, e.target.value)}
-                    className="px-2 py-1 border rounded-md"
-                    required
-                  >
-                    {/* <option value="">Select state</option> */}
-                       {taskStates.map(state => (
-                        <option key={state.Id} value={state.Id}>  {/* Use state.taskstatus_id as the value */}
-                          {`${state.status_name}`}  {/* Display the name */}
-                        </option>
-                      ))}
-                    </select>
-                </td>
-
-                {/* Task Priority */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <select
-                    value={ticketPriority[ticket.id]?.priority_id || ""}
-                    onChange={(e) => handlePriorityChange(ticket.id, e.target.value)}
-                    className="px-2 py-1 border rounded-md"
-                    required
-                  >
-                    {/* <option value="">Select priority</option> */}
-                      {priorities.map(priority => (
-                        <option key={priority.Id} value={priority.Id}>
-                          {`${priority.priority_name}`}
-                        </option>
-                      ))}
-                    </select>
-                </td>
-
-                {/* Actions */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <button
-                    onClick={() => handleDeleteTicket(ticket.id)}
-                    className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
+            {filteredTickets.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                  No tasks found matching your filters.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredTickets.map(ticket => (
+                <tr key={ticket.id} className="hover:bg-gray-50 transition duration-150">
+                  {/* Task Title */}
+                  <td className="px-6 py-4 max-w-xs truncate text-sm text-gray-700">
+                    <Link href={`/TaskManager/task/${ticket.id}`} className="text-blue-600 hover:underline">
+                      {ticket.title}
+                    </Link>
+                  </td>
+
+                  {/* Assigned Users */}
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    <div className="flex flex-wrap gap-2">
+                      {allAssignedUsers[ticket.id]?.length > 0 ? (
+                        allAssignedUsers[ticket.id].map((user, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                          >
+                            {user.fname} {user.lname || ""}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 text-xs italic">No users assigned</span>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Task State */}
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        getStateBadge(ticketState[ticket.id]?.status_name)
+                      }`}
+                    >
+                      {ticketState[ticket.id]?.status_name || "Unknown"}
+                    </span>
+                  </td>
+
+                  {/* Task Priority */}
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        getPriorityBadge(ticketPriority[ticket.id]?.priority_name)
+                      }`}
+                    >
+                      {ticketPriority[ticket.id]?.priority_name || "Not Set"}
+                    </span>
+                  </td>
+
+                  {/* Actions */}
+                  
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
     </div>
-  );
-};
-
-
-
-// Wrap with ProtectedRoute for authentication
-export default function OpenedTicketsWrapper() {
-  return (
-    <ProtectedRoute>
-      <OpenedTickets />
-    </ProtectedRoute>
   );
 }
