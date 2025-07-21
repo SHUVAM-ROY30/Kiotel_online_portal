@@ -23,6 +23,7 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
   const [leaveMode, setLeaveMode] = useState("single"); // 'single' or 'multiple'
   const [multipleLeaves, setMultipleLeaves] = useState([]); // For multiple leave entries
   const [isDisclaimerAgreed, setIsDisclaimerAgreed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const uniqueId = localStorage.getItem("uniqueId");
 
   useEffect(() => {
@@ -158,6 +159,8 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    setIsSubmitting(true);
     try {
       if (leaveMode === "single") {
         if (
@@ -210,7 +213,9 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
     } catch (error) {
       console.error("Error submitting leave request:", error);
       alert("An error occurred while submitting the leave request. Please try again.");
-    }
+    }finally {
+    setIsSubmitting(false);
+  }
   };
 
   const isSubmitDisabled =
@@ -390,27 +395,7 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
                     {selectedLeaveBalance !== null ? selectedLeaveBalance : "Loading..."}
                   </p>
                 )}
-              {/* <div>
-                <label className="block text-sm font-medium text-gray-700">Start Date</label>
-                <input
-                  type="date"
-                  name="startDate"
-                  value={formData.startDate}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">End Date</label>
-                <input
-                  type="date"
-                  name="endDate"
-                  value={formData.endDate}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div> */}
-              {/* // Inside your JSX where you have the date inputs */}
+              
 
 <div>
   <label className="block text-sm font-medium text-gray-700">Start Date</label>
@@ -556,7 +541,7 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
           </div>
 
           {/* Submit Button */}
-          <button
+          {/* <button
             type="submit"
             disabled={isSubmitDisabled}
             title={
@@ -571,7 +556,43 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
             }`}
           >
             Submit Request
-          </button>
+          </button> */}
+
+<button
+  type="submit"
+  disabled={isSubmitting}
+  className={`w-full px-4 py-3 rounded-md font-medium transition duration-200 ${
+    isSubmitting
+      ? "bg-gray-400 cursor-not-allowed"
+      : "bg-blue-600 hover:bg-blue-700 text-white"
+  }`}
+>
+  {isSubmitting ? (
+    <span className="flex items-center justify-center">
+      <svg
+        className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        ></circle>
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V2a10 10 0 1010 10h-2zm4-8a8 8 0 011.71 15.29L10 17.7V19a8 8 0 11-6-14z"
+        ></path>
+      </svg>
+      Submitting...
+    </span>
+  ) : leaveMode === "single" ? "Submit Request" : "Submit Multiple Requests"}
+</button>
         </form>
       </div>
     </div>

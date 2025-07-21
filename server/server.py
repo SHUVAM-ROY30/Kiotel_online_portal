@@ -2199,98 +2199,83 @@ password = "tfyr kugr sjpj ayvh"
 
 
 
+
+
+
 @app.route("/api/task", methods=["POST"])
 @login_required
 def create_task():
-    user_id = session.get("user_id")
+    if session.get("is_creating_task"):
+        return jsonify({"error": "Request already in progress"}), 429  # Too Many Requests
 
-    if user_id is None:
-        return jsonify({"error": "User ID not found in session"}), 400
-
-    title = request.form.get("title")
-    description = request.form.get("description")
-    assigned_users = request.form.getlist("assignedUsers[]")  # List of assigned user IDs
-    task_state = request.form.get("ticketState")  # Task status ID
-    task_priority = request.form.get("ticketPriority")  # Priority ID
-    attachments = request.files.getlist("attachments")
-
-    # Validation: Ensure title and description are provided
-    if not title or not description:
-        return jsonify({"error": "Title and description are required"}), 400
-
-    connection = create_connection()
-    if connection is None:
-        return jsonify({"error": "Failed to connect to the database"}), 500
+    session["is_creating_task"] = True  # Lock
 
     try:
-        attachment_filenames = []
-        upload_folder = app.config['UPLOAD_FOLDER']
+        user_id = session.get("user_id")
+        if not user_id:
+            return jsonify({"error": "User ID not found in session"}), 400
 
-        with connection.cursor() as cursor:
-            # Handle file attachments if present
-            if attachments:
-                for attachment in attachments:
-                    original_filename = attachment.filename
-                    
-                    # Generate unique encrypted name for the file
-                    unique_name = generate_unique_name(original_filename)
-                    
-                    # Save the file on the server with the unique encrypted name
-                    file_path = os.path.join(upload_folder, unique_name)
-                    attachment.save(file_path)
-                    
-                    # Store only the original filename
-                    attachment_filenames.append(original_filename)
+        title = request.form.get("title")
+        description = request.form.get("description")
+        assigned_users = request.form.getlist("assignedUsers[]")
+        task_state = request.form.get("ticketState")
+        task_priority = request.form.get("ticketPriority")
+        attachments = request.files.getlist("attachments")
 
-            # Convert attachment filenames to JSON format
-            attachments_json = json.dumps(attachment_filenames)
+        if not title or not description:
+            return jsonify({"error": "Title and description are required"}), 400
 
-            # Set the session variable for the current user ID
-            cursor.execute("SET @current_user_id = %s", (user_id,))
+        connection = create_connection()
+        if connection is None:
+            return jsonify({"error": "Failed to connect to the database"}), 500
 
-            # Set status_id to the provided task state, defaulting to 1 if not provided
-            status_id = task_state if task_state else 1  # Default status ID to 1 (assumed 'Open')
+        try:
+            attachment_filenames = []
+            upload_folder = app.config['UPLOAD_FOLDER']
 
-            # Set priority_id to the provided priority, defaulting to 1 if not provided
-            priority_id = task_priority if task_priority else 4  # Default priority ID to 4 (assumed default priority)
+            with connection.cursor() as cursor:
+                if attachments:
+                    for attachment in attachments:
+                        original_filename = attachment.filename
+                        unique_name = generate_unique_name(original_filename)
+                        file_path = os.path.join(upload_folder, unique_name)
+                        attachment.save(file_path)
+                        attachment_filenames.append(original_filename)
 
-            # Call the stored procedure to create the task
-            cursor.callproc('Proc_tbltasks_Upsert_test', (
-                0,  # 0 for new task (assuming)
-                title, 
-                description, 
-                attachments_json, 
-                unique_name if attachments else None, 
-                status_id, 
-                json.dumps(assigned_users),  # Pass the assigned users array as JSON
-                priority_id
-            ))
-            connection.commit()
+                attachments_json = json.dumps(attachment_filenames)
 
-            # Fetch the emails of assigned users
-            assigned_user_emails = []
-            if assigned_users:
-                cursor.execute("SELECT emailid FROM tblusers WHERE id IN (%s)" % ','.join(map(str, assigned_users)))
-                assigned_user_emails = [row['emailid'] for row in cursor.fetchall()]
+                cursor.execute("SET @current_user_id = %s", (user_id,))
+                cursor.callproc('Proc_tbltasks_Upsert_test', (
+                    0, title, description, attachments_json, None, task_state,
+                    json.dumps(assigned_users), task_priority
+                ))
 
-            # Fetch creator's email
-            cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
-            creator_email = cursor.fetchone()['emailid']
+                connection.commit()
 
-            # Send email notification to the creator and all assigned users
-            send_email_notification_new_task(title, description, cursor.lastrowid, creator_email, assigned_user_emails)
+                # Fetch emails and send notifications
+                assigned_user_emails = []
+                if assigned_users:
+                    cursor.execute(
+                        "SELECT emailid FROM tblusers WHERE id IN ({})".format(','.join(map(str, assigned_users)))
+                    )
+                    assigned_user_emails = [row['emailid'] for row in cursor.fetchall()]
 
-            return jsonify({"message": "Task created successfully"}), 201
+                cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
+                creator_email = cursor.fetchone()['emailid']
 
-    except pymysql.MySQLError as e:
-        print(f"The error '{e}' occurred")
-        return jsonify({"error": "Database query failed"}), 500
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        return jsonify({"error": str(e)}), 500
+                send_email_notification_new_task(title, description, cursor.lastrowid, creator_email, assigned_user_emails)
+
+        except pymysql.MySQLError as e:
+            connection.rollback()
+            print(f"Database error: {e}")
+            return jsonify({"error": "Database operation failed"}), 500
+        finally:
+            connection.close()
+
+        return jsonify({"message": "Task created successfully"}), 201
+
     finally:
-        connection.close()
-
+        session.pop("is_creating_task", None)  # Unlock
 
 def send_email_notification_new_task(title, description, ticket_id, creator_email, assigned_user_emails):
     try:
@@ -3357,6 +3342,90 @@ def assign_user_to_task():
     except pymysql.MySQLError as e:
         print(f"The error '{e}' occurred")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+    finally:
+        connection.close()
+
+
+@app.route('/api/opened_tasks', methods=['GET'])
+@login_required
+def get_opened_taskss():
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            query = """
+                SELECT 
+                    t.id AS task_id,
+                    t.title,
+                    t.description,
+                    t.created_at,
+                    s.status_name,
+                    p.priority_name,
+                    creator.id AS creator_id,
+                    creator.fname AS creator_fname,
+                    creator.lname AS creator_lname,
+                    creator.role_id AS creator_role,
+                    GROUP_CONCAT(DISTINCT CONCAT(u.fname, ' ', u.lname, '|', u.role_id) SEPARATOR ', ') AS assigned_users
+                FROM 
+                    tbltasks t
+                LEFT JOIN 
+                    tbltaskstatus s ON t.taskstatus_id = s.id
+                LEFT JOIN 
+                    tblpriority p ON t.priority_id = p.id
+                LEFT JOIN 
+                    tblusers creator ON t.created_by = creator.id
+                LEFT JOIN 
+                    tblTaskAssignments ta ON t.id = ta.task_id
+                LEFT JOIN 
+                    tblusers u ON ta.AssignedTo = u.id
+                WHERE 
+                    t.taskstatus_id != 4
+                GROUP BY 
+                    t.id
+                    ORDER BY 
+                        t.id DESC;
+            """
+            cursor.execute(query)
+            tasks = cursor.fetchall()
+
+            # Process each task
+            result = []
+            for task in tasks:
+                assigned_users = []
+                if task['assigned_users']:
+                    for user_str in task['assigned_users'].split(', '):
+                        user_info = user_str.split('|')
+                        if len(user_info) == 2:
+                            fname, lname = user_info[0].split(' ', 1)
+                            assigned_users.append({
+                                "fname": fname,
+                                "lname": lname,
+                                "role": user_info[1]
+                            })
+
+                result.append({
+                    "task_id": task['task_id'],
+                    "title": task['title'],
+                    "description": task['description'],
+                    "created_at": task['created_at'],
+                    "status_name": task['status_name'],
+                    "priority_name": task['priority_name'],
+                    "creator": {
+                        "fname": task['creator_fname'],
+                        "lname": task['creator_lname'],
+                        "role": task['creator_role']
+                    },
+                    "assigned_users": assigned_users
+                })
+
+            return jsonify(result), 200
+
+    except pymysql.MySQLError as e:
+        print(f"Database error: {e}")
+        return jsonify({"error": "Failed to fetch tasks"}), 500
 
     finally:
         connection.close()
