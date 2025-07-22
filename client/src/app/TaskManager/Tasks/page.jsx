@@ -22,7 +22,6 @@ export default function OpenedTickets() {
   const [selectedPriority, setSelectedPriority] = useState(""); // Filter by priority
   const [assignedUserSearch, setAssignedUserSearch] = useState(""); // New filter: search by user name
   const [userRole, setUserRole] = useState(null);
-  
 
   // Fetch the user's role from the session
     useEffect(() => {
@@ -221,7 +220,7 @@ export default function OpenedTickets() {
       <header className="bg-white shadow-lg rounded-lg mb-6">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-wide">
-            All Tasks
+            Task Manager
           </h1>
           <img
             src="/Kiotel_Logo_bg.PNG"
@@ -315,9 +314,6 @@ export default function OpenedTickets() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tags
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Task Title
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -347,18 +343,6 @@ export default function OpenedTickets() {
                   key={ticket.task_id}
                   className="hover:bg-gray-50 transition duration-150"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  <div className="flex flex-col">
-                      <span className="font-medium">
-                        {ticket.task_tags} 
-                      </span>
-                      <span className="text-xs text-gray-500">
-              
-
-            </span>
-            
-                    </div>
-                    </td>
                   {/* Task Title */}
                   <td className="px-6 py-4 max-w-xs truncate text-sm text-gray-700">
                     <Link
@@ -379,7 +363,6 @@ export default function OpenedTickets() {
                       </span>
                       <span className="text-xs text-gray-500">
               ({ticket.creator.role || "No Role"})
-
             </span>
                     </div>
                   </td>

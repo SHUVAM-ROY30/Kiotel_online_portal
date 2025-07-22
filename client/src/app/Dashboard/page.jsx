@@ -350,7 +350,7 @@ function Dashboard() {
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
           { withCredentials: true }
         );
-        setUserFname(response.data.name);
+        setUserFname(response.data.fname);
         console.log(response.data.id);
       } catch (error) {
         console.error("Failed to fetch user name:", error);
