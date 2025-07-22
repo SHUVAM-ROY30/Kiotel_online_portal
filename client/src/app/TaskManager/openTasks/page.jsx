@@ -378,7 +378,7 @@ export default function OpenedTickets() {
                         {ticket.creator.fname} {ticket.creator.lname || ""}
                       </span>
                       <span className="text-xs text-gray-500">
-              ({ticket.creator.role || "No Role"})
+              {/* ({ticket.creator.role || "No Role"}) */}
 
             </span>
                     </div>
