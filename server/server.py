@@ -298,8 +298,6 @@ def get_user_email():
 
 
 
-
-
 @app.route("/api/register", methods=["POST"])
 def register_user():
     data = request.json
@@ -320,6 +318,24 @@ def register_user():
     mobileno = data.get("mobileno", "N/A")
     role_id = int(data.get("role_id", 2))  # Default to 2 if not provided
 
+    # --- NEW: Handle Group IDs ---
+    # Expecting a list of integers, e.g., [1, 3, 5] or an empty list []
+    group_ids_list = data.get("group_ids", [])
+    # Convert list of integers to a comma-separated string for the SP
+    # Handle cases where the list might be empty or contain invalid data
+    if isinstance(group_ids_list, list):
+        # Filter out non-integer items and convert to string
+        try:
+            group_ids_filtered = [str(gid) for gid in group_ids_list if isinstance(gid, int)]
+        except (ValueError, TypeError):
+            group_ids_filtered = []
+        group_ids_string = ','.join(group_ids_filtered)
+    else:
+        # If group_ids is not a list, treat as no groups
+        group_ids_string = ''
+
+    # --- END NEW ---
+
     connection1 = create_connection()
     if not connection1:
         return jsonify({"error": "Failed to connect to primary database"}), 500
@@ -327,24 +343,46 @@ def register_user():
     connection2 = create_connection2() if role_id in (1, 2, 3) else None
 
     try:
-        with connection1.cursor() as cursor1:
+        # Use a DictCursor to easily access results by column name
+        with connection1.cursor(pymysql.cursors.DictCursor) as cursor1:
             # Check existing user
             cursor1.execute("SELECT id FROM tblusers WHERE emailid = %s OR account_no = %s", (email, account_no))
             existing_user = cursor1.fetchone()
             if existing_user:
                 return jsonify({"message": "Email or Account Number already exists"}), 409
 
-            # Insert into primary DB using the stored procedure
-            user_id = 0  # Assuming upsert handles insert when user_id = 0
-            cursor1.callproc('Proc_tblusers_Upsert_V2', (
-                user_id, email, password, fname, lname, dob, address, address2,
-                entity_name, account_no, account_no2, mobileno, role_id
+            # --- UPDATED: Call the new stored procedure with group IDs ---
+            # Prepare the call. sp_manage_user_with_groups expects user fields and the group_ids string.
+            # It handles insertion and returns the new user's ID via SELECT LAST_INSERT_ID().
+            cursor1.callproc('sp_manage_user_with_groups', (
+                0,  # p_id = 0 for new user
+                email, password, fname, lname, dob, address, address2,
+                entity_name, account_no, account_no2, mobileno, role_id,
+                group_ids_string # p_group_ids
             ))
             connection1.commit()
 
-            # Fetch inserted user
-            cursor1.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
+            # --- Fetch the ID of the newly inserted user ---
+            # The stored procedure inserts the user and manages groups.
+            # We need the user ID for secondary DB operations.
+            # Option 1: Fetch immediately after the commit using LAST_INSERT_ID()
+            cursor1.execute("SELECT LAST_INSERT_ID() AS new_user_id;")
+            result = cursor1.fetchone()
+            new_user_id = result['new_user_id'] if result and result['new_user_id'] else None
+
+            if not new_user_id:
+                 # Fallback: Select user by email to get ID (less efficient)
+                 cursor1.execute("SELECT id FROM tblusers WHERE emailid = %s", (email,))
+                 user_result = cursor1.fetchone()
+                 new_user_id = user_result['id'] if user_result else None
+
+            if not new_user_id:
+                raise Exception("Could not retrieve the ID of the newly created user.")
+
+            # Fetch the full user record using the obtained ID
+            cursor1.execute("SELECT * FROM tblusers WHERE id = %s", (new_user_id,))
             user = cursor1.fetchone()
+            # --- END UPDATED ---
 
         # Handle secondary DB insertion only for roles 1, 2, 3
         if connection2:
@@ -357,7 +395,7 @@ def register_user():
                     """, (account_no, fname, lname))
 
                 elif role_id in (2, 3):
-                    # Insert into employees_test table
+                    # Insert into employees_test table (assuming 'employees' based on previous code)
                     cursor2.execute("""
                         INSERT INTO employees (
                             unique_id,
@@ -377,22 +415,150 @@ def register_user():
                 connection2.commit()
 
         return jsonify({
-            "id": user['id'],
+            "id": user['id'], # Use the ID fetched from the database
             "email": user['emailid'],
-            "message": "User registered successfully"
-        })
+            "message": "User registered and groups assigned successfully"
+        }), 201 # 201 Created is more appropriate for successful creation
 
     except pymysql.MySQLError as e:
         connection1.rollback()
         if connection2:
             connection2.rollback()
         print(f"Database error: {e}")
-        return jsonify({"error": "Registration failed due to database error"}), 500
+        # Provide a more specific error message if possible
+        return jsonify({"error": f"Registration failed due to a database error: {str(e)}"}), 500
+    except Exception as e: # Catch other potential errors (e.g., user ID retrieval)
+        connection1.rollback()
+        if connection2:
+            connection2.rollback()
+        print(f"Error during registration: {e}")
+        return jsonify({"error": f"Registration process failed: {str(e)}"}), 500
 
     finally:
         connection1.close()
         if connection2:
             connection2.close()
+
+
+# @app.route("/api/register", methods=["POST"])
+# def register_user():
+#     data = request.json
+
+#     # Required fields
+#     email = data.get("email")
+#     password = data.get("password")
+
+#     # Optional fields with 'N/A' defaults
+#     fname = data.get("fname", "N/A")
+#     lname = data.get("lname", "N/A")
+#     dob = data.get("dob", "0000-00-00")
+#     address = data.get("address", "N/A")
+#     address2 = data.get("address2", "N/A")
+#     entity_name = data.get("entity_name", "N/A")
+#     account_no = data.get("account_no", "N/A")
+#     account_no2 = data.get("account_no2", "N/A")
+#     mobileno = data.get("mobileno", "N/A")
+#     role_id = int(data.get("role_id", 2))  # Default to 2 if not provided
+
+#     connection1 = create_connection()
+#     if not connection1:
+#         return jsonify({"error": "Failed to connect to primary database"}), 500
+
+#     connection2 = create_connection2() if role_id in (1, 2, 3) else None
+
+#     try:
+#         with connection1.cursor() as cursor1:
+#             # Check existing user
+#             cursor1.execute("SELECT id FROM tblusers WHERE emailid = %s OR account_no = %s", (email, account_no))
+#             existing_user = cursor1.fetchone()
+#             if existing_user:
+#                 return jsonify({"message": "Email or Account Number already exists"}), 409
+
+#             # Insert into primary DB using the stored procedure
+#             user_id = 0  # Assuming upsert handles insert when user_id = 0
+#             cursor1.callproc('Proc_tblusers_Upsert_V2', (
+#                 user_id, email, password, fname, lname, dob, address, address2,
+#                 entity_name, account_no, account_no2, mobileno, role_id
+#             ))
+#             connection1.commit()
+
+#             # Fetch inserted user
+#             cursor1.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
+#             user = cursor1.fetchone()
+
+#         # Handle secondary DB insertion only for roles 1, 2, 3
+#         if connection2:
+#             with connection2.cursor() as cursor2:
+#                 if role_id == 1:
+#                     # Insert into admins table
+#                     cursor2.execute("""
+#                         INSERT INTO admins (unique_id, first_name, last_name)
+#                         VALUES (%s, %s, %s)
+#                     """, (account_no, fname, lname))
+
+#                 elif role_id in (2, 3):
+#                     # Insert into employees_test table
+#                     cursor2.execute("""
+#                         INSERT INTO employees (
+#                             unique_id,
+#                             first_name,
+#                             last_name,
+#                             email,
+#                             date_of_joining,
+#                             annual_leave,
+#                             sick_leave,
+#                             casual_leave,
+#                             other_leave
+#                         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+#                     """, (
+#                         account_no, fname, lname, email, dob, 0, 0, 0, 0
+#                     ))
+
+#                 connection2.commit()
+
+#         return jsonify({
+#             "id": user['id'],
+#             "email": user['emailid'],
+#             "message": "User registered successfully"
+#         })
+
+#     except pymysql.MySQLError as e:
+#         connection1.rollback()
+#         if connection2:
+#             connection2.rollback()
+#         print(f"Database error: {e}")
+#         return jsonify({"error": "Registration failed due to database error"}), 500
+
+#     finally:
+#         connection1.close()
+#         if connection2:
+#             connection2.close()
+
+
+# Assuming you have necessary imports like jsonify, create_connection, etc.
+
+@app.route('/api/groups', methods=['GET'])
+def get_groups():
+    """API endpoint to fetch all groups."""
+    connection = create_connection() # Use your existing connection function
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, name FROM tblgroups ORDER BY name")
+            groups = cursor.fetchall()
+        return jsonify(groups), 200
+    except Exception as e:
+        print(f"Error fetching groups: {e}")
+        return jsonify({"error": "Failed to fetch groups"}), 500
+    finally:
+        connection.close()
+
+# Ensure your /api/register endpoint (from previous conversation) handles the 'group_ids' list.
+# It should expect a key like 'group_ids' in the request JSON with a value like [1, 3, 5].
+
+
 
 
 
@@ -1028,6 +1194,42 @@ def get_ticket_title(ticket_id):
 
 
 
+# @app.route('/api/users', methods=['GET'])
+# def get_users():
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+#             # Call the stored procedure to get the list of all users
+#             cursor.callproc('Proc_tblusers_displaylistofusers')
+#             users = cursor.fetchall()  # Fetch all results
+            
+#             if not users:
+#                 return jsonify({"error": "No users found"}), 404
+
+#             # Convert the result to a list of dictionaries
+#             users_list = []
+#             for user in users:
+#                 users_list.append({
+#                     "id": user['id'],
+#                     "fname": user['fname'],
+#                     "lname": user['lname'],
+#                     "emailid": user['emailid'],
+#                     "role": user['role'],
+#                     "account_no": user['account_no']
+#                     # Add other fields as necessary
+#                 })
+
+#             return jsonify(users_list)
+            
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     finally:
+#         connection.close()
+
 @app.route('/api/users', methods=['GET'])
 def get_users():
     connection = create_connection()
@@ -1035,34 +1237,254 @@ def get_users():
         return jsonify({"error": "Failed to connect to the database"}), 500
 
     try:
+        # Use DictCursor to get results as dictionaries
         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
-            # Call the stored procedure to get the list of all users
-            cursor.callproc('Proc_tblusers_displaylistofusers')
-            users = cursor.fetchall()  # Fetch all results
-            
-            if not users:
-                return jsonify({"error": "No users found"}), 404
+            # --- UPDATED: Call the new stored procedure name ---
+            cursor.callproc('sp_get_users_with_groups') # Use the correct name of your updated SP
+            users = cursor.fetchall() # Fetch all results from the SP
+            # --- END UPDATED ---
 
-            # Convert the result to a list of dictionaries
+            # --- UPDATED: Handle potentially empty initial fetch correctly ---
+            # The check for 'not users' should ideally come after fetching.
+            # If the SP executes but returns no rows, users will be an empty list [].
+            # If there's an issue calling the SP, it might raise an exception before this.
+            if users is None or len(users) == 0: # Check if list is empty
+                return jsonify([]) # Return empty list instead of 404, consistent with typical API behavior for "no data found"
+                # Alternatively, you could keep the 404: return jsonify({"error": "No users found"}), 404
+
+            # --- Process the results ---
             users_list = []
             for user in users:
+                # Handle potential NULL value from GROUP_CONCAT
+                # If a user has no groups, group_names might be None/NULL
+                group_names_str = user.get('group_names')
+                groups_list = []
+                if group_names_str: # Check if it's not None or empty string
+                    # Split the comma-separated string into a list
+                    groups_list = [name.strip() for name in group_names_str.split(',') if name.strip()]
+
                 users_list.append({
                     "id": user['id'],
                     "fname": user['fname'],
                     "lname": user['lname'],
                     "emailid": user['emailid'],
-                    "role": user['role'],
-                    "account_no": user['account_no']
-                    # Add other fields as necessary
+                    "role": user['role'], # Assuming your SP returns 'role' (from tblrole.name)
+                    "account_no": user['account_no'],
+                    # --- NEW: Include the processed groups list ---
+                    "groups": groups_list # Add the list of group names
+                    # --- END NEW ---
+                    # Add other fields from the SP result if needed
                 })
 
             return jsonify(users_list)
-            
+
     except pymysql.MySQLError as e:
         print(f"The error '{e}' occurred")
-        return jsonify({"error": "Database query failed"}), 500
+        return jsonify({"error": f"Database query failed: {str(e)}"}), 500
+    except Exception as e: # Catch other potential errors during processing
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An error occurred while processing user data"}), 500
+    finally:
+        if connection:
+            connection.close()
+
+
+
+@app.route('/api/user/<int:user_id>/manage-groups', methods=['POST'])
+def manage_user_groups(user_id):
+    """
+    API endpoint to add/remove specific groups for a user.
+    Expects JSON: { "add": [group_id1, group_id2, ...], "remove": [group_id3, ...] }
+    """
+    connection = create_connection()
+    if not connection:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid JSON data"}), 400
+
+        groups_to_add = data.get('add', [])
+        groups_to_remove = data.get('remove', [])
+
+        # Basic validation: ensure add and remove are lists of integers
+        if not isinstance(groups_to_add, list) or not all(isinstance(gid, int) for gid in groups_to_add):
+             return jsonify({"error": "'add' must be a list of integers"}), 400
+        if not isinstance(groups_to_remove, list) or not all(isinstance(gid, int) for gid in groups_to_remove):
+             return jsonify({"error": "'remove' must be a list of integers"}), 400
+
+        with connection.cursor() as cursor:
+            # --- Add Groups ---
+            if groups_to_add:
+                # Prepare tuples for executemany
+                add_data = [(user_id, gid) for gid in groups_to_add]
+                # Use INSERT IGNORE to prevent errors if the association already exists
+                add_sql = "INSERT IGNORE INTO tbluser_groups (user_id, group_id) VALUES (%s, %s)"
+                cursor.executemany(add_sql, add_data)
+
+            # --- Remove Groups ---
+            if groups_to_remove:
+                # Prepare format strings for IN clause
+                placeholders = ','.join(['%s'] * len(groups_to_remove))
+                remove_sql = f"DELETE FROM tbluser_groups WHERE user_id = %s AND group_id IN ({placeholders})"
+                # Execute with user_id and list of group_ids to remove
+                cursor.execute(remove_sql, [user_id] + groups_to_remove)
+
+        connection.commit()
+        return jsonify({"message": "User groups updated successfully"}), 200
+
+    except pymysql.MySQLError as e:
+        connection.rollback()
+        print(f"Database error managing user groups: {e}")
+        return jsonify({"error": "Database operation failed"}), 500
+    except Exception as e:
+        connection.rollback()
+        print(f"Unexpected error managing user groups: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
     finally:
         connection.close()
+
+
+
+@app.route('/api/groups', methods=['POST'])
+def create_group():
+    data = request.get_json()
+    name = data.get('name')
+    if not name:
+        return jsonify({"error": "Group name is required"}), 400
+    connection = create_connection()
+    if not connection:
+        return jsonify({"error": "Database connection failed"}), 500
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("INSERT INTO tblgroups (name) VALUES (%s)", (name,))
+            connection.commit()
+            new_group_id = cursor.lastrowid
+        return jsonify({"id": new_group_id, "name": name}), 201
+    except Exception as e:
+        connection.rollback()
+        print(f"Error creating group: {e}")
+        return jsonify({"error": "Failed to create group"}), 500
+    finally:
+        connection.close()
+
+
+@app.route('/api/group/<int:group_id>', methods=['PUT'])
+def rename_group(group_id):
+    data = request.get_json()
+    new_name = data.get('name')
+    if not new_name:
+        return jsonify({"error": "New group name is required"}), 400
+    connection = create_connection()
+    if not connection:
+        return jsonify({"error": "Database connection failed"}), 500
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("UPDATE tblgroups SET name = %s WHERE id = %s", (new_name, group_id))
+            if cursor.rowcount == 0:
+                 return jsonify({"error": "Group not found"}), 404
+            connection.commit()
+        return jsonify({"message": "Group renamed"}), 200
+    except Exception as e:
+        connection.rollback()
+        print(f"Error renaming group: {e}")
+        return jsonify({"error": "Failed to rename group"}), 500
+    finally:
+        connection.close()
+
+
+@app.route('/api/group/<int:group_id>', methods=['DELETE'])
+def delete_group(group_id):
+    connection = create_connection()
+    if not connection:
+        return jsonify({"error": "Database connection failed"}), 500
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM tblgroups WHERE id = %s", (group_id,))
+            if cursor.rowcount == 0:
+                 return jsonify({"error": "Group not found"}), 404
+            connection.commit() # ON DELETE CASCADE handles tbluser_groups
+        return jsonify({"message": "Group deleted"}), 200
+    except Exception as e:
+        connection.rollback()
+        print(f"Error deleting group: {e}")
+        return jsonify({"error": "Failed to delete group"}), 500
+    finally:
+        connection.close()
+
+
+@app.route('/api/group/<int:group_id>/users', methods=['GET'])
+def get_users_in_group(group_id):
+    connection = create_connection()
+    if not connection:
+        return jsonify({"error": "Database connection failed"}), 500
+    try:
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("""
+                SELECT u.id, u.fname, u.lname, u.emailid, u.role_id, r.name as role
+                FROM tblusers u
+                JOIN tbluser_groups ug ON u.id = ug.user_id
+                JOIN tblrole r ON u.role_id = r.id
+                WHERE ug.group_id = %s AND IFNULL(u.isDeleted, 0) = 0
+                ORDER BY u.fname, u.lname
+            """, (group_id,))
+            users = cursor.fetchall()
+        return jsonify(users), 200
+    except Exception as e:
+        print(f"Error fetching users for group {group_id}: {e}")
+        return jsonify({"error": "Failed to fetch users for group"}), 500
+    finally:
+        connection.close()
+
+
+@app.route('/api/group/<int:group_id>/manage-users', methods=['POST'])
+def manage_group_users(group_id): # Accept { add: [], remove: [] }
+    connection = create_connection()
+    if not connection:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid JSON data"}), 400
+
+        users_to_add = data.get('add', [])
+        users_to_remove = data.get('remove', [])
+
+        # Basic validation
+        if not isinstance(users_to_add, list) or not all(isinstance(uid, int) for uid in users_to_add):
+             return jsonify({"error": "'add' must be a list of integers"}), 400
+        if not isinstance(users_to_remove, list) or not all(isinstance(uid, int) for uid in users_to_remove):
+             return jsonify({"error": "'remove' must be a list of integers"}), 400
+
+        with connection.cursor() as cursor:
+            # --- Add Users ---
+            if users_to_add:
+                add_data = [(uid, group_id) for uid in users_to_add]
+                add_sql = "INSERT IGNORE INTO tbluser_groups (user_id, group_id) VALUES (%s, %s)"
+                cursor.executemany(add_sql, add_data)
+
+            # --- Remove Users ---
+            if users_to_remove:
+                placeholders = ','.join(['%s'] * len(users_to_remove))
+                remove_sql = f"DELETE FROM tbluser_groups WHERE group_id = %s AND user_id IN ({placeholders})"
+                cursor.execute(remove_sql, [group_id] + users_to_remove)
+
+        connection.commit()
+        return jsonify({"message": "Group users updated successfully"}), 200
+
+    except pymysql.MySQLError as e:
+        connection.rollback()
+        print(f"Database error managing group users: {e}")
+        return jsonify({"error": "Database operation failed"}), 500
+    except Exception as e:
+        connection.rollback()
+        print(f"Unexpected error managing group users: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+    finally:
+        connection.close()
+
 
 # ---------------on 11 09 2024 -------------
 

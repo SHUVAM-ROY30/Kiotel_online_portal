@@ -1,181 +1,10 @@
 
 
 
-// "use client"; // Mark this as a Client Component
-
-// import axios from "axios";
-// import { useState } from "react";
-// import Select from "react-select"; // External library for custom dropdowns
-
-// export default function LeaveRequestDetails({ request, onClose }) {
-//   const [status, setStatus] = useState(request.status); // Local state for status
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState("");
-
-//   // Handle status update
-//   const handleUpdateStatus = async () => {
-//     try {
-//       setLoading(true);
-
-//       const response = await axios.put(
-//         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/leave-requests/${request.id}`,
-//         { status }
-//       );
-
-//       if (response.data.success) {
-//         alert("Status updated successfully!");
-//         onClose(); // Close the modal after updating
-//       } else {
-//         setError(response.data.message || "Failed to update status.");
-//       }
-//     } catch (error) {
-//       console.error("Error updating status:", error);
-//       setError("An error occurred while updating the status. Please try again.");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // Options for the custom dropdown
-//   const statusOptions = [
-//     { value: "pending", label: "Pending" },
-//     { value: "accepted", label: "Accepted" },
-//     { value: "rejected", label: "Rejected" },
-//   ];
-
-//   return (
-//     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-//       {/* Modal Container */}
-//       <div className="bg-white p-8 rounded-lg shadow-lg w-[400px] max-h-[80vh] overflow-y-auto relative">
-//         {/* Close Button */}
-//         <button
-//           onClick={onClose} // Close the modal
-//           className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 transition-colors"
-//         >
-//           <svg
-//             xmlns="http://www.w3.org/2000/svg"
-//             className="h-6 w-6"
-//             fill="none"
-//             viewBox="0 0 24 24"
-//             stroke="currentColor"
-//           >
-//             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-//           </svg>
-//         </button>
-
-//         {/* Heading */}
-//         <h2 className="text-2xl font-bold text-gray-800 mb-6">Leave Request Details</h2>
-
-//         {/* Leave Request Information */}
-//         <div className="space-y-4 text-gray-700">
-//           <p className="font-medium">
-//             <span className="text-gray-600">Employee Name:</span>{" "}
-//             <span className="font-semibold">{request.first_name} {request.last_name}</span>
-//           </p>
-//           <p className="font-medium">
-//             <span className="text-gray-600">Leave Type:</span>{" "}
-//             <span className="font-semibold">{request.leave_type}</span>
-//           </p>
-//           <p className="font-medium">
-//             <span className="text-gray-600">Start Date:</span>{" "}
-//             <span className="font-semibold">{request.start_date}</span>
-//           </p>
-//           <p className="font-medium">
-//             <span className="text-gray-600">End Date:</span>{" "}
-//             <span className="font-semibold">{request.end_date}</span>
-//           </p>
-//           <p className="font-medium">
-//             <span className="text-gray-600">Number of Days:</span>{" "}
-//             <span className="font-semibold">{request.number_of_days}</span>
-//           </p>
-//           <p className="font-medium">
-//             <span className="text-gray-600">Reason:</span>{" "}
-//             <span className="font-semibold">{request.reason}</span>
-//           </p>
-//           <p className="font-medium">
-//             <span className="text-gray-600">Current Status:</span>{" "}
-//             <span className={`${getStatusColor(request.status)} font-semibold`}>
-//               {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-//             </span>
-//           </p>
-
-//           {/* Update Status */}
-//           <div>
-//             <label className="block font-medium text-gray-700 mb-2">Update Status</label>
-//             <Select
-//               options={statusOptions}
-//               value={statusOptions.find((option) => option.value === status)}
-//               onChange={(selectedOption) => setStatus(selectedOption.value)}
-//               className="basic-single"
-//               classNamePrefix="select"
-//               styles={customStyles}
-//             />
-//           </div>
-
-//           {/* Error Message */}
-//           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-
-//           {/* Submit Button */}
-//           <button
-//             onClick={handleUpdateStatus}
-//             disabled={loading}
-//             className="w-full bg-blue-600 text-white px-4 py-3 rounded-md font-medium hover:bg-blue-700 transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
-//           >
-//             {loading ? "Updating..." : "Update Status"}
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// // Helper function to style status based on its value
-// function getStatusColor(status) {
-//   switch (status) {
-//     case "pending":
-//       return "text-yellow-500";
-//     case "accepted":
-//       return "text-green-500";
-//     case "rejected":
-//       return "text-red-500";
-//     default:
-//       return "text-gray-500";
-//   }
-// }
-
-// // Custom styles for react-select dropdown
-// const customStyles = {
-//   control: (base) => ({
-//     ...base,
-//     borderColor: "#d1d5db",
-//     boxShadow: "none",
-//     "&:hover": {
-//       borderColor: "#9ca3af",
-//     },
-//   }),
-//   menu: (base) => ({
-//     ...base,
-//     marginTop: "0.5rem",
-//     borderRadius: "0.375rem",
-//     border: "1px solid #d1d5db",
-//     boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-//   }),
-//   option: (base, state) => ({
-//     ...base,
-//     backgroundColor: state.isSelected ? "#2563eb" : state.isFocused ? "#f3f4f6" : "white",
-//     color: state.isSelected ? "white" : "#1f2937",
-//     "&:active": {
-//       backgroundColor: "#2563eb",
-//     },
-//   }),
-// };
-
 // "use client";
 
 // import axios from "axios";
-// import { useState, Fragment } from "react";
-// import { Listbox, Transition } from "@headlessui/react";
-// import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
+// import { useState } from "react";
 
 // export default function LeaveRequestDetails({ request, onClose }) {
 //   const [status, setStatus] = useState(request.status);
@@ -205,143 +34,138 @@
 //     }
 //   };
 
-//   const statusOptions = ["pending", "accepted", "rejected"];
-
 //   return (
-//     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-//       <div className="relative w-full max-w-md mx-4 p-6 bg-white rounded-2xl shadow-2xl">
+//     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+//       <div className="w-full max-w-xl bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-200 relative p-8 sm:p-10">
 //         {/* Close Button */}
 //         <button
 //           onClick={onClose}
-//           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition"
+//           className="absolute top-5 right-5 text-gray-500 hover:text-gray-800 transition"
 //         >
-//           <svg
-//             xmlns="http://www.w3.org/2000/svg"
-//             className="h-5 w-5"
-//             fill="none"
-//             viewBox="0 0 24 24"
-//             stroke="currentColor"
-//           >
+//           <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 //             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
 //           </svg>
 //         </button>
 
-//         <h2 className="text-2xl font-bold text-gray-800 mb-6">Leave Request Details</h2>
+//         {/* Heading */}
+//         <h2 className="text-3xl font-extrabold text-center text-gray-800 mb-8">
+//           Leave Request Details
+//         </h2>
 
-//         <div className="space-y-4 text-sm text-gray-700">
-//           <p>
-//             <span className="font-medium text-gray-600">Employee Name:</span>{" "}
-//             <span className="font-semibold">{request.first_name} {request.last_name}</span>
-//           </p>
-//           <p>
-//             <span className="font-medium text-gray-600">Leave Type:</span>{" "}
-//             <span className="font-semibold">{request.leave_type}</span>
-//           </p>
-//           <p>
-//             <span className="font-medium text-gray-600">Start Date:</span>{" "}
-//             <span className="font-semibold">{request.start_date}</span>
-//           </p>
-//           <p>
-//             <span className="font-medium text-gray-600">End Date:</span>{" "}
-//             <span className="font-semibold">{request.end_date}</span>
-//           </p>
-//           <p>
-//             <span className="font-medium text-gray-600">Number of Days:</span>{" "}
-//             <span className="font-semibold">{request.number_of_days}</span>
-//           </p>
-//           <p>
-//             <span className="font-medium text-gray-600">Reason:</span>{" "}
-//             <span className="font-semibold">{request.reason}</span>
-//           </p>
-//           <p>
-//             <span className="font-medium text-gray-600">Current Status:</span>{" "}
-//             <span className={`inline-block px-2 py-1 text-sm font-medium rounded-full ${getStatusColor(request.status)}`}>
-//               {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-//             </span>
-//           </p>
-
-//           {/* Custom Tailwind Dropdown */}
-//           <div>
-//             <label className="block text-sm font-medium text-gray-700 mb-1">Update Status</label>
-//             <Listbox value={status} onChange={setStatus}>
-//               <div className="relative mt-1">
-//                 <Listbox.Button className="relative w-full cursor-default rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-opacity-75 text-sm">
-//                   <span className="block truncate capitalize">{status}</span>
-//                   <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-//                     <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
-//                   </span>
-//                 </Listbox.Button>
-
-//                 <Transition
-//                   as={Fragment}
-//                   leave="transition ease-in duration-100"
-//                   leaveFrom="opacity-100"
-//                   leaveTo="opacity-0"
-//                 >
-//                   <Listbox.Options className="absolute mt-1 w-full rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none text-sm z-10">
-//                     {statusOptions.map((option) => (
-//                       <Listbox.Option
-//                         key={option}
-//                         className={({ active }) =>
-//                           `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
-//                             active ? "bg-blue-100 text-blue-900" : "text-gray-900"
-//                           }`
-//                         }
-//                         value={option}
-//                       >
-//                         {({ selected }) => (
-//                           <>
-//                             <span className={`block truncate capitalize ${selected ? "font-medium" : "font-normal"}`}>
-//                               {option}
-//                             </span>
-//                             {selected ? (
-//                               <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
-//                                 <CheckIcon className="h-5 w-5" />
-//                               </span>
-//                             ) : null}
-//                           </>
-//                         )}
-//                       </Listbox.Option>
-//                     ))}
-//                   </Listbox.Options>
-//                 </Transition>
-//               </div>
-//             </Listbox>
-//           </div>
-
-//           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-
-//           <button
-//             onClick={handleUpdateStatus}
-//             disabled={loading}
-//             className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg transition duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
-//           >
-//             {loading ? "Updating..." : "Update Status"}
-//           </button>
+//         {/* Info Section */}
+//         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm sm:text-base text-gray-800">
+//           <Detail label="Employee Name" value={`${request.first_name} ${request.last_name}`} />
+//           <Detail label="Leave Type" value={request.leave_type} />
+//           <Detail label="Start Date" value={trimDate(request.start_date)} />
+//           <Detail label="End Date" value={trimDate(request.end_date)} />
+//           <Detail label="Number of Days" value={request.number_of_days} />
+//           <Detail label="Reason" value={request.reason} />
+//           <Detail
+//             label="Current Status"
+//             value={
+//               <span className={`font-semibold ${getStatusColor(request.status)}`}>
+//                 {capitalize(request.status)}
+//               </span>
+//             }
+//           />
 //         </div>
+
+//         {/* Divider */}
+//         <div className="my-8 border-t border-gray-200" />
+
+//         {/* Status Update */}
+//         <div>
+//           <label className="block font-semibold text-gray-800 mb-3 text-sm sm:text-base">Update Status</label>
+//           <div className="flex flex-wrap gap-3">
+//             {["pending", "accepted", "rejected"].map((option) => (
+//               <button
+//                 key={option}
+//                 onClick={() => setStatus(option)}
+//                 className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+//                   status === option
+//                     ? getStatusButtonStyle(option)
+//                     : "border border-gray-300 text-gray-700 hover:bg-gray-100"
+//                 }`}
+//               >
+//                 {capitalize(option)}
+//               </button>
+//             ))}
+//           </div>
+//         </div>
+
+//         {/* Error Message */}
+//         {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
+
+//         {/* Submit Button */}
+//         <button
+//           onClick={handleUpdateStatus}
+//           disabled={loading}
+//           className="mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 rounded-xl font-semibold shadow-md hover:from-blue-700 hover:to-blue-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+//         >
+//           {loading ? "Updating..." : "Update Status"}
+//         </button>
 //       </div>
 //     </div>
 //   );
 // }
 
+// // Grouped detail component
+// function Detail({ label, value }) {
+//   return (
+//     <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition">
+//       <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">{label}</div>
+//       <div className="font-medium text-gray-900">{value}</div>
+//     </div>
+//   );
+// }
+
+// // Remove time from ISO string
+// function trimDate(dateStr) {
+//   return dateStr.split("T")[0];
+// }
+
+// // Helpers
+// function capitalize(str) {
+//   return str.charAt(0).toUpperCase() + str.slice(1);
+// }
+
 // function getStatusColor(status) {
 //   switch (status) {
 //     case "pending":
-//       return "bg-yellow-100 text-yellow-800";
+//       return "text-yellow-500";
 //     case "accepted":
-//       return "bg-green-100 text-green-800";
+//       return "text-green-600";
 //     case "rejected":
-//       return "bg-red-100 text-red-800";
+//       return "text-red-500";
 //     default:
-//       return "bg-gray-100 text-gray-800";
+//       return "text-gray-500";
+//   }
+// }
+
+// function getStatusButtonStyle(status) {
+//   switch (status) {
+//     case "pending":
+//       return "bg-yellow-100 text-yellow-700 border border-yellow-300";
+//     case "accepted":
+//       return "bg-green-100 text-green-700 border border-green-300";
+//     case "rejected":
+//       return "bg-red-100 text-red-700 border border-red-300";
+//     default:
+//       return "bg-gray-100 text-gray-700 border border-gray-300";
 //   }
 // }
 
 
+
+
+
+// components/LeaveRequestDetails.jsx
 "use client";
 
 import axios from "axios";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion"; // For smooth animations
+import { FaTimes, FaUser, FaCalendarAlt, FaClock, FaStickyNote, FaInfoCircle, FaCheck, FaBan, FaHourglassHalf } from "react-icons/fa"; // Icons for better visuals
 
 export default function LeaveRequestDetails({ request, onClose }) {
   const [status, setStatus] = useState(request.status);
@@ -349,8 +173,15 @@ export default function LeaveRequestDetails({ request, onClose }) {
   const [error, setError] = useState("");
 
   const handleUpdateStatus = async () => {
+    // Prevent updating to the same status
+    if (status === request.status) {
+      setError("Status is already set to this value.");
+      return;
+    }
+
     try {
       setLoading(true);
+      setError("");
 
       const response = await axios.put(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/leave-requests/${request.id}`,
@@ -358,453 +189,275 @@ export default function LeaveRequestDetails({ request, onClose }) {
       );
 
       if (response.data.success) {
+        // Use a subtle animation or toast notification library (like react-toastify) for better UX
+        // For now, a simple alert as in your original code
         alert("Status updated successfully!");
-        onClose();
+        onClose(); // Close the modal on success
       } else {
         setError(response.data.message || "Failed to update status.");
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      setError("An error occurred while updating the status. Please try again.");
+      // Provide more specific error messages if possible from the backend
+      const errorMsg = error.response?.data?.message || "An error occurred while updating the status. Please try again.";
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
+  // Icon mapping for leave types (example)
+  const getLeaveTypeIcon = (type) => {
+    switch(type?.toLowerCase()) {
+        case 'annual':
+        case 'vacation':
+            return <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+        case 'sick':
+        case 'medical':
+            return <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>;
+        case 'personal':
+            return <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>;
+        default:
+            return <FaInfoCircle className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="w-full max-w-xl bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-200 relative p-8 sm:p-10">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 text-gray-500 hover:text-gray-800 transition"
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6"
+        onClick={onClose} // Close modal if backdrop is clicked
+      >
+        <motion.div
+          initial={{ scale: 0.9, y: 20, opacity: 0 }}
+          animate={{ scale: 1, y: 0, opacity: 1 }}
+          exit={{ scale: 0.95, y: 20, opacity: 0 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[95vh]"
+          onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
-        {/* Heading */}
-        <h2 className="text-3xl font-extrabold text-center text-gray-800 mb-8">
-          Leave Request Details
-        </h2>
-
-        {/* Info Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm sm:text-base text-gray-800">
-          <Detail label="Employee Name" value={`${request.first_name} ${request.last_name}`} />
-          <Detail label="Leave Type" value={request.leave_type} />
-          <Detail label="Start Date" value={trimDate(request.start_date)} />
-          <Detail label="End Date" value={trimDate(request.end_date)} />
-          <Detail label="Number of Days" value={request.number_of_days} />
-          <Detail label="Reason" value={request.reason} />
-          <Detail
-            label="Current Status"
-            value={
-              <span className={`font-semibold ${getStatusColor(request.status)}`}>
-                {capitalize(request.status)}
-              </span>
-            }
-          />
-        </div>
-
-        {/* Divider */}
-        <div className="my-8 border-t border-gray-200" />
-
-        {/* Status Update */}
-        <div>
-          <label className="block font-semibold text-gray-800 mb-3 text-sm sm:text-base">Update Status</label>
-          <div className="flex flex-wrap gap-3">
-            {["pending", "accepted", "rejected"].map((option) => (
+          {/* Modal Header */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-5 sm:px-8 sm:py-6 border-b border-gray-200 relative">
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center">
+                  <div className="p-2 rounded-lg bg-white shadow-sm mr-3">
+                    {getLeaveTypeIcon(request.leave_type)}
+                  </div>
+                  Leave Request Details
+                </h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Review and manage <span className="font-semibold">{request.first_name} {request.last_name}'s</span> leave request.
+                </p>
+              </div>
               <button
-                key={option}
-                onClick={() => setStatus(option)}
-                className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
-                  status === option
-                    ? getStatusButtonStyle(option)
-                    : "border border-gray-300 text-gray-700 hover:bg-gray-100"
-                }`}
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-800 transition-colors duration-200 p-2 rounded-full hover:bg-white hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+                aria-label="Close"
               >
-                {capitalize(option)}
+                <FaTimes className="h-5 w-5" />
               </button>
-            ))}
+            </div>
+          </div>
+
+          {/* Modal Body - Scrollable Content */}
+          <div className="flex-grow overflow-y-auto p-6 sm:p-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <InfoCard
+                icon={<FaUser className="text-indigo-600" />}
+                label="Employee"
+                value={`${request.first_name} ${request.last_name}`}
+              />
+              <InfoCard
+                icon={getLeaveTypeIcon(request.leave_type)}
+                label="Leave Type"
+                value={request.leave_type}
+              />
+              <InfoCard
+                icon={<FaCalendarAlt className="text-blue-500" />}
+                label="Start Date"
+                value={trimDate(request.start_date)}
+              />
+              <InfoCard
+                icon={<FaCalendarAlt className="text-green-500" />}
+                label="End Date"
+                value={trimDate(request.end_date)}
+              />
+              <InfoCard
+                icon={<FaClock className="text-amber-500" />}
+                label="Number of Days"
+                value={request.number_of_days}
+              />
+              
+              <InfoCard
+                icon={<FaStickyNote className="text-purple-500" />}
+                label="Reason"
+                value={request.reason}
+                isFullWidth={true} // Span full width for longer content
+              />
+              <InfoCard
+                icon={
+                  request.status === "pending" ? <FaHourglassHalf className="text-yellow-500" /> :
+                  request.status === "accepted" ? <FaCheck className="text-green-500" /> :
+                  <FaBan className="text-red-500" />
+                }
+                label="Current Status"
+                value={
+                  <span className={`font-semibold px-2.5 py-0.5 rounded-full text-xs ${getStatusBadgeStyle(request.status)}`}>
+                    {capitalize(request.status)}
+                  </span>
+                }
+                isFullWidth={true}
+              />
+            </div>
+
+            {/* Divider */}
+            <div className="my-8 border-t border-gray-200"></div>
+
+            {/* Status Update Section */}
+            <div>
+              <label className="block text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Update Status
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {["pending", "accepted", "rejected"].map((option) => (
+                  <button
+                    key={option}
+                    type="button" // Prevent form submission
+                    onClick={() => setStatus(option)}
+                    disabled={loading}
+                    className={`flex items-center px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      status === option
+                        ? `${getStatusButtonStyle(option)} focus:ring-opacity-50`
+                        : "border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-gray-300"
+                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {option === "pending" && <FaHourglassHalf className="mr-2" />}
+                    {option === "accepted" && <FaCheck className="mr-2" />}
+                    {option === "rejected" && <FaBan className="mr-2" />}
+                    {capitalize(option)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-5 p-3 bg-red-50 text-red-700 rounded-lg border border-red-200 text-sm flex items-start"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span>{error}</span>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Modal Footer */}
+          <div className="bg-gray-50 px-6 py-5 sm:px-8 sm:py-6 border-t border-gray-200 flex flex-col sm:flex-row justify-end gap-3">
+            <button
+              type="button" // Prevent form submission
+              onClick={onClose}
+              disabled={loading}
+              className={`px-5 py-2.5 border border-gray-300 shadow-sm text-base font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-colors duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              Cancel
+            </button>
+            <button
+              type="button" // Prevent form submission
+              onClick={handleUpdateStatus}
+              disabled={loading || status === request.status} // Disable if status hasn't changed
+              className={`px-5 py-2.5 text-base font-medium rounded-xl shadow-sm text-white transition-all duration-200 ease-in-out transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                loading || status === request.status
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:ring-blue-500"
+              }`}
+            >
+              {loading ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Updating...
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <FaCheck className="mr-2" />
+                  Update Status
+                </span>
+              )}
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+// --- Reusable Info Card Component ---
+function InfoCard({ icon, label, value, isFullWidth = false }) {
+  return (
+    <div className={`bg-gray-50 rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 ${isFullWidth ? 'sm:col-span-2' : ''}`}>
+      <div className="flex items-start">
+        <div className="flex-shrink-0 p-2 bg-white rounded-lg shadow-sm mr-3">
+          {icon}
+        </div>
+        <div>
+          <div className="text-xs uppercase tracking-wide text-gray-500 mb-1 flex items-center">
+            {label}
+          </div>
+          <div className="font-medium text-gray-900 break-words">
+            {value}
           </div>
         </div>
-
-        {/* Error Message */}
-        {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
-
-        {/* Submit Button */}
-        <button
-          onClick={handleUpdateStatus}
-          disabled={loading}
-          className="mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 rounded-xl font-semibold shadow-md hover:from-blue-700 hover:to-blue-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          {loading ? "Updating..." : "Update Status"}
-        </button>
       </div>
     </div>
   );
 }
 
-// Grouped detail component
-function Detail({ label, value }) {
-  return (
-    <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition">
-      <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">{label}</div>
-      <div className="font-medium text-gray-900">{value}</div>
-    </div>
-  );
-}
-
-// Remove time from ISO string
+// --- Utility Functions ---
 function trimDate(dateStr) {
   return dateStr.split("T")[0];
 }
 
-// Helpers
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-function getStatusColor(status) {
+function getStatusBadgeStyle(status) {
   switch (status) {
     case "pending":
-      return "text-yellow-500";
+      return "bg-yellow-100 text-yellow-800 border border-yellow-200";
     case "accepted":
-      return "text-green-600";
+      return "bg-green-100 text-green-800 border border-green-200";
     case "rejected":
-      return "text-red-500";
+      return "bg-red-100 text-red-800 border border-red-200";
     default:
-      return "text-gray-500";
+      return "bg-gray-100 text-gray-800 border border-gray-200";
   }
 }
 
 function getStatusButtonStyle(status) {
   switch (status) {
     case "pending":
-      return "bg-yellow-100 text-yellow-700 border border-yellow-300";
+      return "bg-yellow-100 text-yellow-800 border border-yellow-300 focus:ring-yellow-500";
     case "accepted":
-      return "bg-green-100 text-green-700 border border-green-300";
+      return "bg-green-100 text-green-800 border border-green-300 focus:ring-green-500";
     case "rejected":
-      return "bg-red-100 text-red-700 border border-red-300";
+      return "bg-red-100 text-red-800 border border-red-300 focus:ring-red-500";
     default:
-      return "bg-gray-100 text-gray-700 border border-gray-300";
+      return "bg-gray-100 text-gray-800 border border-gray-300 focus:ring-gray-500";
   }
 }
-
-
-
-// "use client"; // Mark this as a Client Component
-
-// import axios from "axios";
-// import { useState } from "react";
-
-// export default function LeaveRequestDetails({ request, onClose }) {
-//   const [status, setStatus] = useState(request.status); // Local state for status
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState("");
-
-//   // Handle status update
-//   const handleUpdateStatus = async () => {
-//     try {
-//       setLoading(true);
-
-//       const response = await axios.put(
-//         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/leave-requests/${request.id}`,
-//         { status }
-//       );
-
-//       if (response.data.success) {
-//         alert("Status updated successfully!");
-//         onClose(); // Close the modal after updating
-//       } else {
-//         setError(response.data.message || "Failed to update status.");
-//       }
-//     } catch (error) {
-//       console.error("Error updating status:", error);
-//       setError("An error occurred while updating the status. Please try again.");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-//       {/* Modal Container */}
-//       <div className="bg-white p-8 rounded-lg shadow-lg w-[400px] max-h-[80vh] overflow-y-auto relative">
-//         {/* Close Button */}
-//         <button
-//           onClick={onClose} // Close the modal
-//           className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 transition-colors"
-//         >
-//           <svg
-//             xmlns="http://www.w3.org/2000/svg"
-//             className="h-6 w-6"
-//             fill="none"
-//             viewBox="0 0 24 24"
-//             stroke="currentColor"
-//           >
-//             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-//           </svg>
-//         </button>
-
-//         {/* Heading */}
-//         <h2 className="text-2xl font-bold text-gray-800 mb-6">Leave Request Details</h2>
-
-//         {/* Leave Request Information */}
-//         <div className="space-y-4 text-gray-700">
-//           <p className="font-medium">
-//             <span className="text-gray-600">Employee Name:</span>{" "}
-//             <span className="font-semibold">{request.first_name} {request.last_name}</span>
-//           </p>
-//           <p className="font-medium">
-//             <span className="text-gray-600">Leave Type:</span>{" "}
-//             <span className="font-semibold">{request.leave_type}</span>
-//           </p>
-//           <p className="font-medium">
-//             <span className="text-gray-600">Start Date:</span>{" "}
-//             <span className="font-semibold">{request.start_date}</span>
-//           </p>
-//           <p className="font-medium">
-//             <span className="text-gray-600">End Date:</span>{" "}
-//             <span className="font-semibold">{request.end_date}</span>
-//           </p>
-//           <p className="font-medium">
-//             <span className="text-gray-600">Number of Days:</span>{" "}
-//             <span className="font-semibold">{request.number_of_days}</span>
-//           </p>
-//           <p className="font-medium">
-//             <span className="text-gray-600">Reason:</span>{" "}
-//             <span className="font-semibold">{request.reason}</span>
-//           </p>
-//           <p className="font-medium">
-//             <span className="text-gray-600">Current Status:</span>{" "}
-//             <span className={`${getStatusColor(request.status)} font-semibold`}>
-//               {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-//             </span>
-//           </p>
-
-//           {/* Update Status Toggle Buttons */}
-//           <div>
-//             <label className="block font-medium text-gray-700 mb-2">Update Status</label>
-//             <div className="flex gap-3">
-//               {["pending", "accepted", "rejected"].map((option) => (
-//                 <button
-//                   key={option}
-//                   onClick={() => setStatus(option)}
-//                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-//                     status === option
-//                       ? getStatusButtonStyle(option)
-//                       : "border border-gray-300 text-gray-700 hover:bg-gray-100"
-//                   }`}
-//                 >
-//                   {option.charAt(0).toUpperCase() + option.slice(1)}
-//                 </button>
-//               ))}
-//             </div>
-//           </div>
-
-//           {/* Error Message */}
-//           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-
-//           {/* Submit Button */}
-//           <button
-//             onClick={handleUpdateStatus}
-//             disabled={loading}
-//             className="w-full bg-blue-600 text-white px-4 py-3 rounded-md font-medium hover:bg-blue-700 transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
-//           >
-//             {loading ? "Updating..." : "Update Status"}
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// // Helper function to style status based on its value
-// function getStatusColor(status) {
-//   switch (status) {
-//     case "pending":
-//       return "text-yellow-500";
-//     case "accepted":
-//       return "text-green-500";
-//     case "rejected":
-//       return "text-red-500";
-//     default:
-//       return "text-gray-500";
-//   }
-// }
-
-// // Helper function to style toggle buttons based on selected status
-// function getStatusButtonStyle(status) {
-//   switch (status) {
-//     case "pending":
-//       return "bg-yellow-100 text-yellow-700 border border-yellow-300";
-//     case "accepted":
-//       return "bg-green-100 text-green-700 border border-green-300";
-//     case "rejected":
-//       return "bg-red-100 text-red-700 border border-red-300";
-//     default:
-//       return "bg-gray-100 text-gray-700 border border-gray-300";
-//   }
-// }
-
-
-// "use client";
-
-// import axios from "axios";
-// import { useState } from "react";
-
-// export default function LeaveRequestDetails({ request, onClose }) {
-//   const [status, setStatus] = useState(request.status);
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState("");
-
-//   const handleUpdateStatus = async () => {
-//     try {
-//       setLoading(true);
-//       const response = await axios.put(
-//         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/leave-requests/${request.id}`,
-//         { status }
-//       );
-
-//       if (response.data.success) {
-//         alert("Status updated successfully!");
-//         onClose();
-//       } else {
-//         setError(response.data.message || "Failed to update status.");
-//       }
-//     } catch (error) {
-//       console.error("Error updating status:", error);
-//       setError("An error occurred while updating the status. Please try again.");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // Simple date formatter (removes time)
-//   const formatDate = (isoDate) => isoDate.split("T")[0];
-
-//   return (
-//     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 px-4 sm:px-6">
-//       <div className="w-full max-w-xl max-h-[90vh] bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-200 relative overflow-hidden">
-        
-//         {/* Scrollable Content */}
-//         <div className="overflow-y-auto max-h-[90vh] p-8 sm:p-10">
-//           {/* Close Button */}
-//           <button
-//             onClick={onClose}
-//             className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition"
-//           >
-//             <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none"
-//               viewBox="0 0 24 24" stroke="currentColor">
-//               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-//                 d="M6 18L18 6M6 6l12 12" />
-//             </svg>
-//           </button>
-
-//           {/* Title */}
-//           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
-//             Leave Request Details
-//           </h2>
-
-//           {/* Info Grid */}
-//           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-gray-800 text-sm sm:text-base">
-//             <div>
-//               <p className="text-gray-500">Employee Name</p>
-//               <p className="font-semibold">{request.first_name} {request.last_name}</p>
-//             </div>
-//             <div>
-//               <p className="text-gray-500">Leave Type</p>
-//               <p className="font-semibold">{request.leave_type}</p>
-//             </div>
-//             <div>
-//               <p className="text-gray-500">Start Date</p>
-//               <p className="font-semibold">{formatDate(request.start_date)}</p>
-//             </div>
-//             <div>
-//               <p className="text-gray-500">End Date</p>
-//               <p className="font-semibold">{formatDate(request.end_date)}</p>
-//             </div>
-//             <div>
-//               <p className="text-gray-500">Number of Days</p>
-//               <p className="font-semibold">{request.number_of_days}</p>
-//             </div>
-//             <div>
-//               <p className="text-gray-500">Current Status</p>
-//               <p className={`font-semibold ${getStatusColor(request.status)}`}>
-//                 {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-//               </p>
-//             </div>
-//             <div className="sm:col-span-2">
-//               <p className="text-gray-500">Reason</p>
-//               <p className="font-medium whitespace-pre-wrap">{request.reason}</p>
-//             </div>
-//           </div>
-
-//           {/* Status Controls */}
-//           <div className="mt-8">
-//             <label className="block text-gray-700 font-medium mb-2">
-//               Update Status
-//             </label>
-//             <div className="flex gap-3 flex-wrap">
-//               {["pending", "accepted", "rejected"].map((option) => (
-//                 <button
-//                   key={option}
-//                   onClick={() => setStatus(option)}
-//                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-//                     status === option
-//                       ? getStatusButtonStyle(option)
-//                       : "border border-gray-300 text-gray-700 hover:bg-gray-100"
-//                   }`}
-//                 >
-//                   {option.charAt(0).toUpperCase() + option.slice(1)}
-//                 </button>
-//               ))}
-//             </div>
-//           </div>
-
-//           {/* Error Message */}
-//           {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
-
-//           {/* Update Button */}
-//           <button
-//             onClick={handleUpdateStatus}
-//             disabled={loading}
-//             className="mt-6 w-full bg-blue-600 text-white py-3 px-4 rounded-md font-medium hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-//           >
-//             {loading ? "Updating..." : "Update Status"}
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// // Status Color Text
-// function getStatusColor(status) {
-//   switch (status) {
-//     case "pending":
-//       return "text-yellow-500";
-//     case "accepted":
-//       return "text-green-500";
-//     case "rejected":
-//       return "text-red-500";
-//     default:
-//       return "text-gray-500";
-//   }
-// }
-
-// // Button Style
-// function getStatusButtonStyle(status) {
-//   switch (status) {
-//     case "pending":
-//       return "bg-yellow-100 text-yellow-700 border border-yellow-300";
-//     case "accepted":
-//       return "bg-green-100 text-green-700 border border-green-300";
-//     case "rejected":
-//       return "bg-red-100 text-red-700 border border-red-300";
-//     default:
-//       return "bg-gray-100 text-gray-700 border border-gray-300";
-//   }
-// }
