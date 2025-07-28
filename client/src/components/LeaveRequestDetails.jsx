@@ -251,7 +251,7 @@ export default function LeaveRequestDetails({ request, onClose }) {
                   Leave Request Details
                 </h2>
                 <p className="mt-1 text-sm text-gray-600">
-                  Review and manage <span className="font-semibold">{request.first_name} {request.last_name}'s</span> leave request.
+                  Review and manage <span className="font-semibold">{request.first_name} {request.last_name}</span> leave request.
                 </p>
               </div>
               <button
