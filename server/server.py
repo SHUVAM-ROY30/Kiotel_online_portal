@@ -2667,6 +2667,7 @@ def create_task():
                         file_path = os.path.join(upload_folder, unique_name)
                         attachment.save(file_path)
                         attachment_filenames.append(original_filename)
+                        attachment_filenames.append(unique_name)
 
                 attachments_json = json.dumps(attachment_filenames)
 
@@ -2721,6 +2722,131 @@ def create_task():
 
     finally:
         session.pop("is_creating_task", None)
+
+
+# @app.route("/api/task", methods=["POST"])
+# @login_required
+# def create_task():
+#     if session.get("is_creating_task"):
+#         return jsonify({"error": "Request already in progress"}), 429
+
+#     session["is_creating_task"] = True
+
+#     try:
+#         user_id = session.get("user_id")
+#         if not user_id:
+#             return jsonify({"error": "User ID not found in session"}), 400
+
+#         title = request.form.get("title")
+#         description = request.form.get("description")
+#         assigned_users = request.form.getlist("assignedUsers[]")
+#         task_state = request.form.get("ticketState")
+#         task_priority = request.form.get("ticketPriority")
+#         attachments = request.files.getlist("attachments")
+
+#         # ✅ Get selected tags
+#         tags = request.form.getlist("tags[]")  # List of tag IDs like ['1', '3']
+#         tags_str = ",".join([str(t) for t in tags]) if tags else None
+
+#         if not title or not description:
+#             return jsonify({"error": "Title and description are required"}), 400
+
+#         connection = create_connection()
+#         if connection is None:
+#             return jsonify({"error": "Failed to connect to the database"}), 500
+
+#         try:
+#             unique_filenames = []  # Store unique names for DB/storage
+#             upload_folder = app.config['UPLOAD_FOLDER']
+
+#             # Validate Upload Folder
+#             if not os.path.exists(upload_folder):
+#                 print(f"ERROR: Upload folder does not exist: {upload_folder}")
+#                 return jsonify({"error": "Server configuration error: Upload folder missing"}), 500
+#             if not os.access(upload_folder, os.W_OK):
+#                 print(f"ERROR: No write permission for upload folder: {upload_folder}")
+#                 return jsonify({"error": "Server configuration error: Insufficient permissions for upload folder"}), 500
+
+#             # Handle File Attachments
+#             if attachments:
+#                 print(f"INFO: Processing {len(attachments)} attachments.")
+#                 for attachment in attachments:
+#                     if attachment and attachment.filename != '':
+#                         original_filename = attachment.filename
+#                         print(f"INFO: Processing file: {original_filename}")
+
+#                         # Generate unique name
+#                         unique_name = generate_unique_name(original_filename)
+#                         print(f"DEBUG: Generated unique name: {unique_name}")
+
+#                         # Define full file path
+#                         file_path = os.path.join(upload_folder, unique_name)
+#                         print(f"DEBUG: Full file path: {file_path}")
+
+#                         try:
+#                             # Save the file
+#                             attachment.save(file_path)
+#                             print(f"INFO: File saved successfully: {file_path}")
+
+#                             # Store the unique name (THIS IS THE CHANGE)
+#                             unique_filenames.append(unique_name)  # Use unique_name here
+
+#                         except Exception as save_error:
+#                             print(f"ERROR: Failed to save file {original_filename} -> {file_path}. Error: {save_error}")
+#                             raise save_error
+#                     else:
+#                         print("WARNING: Received an empty or unnamed file part. Skipping.")
+#             else:
+#                 print("INFO: No attachments received.")
+
+#             # Prepare Data for DB
+#             attachments_json = json.dumps(unique_filenames)  # Pass unique names to the SP
+#             print(f"DEBUG: attachments_json to store in DB: {attachments_json}")
+
+#             with connection.cursor() as cursor:
+#                 # Set current user context
+#                 cursor.execute("SET @current_user_id = %s", (user_id,))
+
+#                 # Call SP with unique filenames and tags
+#                 print(f"DEBUG: Calling Proc_tbltasks_Upsert_test_2 with attachments_json: {attachments_json}, tags_str: {tags_str}")
+#                 cursor.callproc('Proc_tbltasks_Upsert_test_2', (
+#                     0,                              # IN p_task_id (0 = insert)
+#                     title,                          # IN p_title
+#                     description,                    # IN p_description
+#                     attachments_json,               # IN p_attachments_json (now unique names)
+#                     unique_name,                           # IN p_attachment_name (legacy, likely unused)
+#                     task_state,                     # IN p_status_id
+#                     json.dumps(assigned_users),     # IN p_assigned_users_json
+#                     task_priority,                  # IN p_priority_id
+#                     tags_str                        # IN p_tags
+#                 ))
+
+#                 connection.commit()
+#                 new_task_id = cursor.lastrowid
+#                 print(f"INFO: Task created successfully with ID: {new_task_id}")
+
+#             return jsonify({"message": "Task created successfully", "task_id": new_task_id}), 201
+
+#         except Exception as file_save_error:
+#             connection.rollback()
+#             print(f"ERROR (File Save/DB): {file_save_error}")
+#             return jsonify({"error": f"Failed to process attachments or save task: {str(file_save_error)}"}), 500
+
+#         finally:
+#             connection.close()
+#             print("DEBUG: Database connection closed.")
+
+#     except Exception as e:
+#         print(f"ERROR (Unexpected): {e}")
+#         return jsonify({"error": f"An internal error occurred: {str(e)}"}), 500
+
+#     finally:
+#         session.pop("is_creating_task", None)
+#         print("DEBUG: Session lock released.")
+
+
+
+
 # @app.route("/api/task", methods=["POST"])
 # @login_required
 # def create_task():
@@ -4406,6 +4532,8 @@ if __name__ == '__main__':
 
 
 #Hello this is the the 
+
+
 
 
 

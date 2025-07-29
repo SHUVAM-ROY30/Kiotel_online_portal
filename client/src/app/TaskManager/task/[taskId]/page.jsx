@@ -48,12 +48,34 @@ useEffect(() => {
   };
 }, []);
 
+  // // Utility to check if a file is an image
+  // const isImage = (filename) => {
+  //   if (!filename) return false;
+  //   const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "tiff", "tif"];
+  //   const ext = filename.split(".").pop().toLowerCase();
+  //   return imageExtensions.includes(ext);
+  // };
+
+
   // Utility to check if a file is an image
-  const isImage = (filename) => {
-    if (!filename) return false;
-    const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
-    return imageExtensions.includes(filename.split(".").pop().toLowerCase());
-  };
+const isImage = (filename) => {
+  // FIX: Ensure filename is a valid, non-empty string
+  if (!filename || typeof filename !== 'string') {
+    return false;
+  }
+  const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "tiff", "tif"];
+  
+  // Safely extract extension
+  const parts = filename.split(".");
+  if (parts.length < 2) { // Handles cases like "filename" (no dot) or "." 
+    return false;
+  }
+  const ext = parts.pop().toLowerCase(); // Get the last part after the final dot
+
+  return imageExtensions.includes(ext);
+};
+
+
 
   // Utility to check if a file exists on the server
   const checkFileExistence = async (filePath) => {
@@ -334,22 +356,7 @@ useEffect(() => {
   fetchUsers();
 }, []);
 
-  // useEffect(() => {
-  //   const fetchUsers = async () => {
-  //     try {
-  //       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`);
-  //       const filteredUsers = response.data
-  //         .filter((user) => user.role !== "Client")
-  //         .map((user) => ({ value: user.id, label: `${user.fname} ${user.lname}` })); // Format for react-select
-  //       setUsers(filteredUsers);
-  //     } catch (error) {
-  //       console.error("Error fetching users:", error);
-  //     }
-  //   };
-  
-  //   fetchUsers();
-  // }, []);
-  // Fetch user session
+
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
