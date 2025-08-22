@@ -1,6 +1,3 @@
-
-
-
 "use client";
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
@@ -19,7 +16,7 @@ export default function TicketDetails({ params }) {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedPriority, setSelectedPriority] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [taskState, setTaskState] = useState(null);     // From previous update
+  const [taskState, setTaskState] = useState(null); // From previous update
   const [taskPriority, setTaskPriority] = useState(null); // From previous update
   const [assignedUsers, setAssignedUsers] = useState([]); // NEW: Assigned User
   const [isAssignDropdownOpen, setIsAssignDropdownOpen] = useState(false);
@@ -30,23 +27,23 @@ export default function TicketDetails({ params }) {
   const router = useRouter();
 
   // Inside useEffect for outside click
-useEffect(() => {
-  const handleClickOutside = (event) => {
-    if (
-      dropdownRef.current &&
-      !dropdownRef.current.contains(event.target) &&
-      assignDropdownRef.current &&
-      !assignDropdownRef.current.contains(event.target)
-    ) {
-      setIsDropdownOpen(false);
-      setIsAssignDropdownOpen(false);
-    }
-  };
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => {
-    document.removeEventListener("mousedown", handleClickOutside);
-  };
-}, []);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        assignDropdownRef.current &&
+        !assignDropdownRef.current.contains(event.target)
+      ) {
+        setIsDropdownOpen(false);
+        setIsAssignDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // // Utility to check if a file is an image
   // const isImage = (filename) => {
@@ -56,26 +53,34 @@ useEffect(() => {
   //   return imageExtensions.includes(ext);
   // };
 
-
   // Utility to check if a file is an image
-const isImage = (filename) => {
-  // FIX: Ensure filename is a valid, non-empty string
-  if (!filename || typeof filename !== 'string') {
-    return false;
-  }
-  const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "tiff", "tif"];
-  
-  // Safely extract extension
-  const parts = filename.split(".");
-  if (parts.length < 2) { // Handles cases like "filename" (no dot) or "." 
-    return false;
-  }
-  const ext = parts.pop().toLowerCase(); // Get the last part after the final dot
+  const isImage = (filename) => {
+    // FIX: Ensure filename is a valid, non-empty string
+    if (!filename || typeof filename !== "string") {
+      return false;
+    }
+    const imageExtensions = [
+      "jpg",
+      "jpeg",
+      "png",
+      "gif",
+      "bmp",
+      "webp",
+      "svg",
+      "tiff",
+      "tif",
+    ];
 
-  return imageExtensions.includes(ext);
-};
+    // Safely extract extension
+    const parts = filename.split(".");
+    if (parts.length < 2) {
+      // Handles cases like "filename" (no dot) or "."
+      return false;
+    }
+    const ext = parts.pop().toLowerCase(); // Get the last part after the final dot
 
-
+    return imageExtensions.includes(ext);
+  };
 
   // Utility to check if a file exists on the server
   const checkFileExistence = async (filePath) => {
@@ -120,12 +125,18 @@ const isImage = (filename) => {
     const fetchTicketDetails = async () => {
       try {
         const [ticketResponse, repliesResponse] = await Promise.all([
-          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${ticketId}`, {
-            withCredentials: true,
-          }),
-          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${ticketId}/replies`, {
-            withCredentials: true,
-          }),
+          axios.get(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${ticketId}`,
+            {
+              withCredentials: true,
+            }
+          ),
+          axios.get(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${ticketId}/replies`,
+            {
+              withCredentials: true,
+            }
+          ),
         ]);
 
         const ticketData = ticketResponse.data;
@@ -155,7 +166,7 @@ const isImage = (filename) => {
       try {
         const [statusRes, priorityRes] = await Promise.all([
           axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/taskstate`),
-          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/priority`)
+          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/priority`),
         ]);
         setStatuses(statusRes.data);
         setPriorities(priorityRes.data);
@@ -202,35 +213,31 @@ const isImage = (filename) => {
     if (ticketId) fetchTaskPriority();
   }, [ticketId]);
 
+  // Fetch assigned users
+  useEffect(() => {
+    const fetchAssignedUsers = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticketId}`,
+          { withCredentials: true }
+        );
 
-
-// Fetch assigned users
-useEffect(() => {
-  const fetchAssignedUsers = async () => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticketId}`,
-        { withCredentials: true }
-      );
-
-      // Make sure we're handling both single and multiple user responses
-      if (response.data && Array.isArray(response.data)) {
-        setAssignedUsers(response.data);
-      } else if (response.data && !Array.isArray(response.data)) {
-        setAssignedUsers([response.data]); // Wrap single object in array
-      } else {
-        setAssignedUsers([]); // Fallback to empty array
+        // Make sure we're handling both single and multiple user responses
+        if (response.data && Array.isArray(response.data)) {
+          setAssignedUsers(response.data);
+        } else if (response.data && !Array.isArray(response.data)) {
+          setAssignedUsers([response.data]); // Wrap single object in array
+        } else {
+          setAssignedUsers([]); // Fallback to empty array
+        }
+      } catch (err) {
+        console.error("Error fetching assigned users:", err);
+        setAssignedUsers([]);
       }
+    };
 
-    } catch (err) {
-      console.error("Error fetching assigned users:", err);
-      setAssignedUsers([]);
-    }
-  };
-
-  if (ticketId) fetchAssignedUsers();
-}, [ticketId]);
-
+    if (ticketId) fetchAssignedUsers();
+  }, [ticketId]);
 
   // Fetch user session
   useEffect(() => {
@@ -250,7 +257,9 @@ useEffect(() => {
 
   // Save updated status
   const handleUpdateStatus = async () => {
-    const confirmChange = window.confirm("Are you sure you want to update the status?");
+    const confirmChange = window.confirm(
+      "Are you sure you want to update the status?"
+    );
     if (!confirmChange) return;
     if (!selectedStatus) {
       alert("⚠️ Please select a status.");
@@ -267,7 +276,9 @@ useEffect(() => {
         setTicketDetails({
           ...ticketDetails,
           status_id: selectedStatus,
-          status_name: statuses.find(s => s.Id === selectedStatus)?.status_name || ticketDetails.status_name,
+          status_name:
+            statuses.find((s) => s.Id === selectedStatus)?.status_name ||
+            ticketDetails.status_name,
         });
       }
     } catch (err) {
@@ -278,7 +289,9 @@ useEffect(() => {
 
   // Save updated priority
   const handleUpdatePriority = async () => {
-    const confirmChange = window.confirm("Are you sure you want to update the priority?");
+    const confirmChange = window.confirm(
+      "Are you sure you want to update the priority?"
+    );
     if (!confirmChange) return;
     if (!selectedPriority) {
       alert("⚠️ Please select a priority.");
@@ -295,7 +308,9 @@ useEffect(() => {
         setTicketDetails({
           ...ticketDetails,
           priority_id: selectedPriority,
-          priority_name: priorities.find(p => p.Id === selectedPriority)?.priority_name || ticketDetails.priority_name,
+          priority_name:
+            priorities.find((p) => p.Id === selectedPriority)?.priority_name ||
+            ticketDetails.priority_name,
         });
       }
     } catch (err) {
@@ -305,57 +320,61 @@ useEffect(() => {
   };
 
   const handleAssignUser = async () => {
-  if (!selectedUser) {
-    alert("⚠️ Please select a user to assign.");
-    return;
-  }
+    if (!selectedUser) {
+      alert("⚠️ Please select a user to assign.");
+      return;
+    }
 
-  try {
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/assign_user_to_task`,
-      {
-        task_id: ticketId,
-        assigned_to: selectedUser.value,
-      },
-      { withCredentials: true }
-    );
-
-    if (response.data.success) {
-      alert("✅ User assigned successfully!");
-
-      // Refresh assigned users
-      const updatedUsersResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticketId}`,
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/assign_user_to_task`,
+        {
+          task_id: ticketId,
+          assigned_to: selectedUser.value,
+        },
         { withCredentials: true }
       );
-      const updatedUsers = Array.isArray(updatedUsersResponse.data)
-        ? updatedUsersResponse.data
-        : [updatedUsersResponse.data];
-      setAssignedUsers(updatedUsers);
-      setSelectedUser(""); // Reset selection
-    }
-  } catch (err) {
-    console.error("🚨 Error assigning user:", err);
-    alert("❌ Failed to assign user.");
-  }
-};
 
-useEffect(() => {
-  const fetchUsers = async () => {
-    try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`);
-      const filteredUsers = response.data
-        .filter((user) => user.role !== "Client")
-        .map((user) => ({ value: user.id, label: `${user.fname} ${user.lname}` }));
-      setUsers(filteredUsers);
-    } catch (error) {
-      console.error("Error fetching users:", error);
+      if (response.data.success) {
+        alert("✅ User assigned successfully!");
+
+        // Refresh assigned users
+        const updatedUsersResponse = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticketId}`,
+          { withCredentials: true }
+        );
+        const updatedUsers = Array.isArray(updatedUsersResponse.data)
+          ? updatedUsersResponse.data
+          : [updatedUsersResponse.data];
+        setAssignedUsers(updatedUsers);
+        setSelectedUser(""); // Reset selection
+      }
+    } catch (err) {
+      console.error("🚨 Error assigning user:", err);
+      alert("❌ Failed to assign user.");
     }
   };
 
-  fetchUsers();
-}, []);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`
+        );
+        const filteredUsers = response.data
+          .filter((user) => user.role !== "Client")
+          .map((user) => ({
+            value: user.id,
+            label: `${user.fname} ${user.lname}`,
+          }));
+        setUsers(filteredUsers);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
 
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -376,25 +395,41 @@ useEffect(() => {
     return <p className="text-center text-blue-700 font-medium">Loading...</p>;
 
   if (error)
-    return <p className="text-center text-red-600">Error loading ticket details: {error}</p>;
+    return (
+      <p className="text-center text-red-600">
+        Error loading ticket details: {error}
+      </p>
+    );
 
   if (!ticketDetails)
-    return <p className="text-center text-gray-700">No ticket details available.</p>;
+    return (
+      <p className="text-center text-gray-700">No ticket details available.</p>
+    );
 
   return (
     <div>
       {/* Navbar */}
       <nav className="bg-white shadow-sm px-6 py-5 flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center space-x-4">
-          {user && <span className="text-lg font-semibold text-gray-800">Welcome, {user.name}</span>}
-          <img src="/Kiotel logo.jpg" alt="Dashboard Logo" className="h-9 w-auto rounded-md shadow-sm" />
+          {user && (
+            <span className="text-lg font-semibold text-gray-800">
+              Welcome, {user.name}
+            </span>
+          )}
+          <img
+            src="/Kiotel logo.jpg"
+            alt="Dashboard Logo"
+            className="h-9 w-auto rounded-md shadow-sm"
+          />
         </div>
         <div className="space-x-4">
           {/* Reply Button */}
           <button
             onClick={() =>
               router.push(
-                `/TaskManager/task/${ticketId}/replyTicket?title=${encodeURIComponent(ticketDetails.title)}`
+                `/TaskManager/task/${ticketId}/replyTicket?title=${encodeURIComponent(
+                  ticketDetails.title
+                )}`
               )
             }
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-lg transition duration-300 shadow-md"
@@ -402,41 +437,43 @@ useEffect(() => {
             Reply to Task
           </button>
 
-{/* Assign Task Dropdown */}
-<div className="relative inline-block">
-  <button
-    type="button"
-    onClick={() => setIsAssignDropdownOpen(!isAssignDropdownOpen)}
-    className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-5 rounded-lg transition duration-300 shadow-md"
-  >
-    Assign New User
-  </button>
+          {/* Assign Task Dropdown */}
+          <div className="relative inline-block">
+            <button
+              type="button"
+              onClick={() => setIsAssignDropdownOpen(!isAssignDropdownOpen)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-5 rounded-lg transition duration-300 shadow-md"
+            >
+              Assign New User
+            </button>
 
-  {isAssignDropdownOpen && (
-    <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-10 p-4 space-y-4">
-      <h4 className="text-sm font-medium text-gray-700">Assign To:</h4>
-      <Select
-        value={selectedUser}
-        onChange={setSelectedUser}
-        options={users}
-        placeholder="Search & Select Employee"
-        isClearable
-        className="text-sm"
-      />
-      <button
-        onClick={handleAssignUser}
-        disabled={!selectedUser}
-        className={`w-full py-1 px-3 rounded-md transition ${
-          !selectedUser
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-green-600 hover:bg-green-700 text-white"
-        }`}
-      >
-        Assign
-      </button>
-    </div>
-  )}
-</div>
+            {isAssignDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-10 p-4 space-y-4">
+                <h4 className="text-sm font-medium text-gray-700">
+                  Assign To:
+                </h4>
+                <Select
+                  value={selectedUser}
+                  onChange={setSelectedUser}
+                  options={users}
+                  placeholder="Search & Select Employee"
+                  isClearable
+                  className="text-sm"
+                />
+                <button
+                  onClick={handleAssignUser}
+                  disabled={!selectedUser}
+                  className={`w-full py-1 px-3 rounded-md transition ${
+                    !selectedUser
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700 text-white"
+                  }`}
+                >
+                  Assign
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Update Dropdown */}
           <div className="relative inline-block" ref={dropdownRef}>
@@ -452,7 +489,9 @@ useEffect(() => {
               <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-10 p-5 space-y-4 animate-fadeIn">
                 {/* Status Section */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Change Status:</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Change Status:
+                  </label>
                   <select
                     value={selectedStatus}
                     onChange={(e) => setSelectedStatus(e.target.value)}
@@ -479,7 +518,9 @@ useEffect(() => {
 
                 {/* Priority Section */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Change Priority:</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Change Priority:
+                  </label>
                   <select
                     value={selectedPriority}
                     onChange={(e) => setSelectedPriority(e.target.value)}
@@ -514,8 +555,13 @@ useEffect(() => {
         <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-lg mb-6 p-6">
           {/* Ticket Details */}
           <div className="mb-6">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Tasks #{ticketDetails.id}</h2>
-            <p className="font-medium text-gray-700 mb-1">Title: <span className="text-gray-900">{ticketDetails.title}</span></p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Tasks #{ticketDetails.id}
+            </h2>
+            <p className="font-medium text-gray-700 mb-1">
+              Title:{" "}
+              <span className="text-gray-900">{ticketDetails.title}</span>
+            </p>
             <p className="font-medium text-gray-700 mb-4">
               Created At:{" "}
               <span className="text-gray-900">
@@ -571,34 +617,39 @@ useEffect(() => {
               </span>
             </div>
 
-            
-{/* Assigned Users */}
-{assignedUsers.length > 0 ? (
-  <div className="mt-4">
-    <h4 className="text-sm font-medium text-gray-700 mb-2">Assigned To:</h4>
-    <div className="flex flex-wrap items-center gap-2 p-3 bg-white border border-gray-200 rounded-lg shadow-sm min-h-[50px] overflow-x-auto">
-      {assignedUsers.map((user, index) => (
-        <span
-          key={index}
-          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
-          title={`${user.fname} ${user.lname || ""}`}
-        >
-          {/* User Avatar Initials */}
-          <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center mr-2">
-            {user.fname.charAt(0).toUpperCase()}
-            {user.lname ? user.lname.charAt(0).toUpperCase() : ""}
-          </span>
-          {user.fname} {user.lname || ""}
-        </span>
-      ))}
-    </div>
-  </div>
-) : (
-  <div className="mt-4">
-    <h4 className="text-sm font-medium text-gray-700 mb-2">Assigned To:</h4>
-    <p className="text-sm text-gray-500 italic">No users assigned</p>
-  </div>
-)}
+            {/* Assigned Users */}
+            {assignedUsers.length > 0 ? (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Assigned To:
+                </h4>
+                <div className="flex flex-wrap items-center gap-2 p-3 bg-white border border-gray-200 rounded-lg shadow-sm min-h-[50px] overflow-x-auto">
+                  {assignedUsers.map((user, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
+                      title={`${user.fname} ${user.lname || ""}`}
+                    >
+                      {/* User Avatar Initials */}
+                      <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center mr-2">
+                        {user.fname.charAt(0).toUpperCase()}
+                        {user.lname ? user.lname.charAt(0).toUpperCase() : ""}
+                      </span>
+                      {user.fname} {user.lname || ""}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Assigned To:
+                </h4>
+                <p className="text-sm text-gray-500 italic">
+                  No users assigned
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Description */}
@@ -612,11 +663,18 @@ useEffect(() => {
           {/* Attachments */}
           {ticketDetails.unique_name && (
             <div className="mt-4">
-              <h4 className="text-lg font-semibold text-gray-800 mb-2">Attachments</h4>
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                Attachments
+              </h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {isImage(ticketDetails.unique_name) ? (
                   <div className="relative group overflow-hidden rounded-lg shadow-md">
-                    <a href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${ticketDetails.unique_name}`} target="_blank" rel="noopener noreferrer" className="block">
+                    <a
+                      href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${ticketDetails.unique_name}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
                       <img
                         src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${ticketDetails.unique_name}`}
                         alt="Ticket Attachment"
@@ -644,13 +702,22 @@ useEffect(() => {
           {/* Replies Section */}
           {replies.length > 0 && (
             <div className="mt-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-6">Conversation</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                Conversation
+              </h3>
               <div className="space-y-6">
                 {replies.map((reply, index) => (
-                  <div key={index} className={`flex ${index % 2 === 0 ? "justify-start" : "justify-end"}`}>
+                  <div
+                    key={index}
+                    className={`flex ${
+                      index % 2 === 0 ? "justify-start" : "justify-end"
+                    }`}
+                  >
                     <div className="bg-white shadow-md rounded-lg p-4 max-w-md border border-gray-200">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-lg font-semibold text-blue-600">{reply.fname}</p>
+                        <p className="text-lg font-semibold text-blue-600">
+                          {reply.fname}
+                        </p>
                         <span className="text-xs text-gray-500">
                           {new Date(reply.created_at).toLocaleString("en-US", {
                             timeZone: "America/Chicago",
@@ -670,11 +737,18 @@ useEffect(() => {
                       {/* Reply Attachments */}
                       {reply.unique_name && (
                         <div className="mt-4">
-                          <h4 className="text-sm font-semibold text-gray-800">Attachments:</h4>
+                          <h4 className="text-sm font-semibold text-gray-800">
+                            Attachments:
+                          </h4>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-2">
                             {isImage(reply.unique_name) ? (
                               <div className="relative group overflow-hidden rounded-lg shadow-md">
-                                <a href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/replies/${reply.unique_name}`} target="_blank" rel="noopener noreferrer" className="block">
+                                <a
+                                  href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/replies/${reply.unique_name}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block"
+                                >
                                   <img
                                     src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/replies/${reply.unique_name}`}
                                     alt={`Reply Attachment`}
@@ -710,8 +784,6 @@ useEffect(() => {
   );
 }
 
-
-
 // // components/TicketDetails.jsx
 // "use client";
 
@@ -734,6 +806,7 @@ useEffect(() => {
 //   const [statuses, setStatuses] = useState([]);
 //   const [priorities, setPriorities] = useState([]);
 //   const [reply, setReply] = useState("");
+//   const [description, setDescription] = useState("");
 //   const [attachments, setAttachments] = useState(null);
 //   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 //   const [isAssignDropdownOpen, setIsAssignDropdownOpen] = useState(false);
@@ -894,7 +967,7 @@ useEffect(() => {
 //   // Handle status update
 //   const handleStatusUpdate = async (newStatusId) => {
 //     try {
-//       await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${ticketId}/status`, { statusId: newStatusId }, { withCredentials: true });
+//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_state`, { status_id: newStatusId, ticketId }, { withCredentials: true });
 //       setTicketDetails(prev => ({ ...prev, taskstatus_id: newStatusId, status_name: statuses.find(s => s.Id === newStatusId)?.status_name || prev.status_name }));
 //       toast.success("Status updated successfully!");
 //       setIsDropdownOpen(false);
@@ -907,7 +980,7 @@ useEffect(() => {
 //   // Handle priority update
 //   const handlePriorityUpdate = async (newPriorityId) => {
 //     try {
-//       await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${ticketId}/priority`, { priorityId: newPriorityId }, { withCredentials: true });
+//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_priority`, { priority_id: newPriorityId,ticketId }, { withCredentials: true });
 //       setTicketDetails(prev => ({ ...prev, priority_id: newPriorityId, priority_name: priorities.find(p => p.Id === newPriorityId)?.priority_name || prev.priority_name }));
 //       toast.success("Priority updated successfully!");
 //     } catch (err) {
@@ -920,7 +993,7 @@ useEffect(() => {
 //   const handleAssignUsers = async (selectedOptions) => {
 //     const newUserIds = selectedOptions ? selectedOptions.map(option => option.value) : [];
 //     try {
-//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${ticketId}/assign`, { userIds: newUserIds }, { withCredentials: true });
+//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/assign_user_to_task`, { userIds: newUserIds }, { withCredentials: true });
 //       setAssignedUsers(selectedOptions || []);
 //       // Update ticketDetails state with new assigned users for display
 //       // This assumes your API returns the updated user list or you refetch
@@ -938,14 +1011,14 @@ useEffect(() => {
 //   // Handle reply submission
 //   const handleSubmitReply = async (e) => {
 //     e.preventDefault();
-//     if (!reply.trim() && (!attachments || attachments.length === 0)) {
+//     if (!description.trim() && (!attachments || attachments.length === 0)) {
 //         toast.warn("Please enter a reply or attach a file.");
 //         return;
 //     }
 
 //     setIsReplying(true);
 //     const formData = new FormData();
-//     formData.append("reply", reply);
+//     formData.append("reply_text", description);
 
 //     if (attachments) {
 //       for (let i = 0; i < attachments.length; i++) {
@@ -961,7 +1034,7 @@ useEffect(() => {
 //       if (response.status === 200 || response.status === 201) {
 //         // Add the new reply to the list
 //         setReplies(prevReplies => [...prevReplies, response.data.reply]); // Assuming API returns the new reply
-//         setReply("");
+//         setDescription();
 //         setAttachments(null);
 //         toast.success("Reply added successfully!");
 //       }
@@ -973,6 +1046,9 @@ useEffect(() => {
 //     }
 //   };
 
+//   const handleDescriptionChange = (e) => {
+//     setDescription(e.target.value);
+//   };
 //   // Handle file attachments for reply
 //   const handleAttachmentsChange = (e) => {
 //     setAttachments(e.target.files);
@@ -1019,7 +1095,6 @@ useEffect(() => {
 //       },
 //     }),
 //   };
-
 
 //   if (loading) {
 //     return (
@@ -1241,6 +1316,13 @@ useEffect(() => {
 //                     <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide flex items-center">
 //                       <FaPaperclip className="mr-2 text-gray-400" />
 //                       Attachments ({ticketDetails.attachments.length})
+//                       {/* hello this is the way yoy should be doing the thing s which is needed to bed one 
+//                       on the thesecece nas tthis is ist he way you shuold be doing on the things in the worng way of the way of the live of the 
+//                       serem of hte intern of he ared and this is the adjust of the path of the line of hte  
+//                       i am the fucking best in the businness in what i am doing, i beleveave that i am the best on and off currenty 
+//                       // thats wahts iists all about  in in the seen of the way of the way of the use is live int he lengsts
+//                       // of the hellow this is the line ofn othe ut and dnew qwerty qwerty qwerty shuvam is the best of the a
+//                       // I Shuvam Roy is the best of the developers in the current cercit */}
 //                     </h3>
 //                     <ul className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
 //                       {ticketDetails.attachments.map((attachment, index) => {
@@ -1427,12 +1509,13 @@ useEffect(() => {
 //                   </h3>
 //                   <form onSubmit={handleSubmitReply} className="mt-4 space-y-6">
 //                     <div>
-//                       <label htmlFor="reply" className="block text-sm font-medium text-gray-700 sr-only">Your Reply</label>
+//                       <label htmlFor="description" className="block text-sm font-medium text-gray-700 sr-only">Your Reply</label>
 //                       <textarea
-//                         id="reply"
+//                         // id="reply"
 //                         rows={4}
-//                         value={reply}
-//                         onChange={(e) => setReply(e.target.value)}
+//                         value={description}
+//                         onChange={handleDescriptionChange}
+//                         // onChange={(e) => setDescription(e.target.value)}
 //                         placeholder="Type your reply here..."
 //                         className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-xl p-4 transition duration-200"
 //                       ></textarea>

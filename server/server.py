@@ -4553,6 +4553,162 @@ def assign_user_to_task():
 #     finally:
 #         connection.close()
 
+# @app.route('/api/opened_tasks', methods=['GET'])
+# @login_required
+# def get_opened_taskss():
+#     user_id = session.get("user_id")
+#     if not user_id:
+#         return jsonify({"error": "User not logged in"}), 401
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Database connection failed"}), 500
+
+#     try:
+#         with connection.cursor() as cursor:
+#             # Get current user's role
+#             cursor.execute("SELECT role_id FROM tblusers WHERE id = %s", [user_id])
+#             user_row = cursor.fetchone()
+#             if not user_row:
+#                 return jsonify({"error": "User not found"}), 404
+
+#             try:
+#                 user_role = int(user_row['role_id'])
+#             except (ValueError, TypeError):
+#                 return jsonify({"error": "Invalid role"}), 500
+
+#             # ⬇️ Updated Query with tag support
+#             query = """
+#                 SELECT 
+#                     t.id AS task_id,
+#                     t.title,
+#                     t.description,
+#                     t.created_at,
+#                     s.status_name,
+#                     p.priority_name,
+#                     creator.id AS creator_id,
+#                     creator.fname AS creator_fname,
+#                     creator.lname AS creator_lname,
+#                     creator.role_id AS creator_role,
+#                     GROUP_CONCAT(
+#                         DISTINCT CONCAT(u.id, '|', u.fname, ' ', u.lname, '|', u.role_id)
+#                         SEPARATOR ', '
+#                     ) AS assigned_users_raw,
+#                     GROUP_CONCAT(
+#                         DISTINCT tg.tag 
+#                         ORDER BY tg.tag 
+#                         SEPARATOR ', '
+#                     ) AS task_tags
+#                 FROM 
+#                     tbltasks t
+#                 LEFT JOIN 
+#                     tbltaskstatus s ON t.taskstatus_id = s.id
+#                 LEFT JOIN 
+#                     tblpriority p ON t.priority_id = p.id
+#                 LEFT JOIN 
+#                     tblusers creator ON t.created_by = creator.id
+#                 LEFT JOIN 
+#                     tblTaskAssignments ta ON t.id = ta.task_id
+#                 LEFT JOIN 
+#                     tblusers u ON ta.AssignedTo = u.id
+#                 LEFT JOIN 
+#                     tags tg ON FIND_IN_SET(tg.id, t.tags) > 0
+#                 WHERE 
+#                     t.taskstatus_id != 4
+#                 GROUP BY 
+#                     t.id
+#                 ORDER BY 
+#                     t.id DESC;
+#             """
+#             cursor.execute(query)
+#             tasks = cursor.fetchall()
+
+#             result = []
+
+#             for task in tasks:
+#                 assigned_users = []
+#                 has_non_role_1_assigned = False
+#                 assigned_user_ids = set()
+
+#                 if task['assigned_users_raw']:
+#                     for item in task['assigned_users_raw'].split(', '):
+#                         parts = item.split('|', 2)
+#                         if len(parts) == 3:
+#                             try:
+#                                 uid = int(parts[0])
+#                                 name = parts[1]
+#                                 role = int(parts[2])
+#                                 assigned_users.append({
+#                                     "id": uid,
+#                                     "fname": name.split()[0],
+#                                     "lname": " ".join(name.split()[1:]) if len(name.split()) > 1 else "",
+#                                     "role": role
+#                                 })
+#                                 assigned_user_ids.add(uid)
+#                                 if role != 1:
+#                                     has_non_role_1_assigned = True
+#                             except (ValueError, IndexError):
+#                                 continue
+
+#                 creator_id = task['creator_id']
+#                 creator_role = int(task['creator_role']) if task['creator_role'] else 1
+
+#                 visible = False
+
+#                 # Role-Based Visibility
+#                 if user_role == 1:
+#                     if creator_role == 1 and not has_non_role_1_assigned:
+#                         if user_id == creator_id or user_id in assigned_user_ids:
+#                             visible = True
+#                     else:
+#                         visible = True
+#                 elif user_role in [2, 4]:
+#                     if user_id == creator_id or user_id in assigned_user_ids:
+#                         visible = True
+#                 elif user_role == 3:
+#                     if creator_role != 1 or user_id in assigned_user_ids:
+#                         visible = True
+#                 elif user_role == 6:
+#                     if creator_role == 6 and not has_non_role_1_assigned:
+#                         if user_id == creator_id or user_id in assigned_user_ids:
+#                             visible = True
+#                     else:
+#                         visible = True
+#                 else:
+#                     if user_id == creator_id or user_id in assigned_user_ids:
+#                         visible = True
+
+#                 if visible:
+#                     result.append({
+#                         "task_id": task['task_id'],
+#                         "title": task['title'],
+#                         "description": task['description'],
+#                         "created_at": task['created_at'],
+#                         "status_name": task['status_name'],
+#                         "priority_name": task['priority_name'],
+#                         "task_tags": task.get("task_tags", ""),
+#                         "creator": {
+#                             "fname": task['creator_fname'],
+#                             "lname": task['creator_lname'],
+#                             "role": creator_role
+#                         },
+#                         "assigned_users": assigned_users
+#                     })
+
+#             return jsonify(result), 200
+
+#     except Exception as e:
+#         print(f"Error fetching opened tasks: {e}")
+#         return jsonify({"error": "Failed to fetch tasks"}), 500
+
+#     finally:
+#         connection.close()
+
+
+
+
+
+
 @app.route('/api/opened_tasks', methods=['GET'])
 @login_required
 def get_opened_taskss():
@@ -4577,7 +4733,7 @@ def get_opened_taskss():
             except (ValueError, TypeError):
                 return jsonify({"error": "Invalid role"}), 500
 
-            # ⬇️ Updated Query with tag support
+            # Keep your existing SQL query
             query = """
                 SELECT 
                     t.id AS task_id,
@@ -4655,7 +4811,16 @@ def get_opened_taskss():
 
                 visible = False
 
-                # Role-Based Visibility
+                # 🔹 NEW STRICT PRIVACY RULE for role_id 6
+                # If the task creator is role 6, only assigned users or creator can view
+                if creator_role == 6 and not (user_id == creator_id or user_id in assigned_user_ids):
+                    continue  # Skip this task entirely
+
+                # If the viewer is role 6, they can only see their own or assigned tasks
+                if user_role == 6 and not (user_id == creator_id or user_id in assigned_user_ids):
+                    continue  # Skip this task entirely
+
+                # Existing Role-Based Visibility Rules
                 if user_role == 1:
                     if creator_role == 1 and not has_non_role_1_assigned:
                         if user_id == creator_id or user_id in assigned_user_ids:
@@ -4667,6 +4832,10 @@ def get_opened_taskss():
                         visible = True
                 elif user_role == 3:
                     if creator_role != 1 or user_id in assigned_user_ids:
+                        visible = True
+                elif user_role == 6:
+                    # Already handled by new rule above, but keep for clarity
+                    if user_id == creator_id or user_id in assigned_user_ids:
                         visible = True
                 else:
                     if user_id == creator_id or user_id in assigned_user_ids:
@@ -4697,6 +4866,7 @@ def get_opened_taskss():
 
     finally:
         connection.close()
+
 
 
 @app.route('/api/tags', methods=['GET'])
