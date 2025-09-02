@@ -1055,7 +1055,7 @@ function SignUpForm({ existingUser = null }) {
             </div>
 
             {/* --- NEW: Group Multi-Select (Always visible for simplicity, adjust if needed) --- */}
-            <div className="w-full">
+            {/* <div className="w-full">
               <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
                 <FaUsers className="mr-2 text-blue-500" />
                 Assign to Groups (Optional)
@@ -1085,7 +1085,7 @@ function SignUpForm({ existingUser = null }) {
                   No groups available.
                 </p>
               )}
-            </div>
+            </div> */}
             {/* --- END NEW --- */}
 
             {/* Grid Layout for Fields */}
