@@ -192,7 +192,7 @@ def get_user_email():
             cursor.execute("SELECT * FROM tblusers WHERE id = %s", (user_id,))
             user = cursor.fetchone()
             if user:
-                return jsonify({"fname": user['fname'],"lname": user['lname'], "role": user["role_id"],"email": user['emailid'],"id": user['id']})
+                return jsonify({"fname": user['fname'],"lname": user['lname'], "role": user["role_id"],"email": user['emailid'],"id": user['id'],"link": user['link']})
             else:
                 return jsonify({"error": "User not found"}), 404
     except pymysql.MySQLError as e:
@@ -317,6 +317,7 @@ def register_user():
     account_no2 = data.get("account_no2", "N/A")
     mobileno = data.get("mobileno", "N/A")
     role_id = int(data.get("role_id", 2))  # Default to 2 if not provided
+    link = data.get("link", "N/A") 
 
     # --- NEW: Handle Group IDs ---
     # Expecting a list of integers, e.g., [1, 3, 5] or an empty list []
@@ -354,10 +355,11 @@ def register_user():
             # --- UPDATED: Call the new stored procedure with group IDs ---
             # Prepare the call. sp_manage_user_with_groups expects user fields and the group_ids string.
             # It handles insertion and returns the new user's ID via SELECT LAST_INSERT_ID().
-            cursor1.callproc('sp_manage_user_with_groups', (
+            cursor1.callproc('sp_save_user_with_link', (
                 0,  # p_id = 0 for new user
                 email, password, fname, lname, dob, address, address2,
                 entity_name, account_no, account_no2, mobileno, role_id,
+                link,
                 group_ids_string # p_group_ids
             ))
             connection1.commit()

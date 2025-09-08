@@ -1,3 +1,40 @@
+  "use client";
+  {/* --- NEW: Group Multi-Select (Always visible for simplicity, adjust if needed) --- */}
+            {/* <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                <FaUsers className="mr-2 text-blue-500" />
+                Assign to Groups (Optional)
+              </label>
+              {groups.length > 0 ? (
+                <div className="border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto bg-gray-50">
+                  {groups.map((group) => (
+                    <div key={group.id} className="flex items-center mb-2">
+                      <input
+                        type="checkbox"
+                        id={`group-${group.id}`}
+                        checked={selectedGroups.includes(group.id)}
+                        onChange={() => handleGroupChange(group.id)}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor={`group-${group.id}`}
+                        className="ml-2 text-sm text-gray-700"
+                      >
+                        {group.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-md border border-gray-200">
+                  No groups available.
+                </p>
+              )}
+            </div> */}
+            {/* --- END NEW --- */}
+
+
+// // components/SignUpForm.jsx
 // "use client";
 // import { useState, useEffect } from "react";
 // import axios from "axios";
@@ -5,6 +42,7 @@
 // import DatePicker from "react-datepicker";
 // import "react-datepicker/dist/react-datepicker.css";
 // import ProtectedRoute from "../../../context/ProtectedRoute";
+// import { FaEye, FaEyeSlash, FaSyncAlt, FaUsers, FaUser, FaEnvelope, FaLock, FaCalendarAlt, FaPhone, FaBuilding, FaIdCard, FaMapMarkerAlt } from "react-icons/fa";
 
 // function SignUpForm({ existingUser = null }) {
 //   const router = useRouter();
@@ -109,7 +147,7 @@
 //     ],
 //     hrmanager: ["email", "password", "name", "dob", "eid", "contact"],
 //     officeadmin: ["email", "password", "name", "dob", "eid", "contact"],
-//     // You can add a specific rule for roles that should see the group selector if needed
+//     // Add rules for roles that should see the group selector if needed
 //     // e.g., manager: [...otherFields, "groups"]
 //     // For now, we'll make it visible for all roles if the API supports it.
 //   };
@@ -216,8 +254,7 @@
 //         },
 //         { withCredentials: true }
 //       );
-//       if (response.status === 200 || response.status === 201) {
-//         // Accept 201 Created too
+//       if (response.status === 200 || response.status === 201) { // Accept 201 Created too
 //         setSuccess(true);
 //         setLoading(false);
 //         router.push("/components/Admin");
@@ -262,455 +299,429 @@
 //   // --- END NEW ---
 
 //   return (
-//     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center px-4 py-12">
-//       <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-3xl border border-gray-200">
-//         <h2 className="text-3xl font-bold text-center mb-6 text-gray-900">
-//           {existingUser ? "Update User" : "Sign Up"}
-//         </h2>
-//         {/* Success Message */}
-//         {success && (
-//           <p className="text-green-600 text-center mb-6 font-medium">
-//             User {existingUser ? "updated" : "registered"} successfully!
+//     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+//       <div className="max-w-4xl w-full bg-white shadow-lg rounded-xl overflow-hidden border border-blue-200">
+//         {/* Header */}
+//         <div className="bg-blue-600 px-6 py-8 sm:px-8 sm:py-10 text-white text-center">
+//           <h2 className="text-2xl sm:text-3xl font-bold">
+//             {existingUser ? "Update User Profile" : "Create New User"}
+//           </h2>
+//           <p className="mt-2 text-blue-100">
+//             {existingUser
+//               ? "Modify the details below."
+//               : "Fill in the information below to create a new account."}
 //           </p>
-//         )}
-//         {/* General Error Message */}
-//         {errors.form && (
-//           <p className="text-red-600 text-center mb-6 font-semibold">
-//             {errors.form}
-//           </p>
-//         )}
-//         {/* General Error Message for Groups */}
-//         {errors.general && (
-//           <p className="text-red-600 text-center mb-6 font-semibold">
-//             {errors.general}
-//           </p>
-//         )}
-//         <form onSubmit={handleSubmit} className="space-y-6">
-//           {/* Role Dropdown */}
-//           <div className="w-full">
-//             <label
-//               htmlFor="role"
-//               className="block text-sm font-medium text-gray-700 mb-1"
-//             >
-//               Role
-//             </label>
-//             <select
-//               id="role"
-//               value={role}
-//               onChange={(e) => setRole(e.target.value)}
-//               className={`w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
-//                 errors.role ? "border-red-500" : "border-gray-300"
-//               }`}
-//             >
-//               <option value="">Select Role</option>
-//               {roles.map((roleOption) => (
-//                 <option key={roleOption.id} value={roleOption.id}>
-//                   {roleOption.name}
-//                 </option>
-//               ))}
-//             </select>
-//             {errors.role && (
-//               <p className="mt-1 text-sm text-red-600">{errors.role}</p>
-//             )}
-//           </div>
+//         </div>
 
-//           {/* --- NEW: Group Multi-Select (Always visible for simplicity, adjust if needed) --- */}
-//           <div className="w-full">
-//             <label className="block text-sm font-medium text-gray-700 mb-1">
-//               Assign to Groups (Optional)
-//             </label>
-//             {groups.length > 0 ? (
-//               <div className="border border-gray-300 rounded-md p-2 max-h-40 overflow-y-auto">
-//                 {groups.map((group) => (
-//                   <div key={group.id} className="flex items-center mb-1">
-//                     <input
-//                       type="checkbox"
-//                       id={`group-${group.id}`}
-//                       checked={selectedGroups.includes(group.id)}
-//                       onChange={() => handleGroupChange(group.id)}
-//                       className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-//                     />
-//                     <label
-//                       htmlFor={`group-${group.id}`}
-//                       className="ml-2 text-sm text-gray-700"
-//                     >
-//                       {group.name}
-//                     </label>
-//                   </div>
-//                 ))}
-//               </div>
-//             ) : (
-//               <p className="text-sm text-gray-500 italic">
-//                 No groups available.
+//         {/* Form */}
+//         <div className="px-6 py-8 sm:px-8 sm:py-10">
+//           {/* Success Message */}
+//           {success && (
+//             <div className="mb-6 p-4 rounded-md bg-green-50 text-green-700 border border-green-200 text-center">
+//               <p className="font-medium">
+//                 User {existingUser ? "updated" : "registered"} successfully!
 //               </p>
-//             )}
-//           </div>
-//           {/* --- END NEW --- */}
+//             </div>
+//           )}
+//           {/* General Error Message */}
+//           {errors.form && (
+//             <div className="mb-6 p-4 rounded-md bg-red-50 text-red-700 border border-red-200 text-center">
+//               <p>{errors.form}</p>
+//             </div>
+//           )}
+//           {/* General Error Message for Groups if used here */}
+//           {errors.general && (
+//             <div className="mb-6 p-4 rounded-md bg-red-50 text-red-700 border border-red-200 text-center">
+//               <p>{errors.general}</p>
+//             </div>
+//           )}
 
-//           {/* Email */}
-//           {isFieldVisible("email") && (
-//             <div>
-//               <label
-//                 htmlFor="email"
-//                 className="block text-sm font-medium text-gray-700 mb-1"
-//               >
-//                 Email
+//           <form onSubmit={handleSubmit} className="space-y-6">
+//             {/* Role Dropdown */}
+//             <div className="w-full">
+//               <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                 <FaUser className="mr-2 text-blue-500" />
+//                 Role <span className="text-red-500">*</span>
 //               </label>
-//               <input
-//                 id="email"
-//                 type="email"
-//                 value={email}
-//                 onChange={(e) => setEmail(e.target.value)}
-//                 placeholder="Enter your email"
-//                 className={`w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
-//                   errors.email ? "border-red-500" : "border-gray-300"
+//               <select
+//                 id="role"
+//                 value={role}
+//                 onChange={(e) => setRole(e.target.value)}
+//                 className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+//                   errors.role ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
 //                 }`}
-//               />
-//               {errors.email && (
-//                 <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+//               >
+//                 <option value="">Select Role</option>
+//                 {roles.map((roleOption) => (
+//                   <option key={roleOption.id} value={roleOption.id}>
+//                     {roleOption.name}
+//                   </option>
+//                 ))}
+//               </select>
+//               {errors.role && (
+//                 <p className="mt-1 text-sm text-red-600">{errors.role}</p>
 //               )}
 //             </div>
-//           )}
-//           {/* Password Fields */}
-//           {isFieldVisible("password") && (
-//             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//               {/* Password */}
-//               <div>
-//                 <label
-//                   htmlFor="password"
-//                   className="block text-sm font-medium text-gray-700 mb-1"
-//                 >
-//                   Password
-//                 </label>
-//                 <div className="relative">
+
+          
+
+//             {/* Grid Layout for Fields */}
+//             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+//               {/* Email */}
+//               {isFieldVisible("email") && (
+//                 <div className="md:col-span-2">
+//                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                     <FaEnvelope className="mr-2 text-blue-500" />
+//                     Email <span className="text-red-500">*</span>
+//                   </label>
 //                   <input
-//                     id="password"
-//                     type={passwordVisible ? "text" : "password"}
-//                     value={password}
-//                     onChange={(e) => setPassword(e.target.value)}
-//                     className={`w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
-//                       errors.password ? "border-red-500" : "border-gray-300"
+//                     id="email"
+//                     type="email"
+//                     value={email}
+//                     onChange={(e) => setEmail(e.target.value)}
+//                     placeholder="you@example.com"
+//                     className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+//                       errors.email ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
 //                     }`}
 //                   />
-//                   <button
-//                     type="button"
-//                     onClick={() => setPasswordVisible(!passwordVisible)}
-//                     className="absolute inset-y-0 right-0 px-3 text-sm text-gray-500 hover:text-gray-700"
-//                   >
-//                     {passwordVisible ? "Hide" : "Show"}
-//                   </button>
+//                   {errors.email && (
+//                     <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+//                   )}
 //                 </div>
-//                 {errors.password && (
-//                   <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-//                 )}
-//               </div>
-//               {/* Confirm Password */}
-//               <div>
-//                 <label
-//                   htmlFor="confirm-password"
-//                   className="block text-sm font-medium text-gray-700 mb-1"
-//                 >
-//                   Confirm Password
-//                 </label>
-//                 <div className="relative">
-//                   <input
-//                     id="confirm-password"
-//                     type={confirmPasswordVisible ? "text" : "password"}
-//                     value={confirmPassword}
-//                     onChange={(e) => setConfirmPassword(e.target.value)}
-//                     className={`w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
-//                       passwordMatch ? "border-gray-300" : "border-red-500"
-//                     }`}
-//                   />
-//                   <button
-//                     type="button"
-//                     onClick={() =>
-//                       setConfirmPasswordVisible(!confirmPasswordVisible)
-//                     }
-//                     className="absolute inset-y-0 right-0 px-3 text-sm text-gray-500 hover:text-gray-700"
-//                   >
-//                     {confirmPasswordVisible ? "Hide" : "Show"}
-//                   </button>
-//                 </div>
-//                 {!passwordMatch && (
-//                   <p className="mt-1 text-sm text-red-600">
-//                     Passwords do not match
-//                   </p>
-//                 )}
-//               </div>
-//             </div>
-//           )}
-//           {/* First Name and Last Name */}
-//           {isFieldVisible("name") && (
-//             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//               <div>
-//                 <label
-//                   htmlFor="first-name"
-//                   className="block text-sm font-medium text-gray-700 mb-1"
-//                 >
-//                   First Name
-//                 </label>
-//                 <input
-//                   id="first-name"
-//                   type="text"
-//                   value={firstName}
-//                   onChange={(e) => setFirstName(e.target.value)}
-//                   placeholder="John"
-//                   className={`w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
-//                     errors.firstName ? "border-red-500" : "border-gray-300"
-//                   }`}
-//                 />
-//                 {errors.firstName && (
-//                   <p className="mt-1 text-sm text-red-600">
-//                     {errors.firstName}
-//                   </p>
-//                 )}
-//               </div>
-//               <div>
-//                 <label
-//                   htmlFor="last-name"
-//                   className="block text-sm font-medium text-gray-700 mb-1"
-//                 >
-//                   Last Name
-//                 </label>
-//                 <input
-//                   id="last-name"
-//                   type="text"
-//                   value={lastName}
-//                   onChange={(e) => setLastName(e.target.value)}
-//                   placeholder="Doe"
-//                   className={`w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
-//                     errors.lastName ? "border-red-500" : "border-gray-300"
-//                   }`}
-//                 />
-//                 {errors.lastName && (
-//                   <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
-//                 )}
-//               </div>
-//             </div>
-//           )}
-//           {/* Entity Name - New Field */}
-//           {isFieldVisible("entity") && (
-//             <div>
-//               <label
-//                 htmlFor="entity-name"
-//                 className="block text-sm font-medium text-gray-700 mb-1"
-//               >
-//                 Entity Name
-//               </label>
-//               <input
-//                 id="entity-name"
-//                 type="text"
-//                 value={entityName}
-//                 onChange={(e) => setEntityName(e.target.value)}
-//                 placeholder="Enter entity name"
-//                 className={`w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
-//                   errors.entityName ? "border-red-500" : "border-gray-300"
-//                 }`}
-//               />
-//               {errors.entityName && (
-//                 <p className="mt-1 text-sm text-red-600">{errors.entityName}</p>
 //               )}
-//             </div>
-//           )}
-//           {/* Date of Birth */}
-//           {isFieldVisible("dob") && (
-//             <div>
-//               <label
-//                 htmlFor="date-of-joining"
-//                 className="block text-sm font-medium text-gray-700 mb-1"
-//               >
-//                 Date of Joining
-//               </label>
-//               <DatePicker
-//                 id="date-of-joining"
-//                 selected={dob}
-//                 onChange={(date) => setDob(date)}
-//                 dateFormat="yyyy-MM-dd"
-//                 className={`w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
-//                   errors.dob ? "border-red-500" : "border-gray-300"
-//                 }`}
-//               />
-//               {errors.dob && (
-//                 <p className="mt-1 text-sm text-red-600">{errors.dob}</p>
-//               )}
-//             </div>
-//           )}
-//           {/* Address */}
-//           {isFieldVisible("address") && (
-//             <div>
-//               <label
-//                 htmlFor="address"
-//                 className="block text-sm font-medium text-gray-700 mb-1"
-//               >
-//                 Address
-//               </label>
-//               <input
-//                 id="address"
-//                 type="text"
-//                 value={address}
-//                 onChange={(e) => setAddress(e.target.value)}
-//                 placeholder="Enter address"
-//                 className={`w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
-//                   errors.address ? "border-red-500" : "border-gray-300"
-//                 }`}
-//               />
-//               {errors.address && (
-//                 <p className="mt-1 text-sm text-red-600">{errors.address}</p>
-//               )}
-//             </div>
-//           )}
-//           {/* Mailing Address - New Field */}
-//           {isFieldVisible("mailing") && (
-//             <div>
-//               <label
-//                 htmlFor="mailing-address"
-//                 className="block text-sm font-medium text-gray-700 mb-1"
-//               >
-//                 Mailing Address
-//               </label>
-//               <input
-//                 id="mailing-address"
-//                 type="text"
-//                 value={mailingAddress}
-//                 onChange={(e) => setMailingAddress(e.target.value)}
-//                 placeholder="Enter mailing address"
-//                 className={`w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
-//                   errors.mailingAddress ? "border-red-500" : "border-gray-300"
-//                 }`}
-//               />
-//               {errors.mailingAddress && (
-//                 <p className="mt-1 text-sm text-red-600">
-//                   {errors.mailingAddress}
-//                 </p>
-//               )}
-//             </div>
-//           )}
-//           {/* EID Number - Replaced Field */}
-//           {isFieldVisible("eid") && (
-//             <div>
-//               <label
-//                 htmlFor="eid-number"
-//                 className="block text-sm font-medium text-gray-700 mb-1"
-//               >
-//                 EID Number
-//               </label>
-//               <div className="flex items-center space-x-2">
-//                 <input
-//                   id="eid-number"
-//                   type="text"
-//                   value={eidNumber}
-//                   onChange={(e) => setEidNumber(e.target.value)}
-//                   placeholder="Enter EID number"
-//                   className={`flex-grow px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
-//                     errors.eidNumber ? "border-red-500" : "border-gray-300"
-//                   }`}
-//                 />
-//                 <button
-//                   type="button"
-//                   onClick={() => {
-//                     const newCode = generateUniqueEID();
-//                     setEidNumber(newCode);
-//                   }}
-//                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition duration-200"
-//                 >
-//                   Generate
-//                 </button>
-//               </div>
-//               {errors.eidNumber && (
-//                 <p className="mt-1 text-sm text-red-600">{errors.eidNumber}</p>
-//               )}
-//             </div>
-//           )}
-//           {/* Account 2 - New Field */}
-//           {isFieldVisible("account2") && (
-//             <div>
-//               <label
-//                 htmlFor="account2"
-//                 className="block text-sm font-medium text-gray-700 mb-1"
-//               >
-//                 Account{" "}
-//               </label>
-//               <input
-//                 id="account2"
-//                 type="text"
-//                 value={account2}
-//                 onChange={(e) => setAccount2(e.target.value)}
-//                 placeholder="Enter account 2 details"
-//                 className={`w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
-//                   errors.account2 ? "border-red-500" : "border-gray-300"
-//                 }`}
-//               />
-//               {errors.account2 && (
-//                 <p className="mt-1 text-sm text-red-600">{errors.account2}</p>
-//               )}
-//             </div>
-//           )}
-//           {/* Contact Number */}
-//           {isFieldVisible("contact") && (
-//             <div>
-//               <label
-//                 htmlFor="contact-number"
-//                 className="block text-sm font-medium text-gray-700 mb-1"
-//               >
-//                 Contact Number
-//               </label>
-//               <input
-//                 id="contact-number"
-//                 type="text"
-//                 value={contactNumber}
-//                 onChange={(e) => setContactNumber(e.target.value)}
-//                 placeholder="e.g., +1 123 456 7890"
-//                 className={`w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
-//                   errors.contactNumber ? "border-red-500" : "border-gray-300"
-//                 }`}
-//               />
-//               {errors.contactNumber && (
-//                 <p className="mt-1 text-sm text-red-600">
-//                   {errors.contactNumber}
-//                 </p>
-//               )}
-//             </div>
-//           )}
-//           {/* Submit Button */}
-//           <div className="flex justify-center mt-6">
-//             <button
-//               type="submit"
-//               disabled={loading}
-//               className={`w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-300 flex items-center justify-center ${
-//                 loading ? "cursor-not-allowed opacity-70" : ""
-//               }`}
-//             >
-//               {loading ? (
+
+//               {/* Password Fields */}
+//               {isFieldVisible("password") && (
 //                 <>
-//                   <svg
-//                     className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-//                     xmlns="http://www.w3.org/2000/svg"
-//                     fill="none"
-//                     viewBox="0 0 24 24"
-//                   >
-//                     <circle
-//                       className="opacity-25"
-//                       cx="12"
-//                       cy="12"
-//                       r="10"
-//                       stroke="currentColor"
-//                       strokeWidth="4"
-//                     ></circle>
-//                     <path
-//                       className="opacity-75"
-//                       fill="currentColor"
-//                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-//                     ></path>
-//                   </svg>
-//                   Submitting...
+//                   <div>
+//                     <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                       <FaLock className="mr-2 text-blue-500" />
+//                       Password <span className="text-red-500">*</span>
+//                     </label>
+//                     <div className="relative">
+//                       <input
+//                         id="password"
+//                         type={passwordVisible ? "text" : "password"}
+//                         value={password}
+//                         onChange={(e) => setPassword(e.target.value)}
+//                         placeholder="Create a strong password"
+//                         className={`w-full px-3 py-2 pl-10 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+//                           errors.password ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
+//                         }`}
+//                       />
+//                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+//                         <FaLock className="h-4 w-4 text-gray-400" />
+//                       </div>
+//                       <button
+//                         type="button"
+//                         onClick={() => setPasswordVisible(!passwordVisible)}
+//                         className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+//                         aria-label={passwordVisible ? "Hide password" : "Show password"}
+//                       >
+//                         {passwordVisible ? <FaEyeSlash className="h-4 w-4" /> : <FaEye className="h-4 w-4" />}
+//                       </button>
+//                     </div>
+//                     {errors.password && (
+//                       <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+//                     )}
+//                   </div>
+
+//                   <div>
+//                     <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                       <FaLock className="mr-2 text-blue-500" />
+//                       Confirm Password <span className="text-red-500">*</span>
+//                     </label>
+//                     <div className="relative">
+//                       <input
+//                         id="confirm-password"
+//                         type={confirmPasswordVisible ? "text" : "password"}
+//                         value={confirmPassword}
+//                         onChange={(e) => setConfirmPassword(e.target.value)}
+//                         placeholder="Re-enter your password"
+//                         className={`w-full px-3 py-2 pl-10 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+//                           !passwordMatch ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
+//                         }`}
+//                       // Hello this is the way you should be high 
+//                       />
+//                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+//                         <FaLock className="h-4 w-4 text-gray-400" />
+//                       </div>
+//                       <button
+//                         type="button"
+//                         onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+//                         className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+//                         aria-label={confirmPasswordVisible ? "Hide password" : "Show password"}
+//                       >
+//                         {confirmPasswordVisible ? <FaEyeSlash className="h-4 w-4" /> : <FaEye className="h-4 w-4" />}
+//                       </button>
+//                     </div>
+//                     {!passwordMatch && (
+//                       <p className="mt-1 text-sm text-red-600">Passwords do not match</p>
+//                     )}
+//                   </div>
 //                 </>
-//               ) : (
-//                 "Submit"
 //               )}
-//             </button>
-//           </div>
-//         </form>
+//               {/*  */}
+
+//               {/* First Name and Last Name */}
+//               {isFieldVisible("name") && (
+//                 <>
+//                   <div>
+//                     <label htmlFor="first-name" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                       <FaUser className="mr-2 text-blue-500" />
+//                       First Name <span className="text-red-500">*</span>
+//                     </label>
+//                     <input
+//                       id="first-name"
+//                       type="text"
+//                       value={firstName}
+//                       onChange={(e) => setFirstName(e.target.value)}
+//                       placeholder="John"
+//                       className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+//                         errors.firstName ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
+//                       }`}
+//                     />
+//                     {errors.firstName && (
+//                       <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+//                     )}
+//                   </div>
+
+//                   <div>
+//                     <label htmlFor="last-name" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                       <FaUser className="mr-2 text-blue-500" />
+//                       Last Name <span className="text-red-500">*</span>
+//                     </label>
+//                     <input
+//                       id="last-name"
+//                       type="text"
+//                       value={lastName}
+//                       onChange={(e) => setLastName(e.target.value)}
+//                       placeholder="Doe"
+//                       className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+//                         errors.lastName ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
+//                       }`}
+//                     />
+//                     {errors.lastName && (
+//                       <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+//                     )}
+//                   </div>
+//                 </>
+//               )}
+
+//               {/* Entity Name - New Field */}
+//               {isFieldVisible("entity") && (
+//                 <div>
+//                   <label htmlFor="entity-name" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                     <FaBuilding className="mr-2 text-blue-500" />
+//                     Entity Name
+//                   </label>
+//                   <input
+//                     id="entity-name"
+//                     type="text"
+//                     value={entityName}
+//                     onChange={(e) => setEntityName(e.target.value)}
+//                     placeholder="Enter entity name"
+//                     className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+//                       errors.entityName ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
+//                     }`}
+//                   />
+//                   {errors.entityName && (
+//                     <p className="mt-1 text-sm text-red-600">{errors.entityName}</p>
+//                   )}
+//                 </div>
+//               )}
+
+//               {/* Date of Birth */}
+//               {isFieldVisible("dob") && (
+//                 <div>
+//                   <label htmlFor="date-of-birth" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                     <FaCalendarAlt className="mr-2 text-blue-500" />
+//                     Date of Birth <span className="text-red-500">*</span>
+//                   </label>
+//                   <div className="relative">
+//                     <DatePicker
+//                       id="date-of-birth"
+//                       selected={dob}
+//                       onChange={(date) => setDob(date)}
+//                       dateFormat="yyyy/MM/dd"
+//                       placeholderText="Select Date"
+//                       className={`w-full px-3 py-2 pl-10 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+//                         errors.dob ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
+//                       }`}
+//                     />
+//                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+//                       <FaCalendarAlt className="h-4 w-4 text-gray-400" />
+//                     </div>
+//                   </div>
+//                   {errors.dob && (
+//                     <p className="mt-1 text-sm text-red-600">{errors.dob}</p>
+//                   )}
+//                 </div>
+//               )}
+
+//               {/* Address */}
+//               {isFieldVisible("address") && (
+//                 <div>
+//                   <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                     <FaMapMarkerAlt className="mr-2 text-blue-500" />
+//                     Address
+//                   </label>
+//                   <input
+//                     id="address"
+//                     type="text"
+//                     value={address}
+//                     onChange={(e) => setAddress(e.target.value)}
+//                     placeholder="123 Main St"
+//                     className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+//                       errors.address ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
+//                     }`}
+//                   />
+//                   {errors.address && (
+//                     <p className="mt-1 text-sm text-red-600">{errors.address}</p>
+//                   )}
+//                 </div>
+//               )}
+// {/* Hello this is the way you should be doing  the things for the whole world and the way it should be */}
+//               {/* Mailing Address - New Field */}
+//               {isFieldVisible("mailing") && (
+//                 <div>
+//                   <label htmlFor="mailing-address" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                     <FaMapMarkerAlt className="mr-2 text-blue-500" />
+//                     Mailing Address
+//                   </label>
+//                   <input
+//                     id="mailing-address"
+//                     type="text"
+//                     value={mailingAddress}
+//                     onChange={(e) => setMailingAddress(e.target.value)}
+//                     placeholder="P.O. Box 123"
+//                     className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+//                       errors.mailingAddress ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
+//                     }`}
+//                   />
+//                   {errors.mailingAddress && (
+//                     <p className="mt-1 text-sm text-red-600">{errors.mailingAddress}</p>
+//                   )}
+//                 </div>
+//               )}
+// {/* Hello this is the way you should be trying to upda   */}
+//               {/* EID Number - Replaced Field */}
+//               {isFieldVisible("eid") && (
+//                 <div>
+//                   <label htmlFor="eid-number" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                     <FaIdCard className="mr-2 text-blue-500" />
+//                     EID Number <span className="text-red-500">*</span>
+//                   </label>
+//                   <div className="flex items-center space-x-2">
+//                     <input
+//                       id="eid-number"
+//                       type="text"
+//                       value={eidNumber}
+//                       onChange={(e) => setEidNumber(e.target.value)}
+//                       placeholder="Enter EID number"
+//                       className={`flex-grow px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+//                         errors.eidNumber ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
+//                       }`}
+//                     />
+//                     {/* hello this is the way you should be doing you things which is the corrent way for it as it si the 
+//                     correct way for it as the below button is the on the way of the local of hte adjust of the things which we need to use
+//                     as this ist he local progress
+//                     */}
+//                     <button
+//                       type="button"
+//                       onClick={() => {
+//                         const newCode = generateUniqueEID();
+//                         setEidNumber(newCode);
+//                       }}
+//                       className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow transition duration-200 flex items-center"
+//                     >
+//                       <FaSyncAlt className="mr-1.5" />
+//                       Generate
+//                     </button>
+//                   </div>
+//                   {errors.eidNumber && (
+//                     <p className="mt-1 text-sm text-red-600">{errors.eidNumber}</p>
+//                   )}
+//                 </div>
+//               )}
+
+//               {/* Account 2 - New Field */}
+//               {isFieldVisible("account2") && (
+//                 <div>
+//                   <label htmlFor="account2" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                     <FaIdCard className="mr-2 text-blue-500" />
+//                     Account 2
+//                   </label>
+//                   <input
+//                     id="account2"
+//                     type="text"
+//                     value={account2}
+//                     onChange={(e) => setAccount2(e.target.value)}
+//                     placeholder="Enter account 2 details"
+//                     className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+//                       errors.account2 ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
+//                     }`}
+//                   />
+//                   {errors.account2 && (
+//                     <p className="mt-1 text-sm text-red-600">{errors.account2}</p>
+//                   )}
+//                 </div>
+//               )}
+
+//               {/* Contact Number */}
+//               {isFieldVisible("contact") && (
+//                 <div>
+//                   <label htmlFor="contact-number" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                     <FaPhone className="mr-2 text-blue-500" />
+//                     Contact Number <span className="text-red-500">*</span>
+//                   </label>
+//                   <input
+//                     id="contact-number"
+//                     type="text"
+//                     value={contactNumber}
+//                     onChange={(e) => setContactNumber(e.target.value)}
+//                     placeholder="e.g., +1 123 456 7890"
+//                     className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+//                       errors.contactNumber ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
+//                     }`}
+//                   />
+//                   {errors.contactNumber && (
+//                     <p className="mt-1 text-sm text-red-600">{errors.contactNumber}</p>
+//                   )}
+//                 </div>
+//               )}
+              
+
+//             </div>
+
+            
+
+//             {/* Submit Button */}
+//             <div className="flex justify-center pt-4">
+//               <button
+//                 type="submit"
+//                 disabled={loading}
+//                 className={`px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+//                   loading
+//                     ? "bg-blue-400 cursor-not-allowed"
+//                     : "bg-blue-600 hover:bg-blue-700"
+//                 }`}
+//               >
+//                 {loading ? (
+//                   <span className="flex items-center">
+//                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+//                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+//                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+//                     </svg>
+//                     {existingUser ? "Updating..." : "Creating..."}
+//                   </span>
+//                 ) : (
+//                   <span>{existingUser ? "Update User" : "Create User"}</span>
+//                 )}
+//               </button>
+//             </div>
+//           </form>
+//         </div>
 //       </div>
 //     </div>
 //   );
@@ -726,14 +737,14 @@
 
 
 // components/SignUpForm.jsx
-"use client";
+
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import ProtectedRoute from "../../../context/ProtectedRoute";
-import { FaEye, FaEyeSlash, FaSyncAlt, FaUsers, FaUser, FaEnvelope, FaLock, FaCalendarAlt, FaPhone, FaBuilding, FaIdCard, FaMapMarkerAlt } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaSyncAlt, FaUsers, FaUser, FaEnvelope, FaLock, FaCalendarAlt, FaPhone, FaBuilding, FaIdCard, FaMapMarkerAlt, FaLink } from "react-icons/fa";
 
 function SignUpForm({ existingUser = null }) {
   const router = useRouter();
@@ -760,6 +771,10 @@ function SignUpForm({ existingUser = null }) {
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // --- NEW: Link field state ---
+  const [link, setLink] = useState(existingUser?.link || "");
+  // --- END NEW ---
 
   // --- NEW: Group State ---
   const [groups, setGroups] = useState([]); // List of all available groups
@@ -835,6 +850,7 @@ function SignUpForm({ existingUser = null }) {
       "mailing",
       "entity",
       "account2",
+      "link" // Added link field for clients
     ],
     hrmanager: ["email", "password", "name", "dob", "eid", "contact"],
     officeadmin: ["email", "password", "name", "dob", "eid", "contact"],
@@ -909,6 +925,10 @@ function SignUpForm({ existingUser = null }) {
       validationErrors.entityName = "Entity Name is required";
     if (isFieldVisible("account2") && !account2)
       validationErrors.account2 = "Account 2 is required";
+    // --- NEW: Link field validation ---
+    if (isFieldVisible("link") && !link)
+      validationErrors.link = "Link is required";
+    // --- END NEW ---
     return validationErrors;
   };
 
@@ -939,7 +959,8 @@ function SignUpForm({ existingUser = null }) {
           address2: mailingAddress,
           mobileno: contactNumber,
           role_id: role,
-          // --- NEW: Include selected group IDs ---
+          // --- NEW: Include link field and selected group IDs ---
+          link: isFieldVisible("link") ? link : undefined,
           group_ids: selectedGroups, // This sends an array like [1, 3, 5]
           // --- END NEW ---
         },
@@ -1053,40 +1074,6 @@ function SignUpForm({ existingUser = null }) {
                 <p className="mt-1 text-sm text-red-600">{errors.role}</p>
               )}
             </div>
-
-            {/* --- NEW: Group Multi-Select (Always visible for simplicity, adjust if needed) --- */}
-            {/* <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                <FaUsers className="mr-2 text-blue-500" />
-                Assign to Groups (Optional)
-              </label>
-              {groups.length > 0 ? (
-                <div className="border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto bg-gray-50">
-                  {groups.map((group) => (
-                    <div key={group.id} className="flex items-center mb-2">
-                      <input
-                        type="checkbox"
-                        id={`group-${group.id}`}
-                        checked={selectedGroups.includes(group.id)}
-                        onChange={() => handleGroupChange(group.id)}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <label
-                        htmlFor={`group-${group.id}`}
-                        className="ml-2 text-sm text-gray-700"
-                      >
-                        {group.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-md border border-gray-200">
-                  No groups available.
-                </p>
-              )}
-            </div> */}
-            {/* --- END NEW --- */}
 
             {/* Grid Layout for Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -1407,6 +1394,30 @@ function SignUpForm({ existingUser = null }) {
                   )}
                 </div>
               )}
+
+              {/* --- NEW: Link Field (only for clients) --- */}
+              {isFieldVisible("link") && (
+                <div>
+                  <label htmlFor="link" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                    <FaLink className="mr-2 text-blue-500" />
+                    Link <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="link"
+                    type="url"
+                    value={link}
+                    onChange={(e) => setLink(e.target.value)}
+                    placeholder="https://example.com"
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ${
+                      errors.link ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-blue-400"
+                    }`}
+                  />
+                  {errors.link && (
+                    <p className="mt-1 text-sm text-red-600">{errors.link}</p>
+                  )}
+                </div>
+              )}
+              {/* --- END NEW --- */}
             </div>
 
             {/* Submit Button */}
