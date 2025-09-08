@@ -79,7 +79,7 @@ function EmbeddedLink() {
         <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full text-center">
           <div className="text-gray-500 text-5xl mb-4">🔗</div>
           <h2 className="text-xl font-bold text-gray-800 mb-2">No Link Assigned</h2>
-          <p className="text-gray-600">You don't have any external link assigned to your account.</p>
+          <p className="text-gray-600">You dont have any external link assigned to your account.</p>
           <p className="text-gray-500 text-sm mt-2">Please contact your administrator.</p>
         </div>
       </div>
