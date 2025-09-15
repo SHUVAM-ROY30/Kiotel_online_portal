@@ -2726,151 +2726,302 @@ password = "tfyr kugr sjpj ayvh"
 #         session.pop("is_creating_task", None)
 
 from datetime import datetime, timezone # Import timezone
+# @app.route("/api/task", methods=["POST"])
+# @login_required
+# def create_task():
+#     if session.get("is_creating_task"):
+#         return jsonify({"error": "Request already in progress"}), 429  # Too Many Requests
+
+#     session["is_creating_task"] = True  # Lock
+
+#     try:
+#         user_id = session.get("user_id")
+#         if not user_id:
+#             return jsonify({"error": "User ID not found in session"}), 400
+
+#         title = request.form.get("title")
+#         description = request.form.get("description")
+#         assigned_users = request.form.getlist("assignedUsers[]")
+#         task_state = request.form.get("ticketState")
+#         task_priority = request.form.get("ticketPriority")
+#         attachments = request.files.getlist("attachments")
+
+#         # ✅ Get selected tags
+#         tags = request.form.getlist("tags[]")  # List of tag IDs like ['1', '3']
+#         tags_str = ",".join([str(t) for t in tags]) if tags else None
+
+#         # --- Scheduling/Reminder Data ---
+#         scheduled_clone_str = request.form.get("clone_schedule_datetime")
+#         is_subtask = request.form.get("is_subtask", default=False, type=bool)
+#         reminder_datetime_str = request.form.get("reminder_datetime")
+
+#         # Parse datetime strings if provided - FIX FOR TIMEZONE AWARE COMPARISON
+#         clone_schedule_datetime = None
+#         reminder_datetime = None
+#         if scheduled_clone_str:
+#             try:
+#                 # Parse the datetime string. This will be timezone-aware if 'Z' or offset is present.
+#                 parsed_dt = datetime.fromisoformat(scheduled_clone_str.replace('Z', '+00:00'))
+#                 # If the parsed datetime is naive, localize it to UTC.
+#                 if parsed_dt.tzinfo is None:
+#                     parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
+#                 clone_schedule_datetime = parsed_dt
+
+#                 # Compare with the current UTC time (also timezone-aware)
+#                 if clone_schedule_datetime <= datetime.now(timezone.utc):
+#                      return jsonify({"error": "Clone schedule datetime must be in the future."}), 400
+#             except ValueError:
+#                  return jsonify({"error": "Invalid clone schedule datetime format. Expected ISO 8601 (e.g., YYYY-MM-DDTHH:MM:SSZ)."}), 400
+
+#         if reminder_datetime_str:
+#             try:
+#                 # Parse the datetime string.
+#                 parsed_dt = datetime.fromisoformat(reminder_datetime_str.replace('Z', '+00:00'))
+#                 # If the parsed datetime is naive, localize it to UTC.
+#                 if parsed_dt.tzinfo is None:
+#                     parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
+#                 reminder_datetime = parsed_dt
+
+#                 # Compare with the current UTC time (also timezone-aware)
+#                 if reminder_datetime <= datetime.now(timezone.utc):
+#                      return jsonify({"error": "Reminder datetime must be in the future."}), 400
+#             except ValueError:
+#                  return jsonify({"error": "Invalid reminder datetime format. Expected ISO 8601 (e.g., YYYY-MM-DDTHH:MM:SSZ)."}), 400
+
+#         scheduled_clone = clone_schedule_datetime is not None
+#         # --- END Scheduling/Reminder Data ---
+
+#         if not title or not description:
+#             return jsonify({"error": "Title and description are required"}), 400
+
+#         connection = create_connection()
+#         if connection is None:
+#             return jsonify({"error": "Failed to connect to the database"}), 500
+
+#         try:
+#             original_filenames = []  # Store original filenames for 'attachments' column
+#             last_unique_name = None  # Store the last generated unique name for 'unique_name' column
+#             upload_folder = app.config.get('UPLOAD_FOLDER')
+
+#             # Validate Upload Folder
+#             if not upload_folder or not os.path.exists(upload_folder):
+#                  print(f"ERROR: Upload folder misconfigured or missing: {upload_folder}")
+#                  return jsonify({"error": "Server configuration error: Upload folder not found"}), 500
+
+#             with connection.cursor() as cursor:
+#                 # Handle file attachments
+#                 if attachments:
+#                     for attachment in attachments:
+#                         if attachment and attachment.filename != '':
+#                             original_filename = attachment.filename
+#                             unique_name = generate_unique_name(original_filename) # Ensure this function exists
+#                             if not unique_name:
+#                                  print(f"ERROR: Failed to generate unique name for {original_filename}")
+#                                  return jsonify({"error": "Failed to process attachment filename"}), 500
+
+#                             file_path = os.path.join(upload_folder, unique_name)
+#                             try:
+#                                 attachment.save(file_path)
+#                                 original_filenames.append(original_filename)
+#                                 # --- FIX: Store only the last unique name (as a plain string) ---
+#                                 last_unique_name = unique_name # Update the last unique name
+#                                 print(f"Saved attachment: {original_filename} as {unique_name}")
+#                             except Exception as save_error:
+#                                 print(f"ERROR saving file {original_filename} to {file_path}: {save_error}")
+#                                 return jsonify({"error": f"Failed to save attachment: {original_filename}"}), 500
+#                         else:
+#                             print("INFO: Skipped empty file part.")
+
+#                 # Prepare data for columns
+#                 # Store original filenames as JSON array in 'attachments' column
+#                 attachments_json = json.dumps(original_filenames) if original_filenames else None
+#                 # Store only the LAST unique name directly in 'unique_name' column (VARCHAR/TEXT)
+#                 # If no files, last_unique_name will be None, inserting NULL into the DB.
+#                 # If you prefer an empty string, you could use: last_unique_name or ""
+
+#                 # Set current user context
+#                 cursor.execute("SET @current_user_id = %s", (user_id,))
+
+#                 # --- Call Updated Stored Procedure ---
+#                 # Ensure your SP 'Proc_tbltasks_Upsert_test_3' accepts p_unique_name as VARCHAR/TEXT
+#                 # Parameters expected:
+#                 # (p_id, p_title, p_description, p_attachments_json, p_unique_name,
+#                 #  p_attachment_name, p_status_id, p_assigned_users_json, p_priority_id, p_tags,
+#                 #  p_scheduled_clone, p_clone_schedule_datetime, p_is_subtask, p_reminder_datetime)
+#                 cursor.callproc('Proc_tbltasks_Upsert_test_3', ( # <-- Updated SP name
+#                     0,                              # IN p_task_id (0 = insert)
+#                     title,                          # IN p_title
+#                     description,                    # IN p_description
+#                     attachments_json,               # IN p_attachments_json (original names as JSON)
+#                     last_unique_name,               # IN p_unique_name (LAST unique name as plain VARCHAR/TEXT)
+#                     None,                           # IN p_attachment_name (legacy)
+#                     task_state,                     # IN p_status_id
+#                     json.dumps(assigned_users) if assigned_users else None, # IN p_assigned_users_json
+#                     task_priority,                  # IN p_priority_id
+#                     tags_str,                       # IN p_tags
+#                     # --- Scheduling Parameters ---
+#                     scheduled_clone,                # IN p_scheduled_clone
+#                     clone_schedule_datetime,        # IN p_clone_schedule_datetime (timezone-aware)
+#                     is_subtask,                     # IN p_is_subtask
+#                     reminder_datetime               # IN p_reminder_datetime (timezone-aware)
+#                 ))
+
+#                 connection.commit()
+#                 new_task_id = cursor.lastrowid
+#                 print(f"INFO: Task created successfully with ID: {new_task_id}")
+
+#                 # --- Send Notifications ---
+#                 try:
+#                     assigned_user_emails = []
+#                     if assigned_users:
+#                         placeholders = ','.join(['%s'] * len(assigned_users))
+#                         cursor.execute(f"SELECT emailid FROM tblusers WHERE id IN ({placeholders})", assigned_users)
+#                         assigned_user_emails = [row['emailid'] for row in cursor.fetchall()]
+
+#                     cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
+#                     creator_email_row = cursor.fetchone()
+#                     creator_email = creator_email_row['emailid'] if creator_email_row else None
+
+#                     send_email_notification_new_task(
+#                         title, description, new_task_id,
+#                         creator_email, assigned_user_emails
+#                     )
+#                 except Exception as notify_error:
+#                      print(f"WARNING: Failed to send notification for task {new_task_id}: {notify_error}")
+
+#                 return jsonify({
+#                     "message": "Task created successfully",
+#                     "task_id": new_task_id,
+#                     "scheduled": scheduled_clone
+#                 }), 201
+
+#         except pymysql.MySQLError as e:
+#             connection.rollback()
+#             print(f"Database error during task creation: {e}")
+#             return jsonify({"error": "Database operation failed"}), 500
+
+#         finally:
+#             connection.close()
+#             print("DEBUG: Database connection closed.")
+
+#     except Exception as e:
+#         print(f"Unexpected error during task creation: {e}")
+#         return jsonify({"error": "An internal error occurred"}), 500
+
+#     finally:
+#         session.pop("is_creating_task", None)
+#         print("DEBUG: Session lock released.")
+
 @app.route("/api/task", methods=["POST"])
 @login_required
 def create_task():
     if session.get("is_creating_task"):
-        return jsonify({"error": "Request already in progress"}), 429  # Too Many Requests
+        return jsonify({"error": "Request already in progress"}), 429
 
-    session["is_creating_task"] = True  # Lock
+    session["is_creating_task"] = True
 
     try:
         user_id = session.get("user_id")
         if not user_id:
             return jsonify({"error": "User ID not found in session"}), 400
 
+        # --- Required Fields ---
         title = request.form.get("title")
         description = request.form.get("description")
+        if not title or not description:
+            return jsonify({"error": "Title and description are required"}), 400
+
+        # --- Task Meta ---
         assigned_users = request.form.getlist("assignedUsers[]")
         task_state = request.form.get("ticketState")
         task_priority = request.form.get("ticketPriority")
         attachments = request.files.getlist("attachments")
-
-        # ✅ Get selected tags
-        tags = request.form.getlist("tags[]")  # List of tag IDs like ['1', '3']
+        tags = request.form.getlist("tags[]")
         tags_str = ",".join([str(t) for t in tags]) if tags else None
 
-        # --- Scheduling/Reminder Data ---
-        scheduled_clone_str = request.form.get("clone_schedule_datetime")
+        # --- Parent / Subtask ---
         is_subtask = request.form.get("is_subtask", default=False, type=bool)
+        parent_task_id = request.form.get("parent_task_id")  # optional
+        if is_subtask and not parent_task_id:
+            return jsonify({"error": "Parent task ID required for a subtask"}), 400
+
+        # --- Scheduling ---
+        scheduled_clone_str = request.form.get("clone_schedule_datetime")
         reminder_datetime_str = request.form.get("reminder_datetime")
 
-        # Parse datetime strings if provided - FIX FOR TIMEZONE AWARE COMPARISON
-        clone_schedule_datetime = None
-        reminder_datetime = None
-        if scheduled_clone_str:
+        def parse_datetime(dt_str):
+            if not dt_str:
+                return None
             try:
-                # Parse the datetime string. This will be timezone-aware if 'Z' or offset is present.
-                parsed_dt = datetime.fromisoformat(scheduled_clone_str.replace('Z', '+00:00'))
-                # If the parsed datetime is naive, localize it to UTC.
+                parsed_dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
                 if parsed_dt.tzinfo is None:
                     parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
-                clone_schedule_datetime = parsed_dt
-
-                # Compare with the current UTC time (also timezone-aware)
-                if clone_schedule_datetime <= datetime.now(timezone.utc):
-                     return jsonify({"error": "Clone schedule datetime must be in the future."}), 400
+                if parsed_dt <= datetime.now(timezone.utc):
+                    return None
+                return parsed_dt
             except ValueError:
-                 return jsonify({"error": "Invalid clone schedule datetime format. Expected ISO 8601 (e.g., YYYY-MM-DDTHH:MM:SSZ)."}), 400
+                return None
 
-        if reminder_datetime_str:
-            try:
-                # Parse the datetime string.
-                parsed_dt = datetime.fromisoformat(reminder_datetime_str.replace('Z', '+00:00'))
-                # If the parsed datetime is naive, localize it to UTC.
-                if parsed_dt.tzinfo is None:
-                    parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
-                reminder_datetime = parsed_dt
-
-                # Compare with the current UTC time (also timezone-aware)
-                if reminder_datetime <= datetime.now(timezone.utc):
-                     return jsonify({"error": "Reminder datetime must be in the future."}), 400
-            except ValueError:
-                 return jsonify({"error": "Invalid reminder datetime format. Expected ISO 8601 (e.g., YYYY-MM-DDTHH:MM:SSZ)."}), 400
-
+        clone_schedule_datetime = parse_datetime(scheduled_clone_str)
+        reminder_datetime = parse_datetime(reminder_datetime_str)
         scheduled_clone = clone_schedule_datetime is not None
-        # --- END Scheduling/Reminder Data ---
 
-        if not title or not description:
-            return jsonify({"error": "Title and description are required"}), 400
+        # --- File Handling ---
+        original_filenames, last_unique_name = [], None
+        upload_folder = app.config.get('UPLOAD_FOLDER')
 
+        if not upload_folder or not os.path.exists(upload_folder):
+            return jsonify({"error": "Upload folder missing or misconfigured"}), 500
+
+        for attachment in attachments:
+            if attachment and attachment.filename != "":
+                original_filename = attachment.filename
+                unique_name = generate_unique_name(original_filename)
+                if not unique_name:
+                    return jsonify({"error": "Failed to generate unique name"}), 500
+
+                file_path = os.path.join(upload_folder, unique_name)
+                try:
+                    attachment.save(file_path)
+                    original_filenames.append(original_filename)
+                    last_unique_name = unique_name
+                except Exception as save_error:
+                    print(f"ERROR saving file: {save_error}")
+                    return jsonify({"error": f"Failed to save {original_filename}"}), 500
+
+        attachments_json = json.dumps(original_filenames) if original_filenames else None
+
+        # --- DB Operation ---
         connection = create_connection()
         if connection is None:
-            return jsonify({"error": "Failed to connect to the database"}), 500
+            return jsonify({"error": "Failed to connect to database"}), 500
 
         try:
-            original_filenames = []  # Store original filenames for 'attachments' column
-            last_unique_name = None  # Store the last generated unique name for 'unique_name' column
-            upload_folder = app.config.get('UPLOAD_FOLDER')
-
-            # Validate Upload Folder
-            if not upload_folder or not os.path.exists(upload_folder):
-                 print(f"ERROR: Upload folder misconfigured or missing: {upload_folder}")
-                 return jsonify({"error": "Server configuration error: Upload folder not found"}), 500
-
             with connection.cursor() as cursor:
-                # Handle file attachments
-                if attachments:
-                    for attachment in attachments:
-                        if attachment and attachment.filename != '':
-                            original_filename = attachment.filename
-                            unique_name = generate_unique_name(original_filename) # Ensure this function exists
-                            if not unique_name:
-                                 print(f"ERROR: Failed to generate unique name for {original_filename}")
-                                 return jsonify({"error": "Failed to process attachment filename"}), 500
-
-                            file_path = os.path.join(upload_folder, unique_name)
-                            try:
-                                attachment.save(file_path)
-                                original_filenames.append(original_filename)
-                                # --- FIX: Store only the last unique name (as a plain string) ---
-                                last_unique_name = unique_name # Update the last unique name
-                                print(f"Saved attachment: {original_filename} as {unique_name}")
-                            except Exception as save_error:
-                                print(f"ERROR saving file {original_filename} to {file_path}: {save_error}")
-                                return jsonify({"error": f"Failed to save attachment: {original_filename}"}), 500
-                        else:
-                            print("INFO: Skipped empty file part.")
-
-                # Prepare data for columns
-                # Store original filenames as JSON array in 'attachments' column
-                attachments_json = json.dumps(original_filenames) if original_filenames else None
-                # Store only the LAST unique name directly in 'unique_name' column (VARCHAR/TEXT)
-                # If no files, last_unique_name will be None, inserting NULL into the DB.
-                # If you prefer an empty string, you could use: last_unique_name or ""
-
-                # Set current user context
                 cursor.execute("SET @current_user_id = %s", (user_id,))
 
-                # --- Call Updated Stored Procedure ---
-                # Ensure your SP 'Proc_tbltasks_Upsert_test_3' accepts p_unique_name as VARCHAR/TEXT
-                # Parameters expected:
-                # (p_id, p_title, p_description, p_attachments_json, p_unique_name,
-                #  p_attachment_name, p_status_id, p_assigned_users_json, p_priority_id, p_tags,
-                #  p_scheduled_clone, p_clone_schedule_datetime, p_is_subtask, p_reminder_datetime)
-                cursor.callproc('Proc_tbltasks_Upsert_test_3', ( # <-- Updated SP name
-                    0,                              # IN p_task_id (0 = insert)
-                    title,                          # IN p_title
-                    description,                    # IN p_description
-                    attachments_json,               # IN p_attachments_json (original names as JSON)
-                    last_unique_name,               # IN p_unique_name (LAST unique name as plain VARCHAR/TEXT)
-                    None,                           # IN p_attachment_name (legacy)
-                    task_state,                     # IN p_status_id
-                    json.dumps(assigned_users) if assigned_users else None, # IN p_assigned_users_json
-                    task_priority,                  # IN p_priority_id
-                    tags_str,                       # IN p_tags
-                    # --- Scheduling Parameters ---
-                    scheduled_clone,                # IN p_scheduled_clone
-                    clone_schedule_datetime,        # IN p_clone_schedule_datetime (timezone-aware)
-                    is_subtask,                     # IN p_is_subtask
-                    reminder_datetime               # IN p_reminder_datetime (timezone-aware)
+                cursor.callproc('Proc_tbltasks_Upsert_withSubtasks', (
+                    0,                              # p_task_id (0 = insert)222
+                    title,                          # p_title
+                    description,                    # p_description
+                    attachments_json,               # p_attachments_json
+                    last_unique_name,               # p_unique_name
+                    None,                           # p_attachment_name (legacy)
+                    task_state,                     # p_status_id
+                    json.dumps(assigned_users) if assigned_users else None, # p_assigned_users_json
+                    task_priority,                  # p_priority_id
+                    tags_str,                       # p_tags
+                    scheduled_clone,                # p_scheduled_clone
+                    clone_schedule_datetime,        # p_clone_schedule_datetime
+                    is_subtask,                     # p_is_subtask
+                    reminder_datetime,              # p_reminder_datetime
+                    parent_task_id                  # NEW: p_parent_task_id
                 ))
 
                 connection.commit()
                 new_task_id = cursor.lastrowid
-                print(f"INFO: Task created successfully with ID: {new_task_id}")
 
-                # --- Send Notifications ---
+                # --- Notifications ---
                 try:
                     assigned_user_emails = []
                     if assigned_users:
@@ -2887,30 +3038,52 @@ def create_task():
                         creator_email, assigned_user_emails
                     )
                 except Exception as notify_error:
-                     print(f"WARNING: Failed to send notification for task {new_task_id}: {notify_error}")
+                    print(f"WARNING: Notification failed for task {new_task_id}: {notify_error}")
 
                 return jsonify({
                     "message": "Task created successfully",
                     "task_id": new_task_id,
-                    "scheduled": scheduled_clone
+                    "is_subtask": is_subtask,
+                    "parent_task_id": parent_task_id
                 }), 201
 
         except pymysql.MySQLError as e:
             connection.rollback()
-            print(f"Database error during task creation: {e}")
+            print(f"DB Error: {e}")
             return jsonify({"error": "Database operation failed"}), 500
 
         finally:
             connection.close()
-            print("DEBUG: Database connection closed.")
 
     except Exception as e:
-        print(f"Unexpected error during task creation: {e}")
-        return jsonify({"error": "An internal error occurred"}), 500
+        print(f"Unexpected error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
     finally:
         session.pop("is_creating_task", None)
-        print("DEBUG: Session lock released.")
+
+
+
+
+@app.route('/api/tasks/parents', methods=['GET'])
+def get_parent_tasks():
+    connection = create_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, title 
+                FROM tbltasks
+                WHERE is_subtask = 0 AND isDeleted = 0
+                ORDER BY title
+            """)
+            result = cursor.fetchall()
+            return jsonify(result), 200
+    except Exception as e:
+        print(e)
+        return jsonify([]), 500
+    finally:
+        connection.close()
+
 
 
 
