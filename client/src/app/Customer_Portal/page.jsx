@@ -120,8 +120,7 @@ function EmbeddedLink() {
               User ID: {userId}
             </div>
           </div>
-          {/* Hello htis is the way you shuold be adding at the things  which is  the way you should be adding
-          the whole of the way of it shuold be adding it */}
+          
           <div className="p-1 bg-gray-200">
             <div className="flex items-center justify-between bg-white p-2 border-b">
               <div className="flex items-center">

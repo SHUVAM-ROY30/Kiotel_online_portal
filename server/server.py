@@ -3073,8 +3073,8 @@ def get_parent_tasks():
             cursor.execute("""
                 SELECT id, title 
                 FROM tbltasks
-                WHERE is_subtask = 0 AND isDeleted = 0
-                ORDER BY title
+                WHERE isDeleted = 0
+                ORDER BY id DESC
             """)
             result = cursor.fetchall()
             return jsonify(result), 200
@@ -3086,7 +3086,26 @@ def get_parent_tasks():
 
 
 
-
+@app.route('/api/tasks/subtasks/<int:parent_task_id>', methods=['GET'])
+@login_required # Or appropriate auth
+def get_subtasks(parent_task_id):
+    print(parent_task_id)
+    connection = create_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, title 
+                FROM tbltasks 
+                WHERE parent_task_id = %s AND isDeleted = 0
+                ORDER BY created_at
+            """, (parent_task_id,))
+            result = cursor.fetchall()
+            return jsonify(result), 200
+    except Exception as e:
+        print(f"Error fetching subtasks for {parent_task_id}: {e}")
+        return jsonify({"error": "Failed to fetch subtasks"}), 500
+    finally:
+        connection.close()
 # @app.route("/api/task", methods=["POST"])
 # @login_required
 # def create_task():

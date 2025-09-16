@@ -1409,7 +1409,10 @@ export default function TicketCreateForm() {
         setSelectedParentTask(null);
         return;
       }
-      
+      // hello thsi is hte way you should be doing it on the go of the wedget of the light  
+      // ok this is the way of the late night of the local in the seen of the things
+      // hello this is the way of the come of the
+
       setLoadingParentTasks(true);
       try {
         // ✅ Using the correct API endpoint
@@ -1618,7 +1621,7 @@ export default function TicketCreateForm() {
       },
     }),
   };
-
+ 
   const datePickerClassNames = "w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 hover:border-gray-400";
 
   return (
@@ -1830,6 +1833,11 @@ export default function TicketCreateForm() {
                   <FaPaperclip className="h-5 w-5 text-gray-600" />
                 </span>
                 Attachments
+                {/* hello this is the thing on the the come of the open of then of the local ages of the way ot 
+                to discusses is the of the way of the perform of the local way of the beloved ages of the worden
+                of the the past with the local of the with own ages for the fuel to perform in the middle of the 
+                local 
+                  */}
               </h2>
               <div>
                 <label className="block mb-2 text-sm font-medium text-gray-700">Upload Files</label>
