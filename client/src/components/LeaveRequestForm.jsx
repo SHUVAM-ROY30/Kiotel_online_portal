@@ -383,7 +383,7 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
                   <option value="Week Off">Week Off</option>
                   <option value="Paid Leave">Paid Leave</option>
                   <option value="Festive Leave">Festive Leave</option>
-                  <option value="Casual Leave">Casual Leave</option>
+                  {/* <option value="Casual Leave">Casual Leave</option> */}
                 </select>
               </div>
               {formData.leaveType &&
@@ -505,7 +505,7 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
                       <option value="Week Off">Week Off</option>
                       <option value="Paid Leave">Paid Leave</option>
                       <option value="Festive Leave">Festive Leave</option>
-                      <option value="Casual Leave">Casual Leave</option>
+                      {/* <option value="Casual Leave">Casual Leave</option> */}
                     </select>
                   </div>
                   <button
