@@ -1178,7 +1178,7 @@ export default function TicketCreateForm() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 hover:border-gray-400"
                   ></textarea>
                 </div>
-                
+
                 {/* ✅ Subtask Toggle */}
                 <div className="flex items-center">
                   <input
