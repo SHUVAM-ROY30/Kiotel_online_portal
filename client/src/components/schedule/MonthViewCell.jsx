@@ -19,7 +19,7 @@ const MonthViewCell = ({
       content = (
         <>
           <div className="font-semibold text-xs">{shiftType?.name}</div>
-          <div className="text-xs truncate mt-0.5">{entry.property_name || 'N/A'}</div>
+          <div className="text-xs truncate mt-0.5">{entry.property_name }</div>
         </>
       );
       bgColor = 'bg-white';

@@ -40,7 +40,7 @@ const ScheduleModals = ({
           >
             <option value="ASSIGNED">Assigned (Shift)</option>
             {currentSchedule?.status === 'LIVE' && <option value="PTO_REQUESTED">LLOP</option>}
-            <option value="FESTIVE_LEAVE">Festive leave</option>
+            {/* <option value="FESTIVE_LEAVE">Festive leave</option> */}
             <option value="PTO_APPROVED">Paid Leave</option>
             <option value="UNAVAILABLE">Week OFF</option>
             <option value="OFF">LOP</option>

@@ -26,7 +26,7 @@ const ShiftCell = ({
       content = (
         <>
           <div className="font-semibold text-sm">{shiftType?.name}</div>
-          <div className="text-xs truncate mt-1">{entry.property_name || 'N/A'}</div>
+          <div className="text-xs truncate mt-1">{entry.property_name }</div>
         </>
       );
       bgColor = 'bg-white';
@@ -95,7 +95,7 @@ const ShiftCell = ({
             <div className="font-semibold text-sm">
               {shiftTypes.find(st => st.id == entry.shift_type_id)?.name}
             </div>
-            <div className="text-xs truncate mt-1">{entry.property_name || 'N/A'}</div>
+            <div className="text-xs truncate mt-1">{entry.property_name }</div>
           </div>
         ) : (
           <div className={`p-3 rounded-xl w-full h-full flex flex-col justify-center shadow-sm group-hover:shadow-md transition-shadow ${
@@ -118,7 +118,7 @@ const ShiftCell = ({
                entry.assignment_status === 'UNAVAILABLE' ? 'Week OFF' :
                entry.assignment_status === 'OFF' ? 'LOP' : 'Off'}
             </div>
-            <div className="text-xs truncate mt-1">{entry.property_name || 'N/A'}</div>
+            <div className="text-xs truncate mt-1">{entry.property_name }</div>
           </div>
         )
       ) : (
