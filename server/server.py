@@ -341,7 +341,7 @@ def register_user():
     if not connection1:
         return jsonify({"error": "Failed to connect to primary database"}), 500
 
-    connection2 = create_connection2() if role_id in (1, 2, 3) else None
+    connection2 = create_connection2() if role_id in (1, 2, 3,5,7) else None
 
     try:
         # Use a DictCursor to easily access results by column name
@@ -389,14 +389,14 @@ def register_user():
         # Handle secondary DB insertion only for roles 1, 2, 3
         if connection2:
             with connection2.cursor() as cursor2:
-                if role_id == 1:
+                if role_id in (1, 5):
                     # Insert into admins table
                     cursor2.execute("""
                         INSERT INTO admins (unique_id, first_name, last_name)
                         VALUES (%s, %s, %s)
                     """, (account_no, fname, lname))
 
-                elif role_id in (2, 3):
+                elif role_id in (2, 3,7):
                     # Insert into employees_test table (assuming 'employees' based on previous code)
                     cursor2.execute("""
                         INSERT INTO employees (

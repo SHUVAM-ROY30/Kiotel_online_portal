@@ -151,6 +151,7 @@ function SignUpForm({ existingUser = null }) {
     ],
     hrmanager: ["email", "password", "name", "dob", "eid", "contact"],
     officeadmin: ["email", "password", "name", "dob", "eid", "contact"],
+    agenttrainee: ["email", "password", "name", "dob", "eid", "contact"],
     // Add rules for roles that should see the group selector if needed
     // e.g., manager: [...otherFields, "groups"]
     // For now, we'll make it visible for all roles if the API supports it.
@@ -541,7 +542,7 @@ function SignUpForm({ existingUser = null }) {
                 <div>
                   <label htmlFor="date-of-birth" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
                     <FaCalendarAlt className="mr-2 text-blue-500" />
-                    Date of Birth <span className="text-red-500">*</span>
+                    Date of Join <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <DatePicker
