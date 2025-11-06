@@ -6084,7 +6084,7 @@ export default function SchedulePage() {
                 <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
                   <h4 className="font-bold text-red-800 mb-2">⚠️ Excessive Week Offs Detected</h4>
                   <p className="text-red-700 mb-3">
-                    The following employees have <strong>more than 2</strong> "Week OFF" days:
+                    The following employees have <strong>2 or more</strong> Week OFF days:
                   </p>
                   <ul className="space-y-2 max-h-40 overflow-y-auto">
                     {publishWarningData.excessiveUnavailability.map((emp, index) => (
@@ -6127,7 +6127,7 @@ export default function SchedulePage() {
 
               {publishWarningData.excessiveUnavailability.length === 0 && publishWarningData.unavailableEmployees.length > 0 && (
                 <p className="text-slate-600 mb-4 text-sm">
-                  No employee has more than 2 "Week OFF" days.
+                  No employee has 2 or more Week OFF days.
                 </p>
               )}
 
