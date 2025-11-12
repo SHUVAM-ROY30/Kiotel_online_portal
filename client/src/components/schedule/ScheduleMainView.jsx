@@ -1,8 +1,9 @@
 
 
+
 // // src/components/schedule/ScheduleMainView.jsx
 
-// import React, { useMemo, useRef } from 'react';
+// import React, { useMemo, useRef, useEffect, useState } from 'react'; // Add useState
 // import { format, isToday, subDays, addDays, subWeeks, addWeeks, startOfWeek, startOfDay } from 'date-fns';
 // import {
 //   DndContext,
@@ -47,15 +48,22 @@
 //   handleReorder,
 //   loadScheduleEntries,
 //   myPastEntries,
-//   uniqueId, // Pass uniqueId if needed by MonthView
-//   selectedTemplate, // Receive selectedTemplate
-//   setSelectedTemplate, // Receive setter
-//   selectedCells, // Receive selectedCells
-//   setSelectedCells, // Receive setter
-//   applySelectedTemplateToCells, // Receive apply function
-//   employeeRoles, // Receive the employee roles map
-//   showBroadcastModal, // Receive modal state
-//   setShowBroadcastModal, // Receive modal setter
+//   uniqueId,
+//   selectedTemplate,
+//   setSelectedTemplate,
+//   selectedCells,
+//   setSelectedCells,
+//   applySelectedTemplateToCells,
+//   employeeRoles,
+//   showBroadcastModal,
+//   setShowBroadcastModal,
+//   // --- NEW PROPS ---
+//   multiTemplateSelections,
+//   setMultiTemplateSelections,
+//   saveAllMultiTemplateSelections,
+//   applyTemplateToAllDaysForEmployee,
+//   employees, // Receive employees
+//   leaveTypes, // Receive leave types
 // }) => {
 //   const sensors = useSensors(
 //     useSensor(PointerSensor),
@@ -64,7 +72,8 @@
 //     })
 //   );
 
-//   // Ref to access the main schedule table body for scrolling
+//   const [isDragging, setIsDragging] = useState(false); // NEW: State for drag selection
+//   const [dragStartCell, setDragStartCell] = useState(null); // NEW: State for drag start cell
 //   const tableBodyRef = useRef(null);
 
 //   const getDaysOfWeek = (baseDate) => {
@@ -96,16 +105,10 @@
 //   // Function to highlight an employee row and scroll to it
 //   const highlightEmployeeRow = (employeeId) => {
 //     if (tableBodyRef.current) {
-//       // Find the employee row element by data-attribute (set in SortableEmployeeRow.jsx)
 //       const rowElement = tableBodyRef.current.querySelector(`tr[data-employee-id="${employeeId}"]`);
 //       if (rowElement) {
-//         // Scroll the main schedule view to the employee row
 //         rowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-//         // Highlight the row
-//         rowElement.classList.add('bg-yellow-100', 'border-yellow-500', 'border-2'); // Example highlight classes
-
-//         // Remove highlight after 2 seconds
+//         rowElement.classList.add('bg-yellow-100', 'border-yellow-500', 'border-2');
 //         setTimeout(() => {
 //           rowElement.classList.remove('bg-yellow-100', 'border-yellow-500', 'border-2');
 //         }, 2000);
@@ -113,11 +116,138 @@
 //     }
 //   };
 
-//   // Expose the highlight function to the parent component (ScheduleSidebar) via a ref
-//   // This requires ScheduleSidebar to have a ref pointing to this function.
-//   // A simpler way is to pass the function directly as a prop from page.jsx.
-//   // For now, let's assume ScheduleSidebar calls this function via a direct prop passed from page.jsx.
-//   // This step is handled in the updated page.jsx where onHighlightEmployeeInMainView is passed.
+//   // // --- NEW FUNCTION: Handle Multi-Template Selection ---
+//   // const handleMultiTemplateSelection = (cellKey, templateId) => {
+//   //   if (!templateId) return;
+
+//   //   setMultiTemplateSelections(prev => {
+//   //     const newSelections = { ...prev };
+//   //     if (!newSelections[templateId]) {
+//   //       newSelections[templateId] = new Set();
+//   //     }
+//   //     if (newSelections[templateId].has(cellKey)) {
+//   //       newSelections[templateId].delete(cellKey);
+//   //     } else {
+//   //       newSelections[templateId].add(cellKey);
+//   //     }
+//   //     return newSelections;
+//   //   });
+//   // };
+//   const handleMultiTemplateSelection = (cellKey, templateId) => {
+//   if (!templateId) return;
+//   setMultiTemplateSelections(prev => {
+//     const newSelections = { ...prev };
+//     if (!newSelections[templateId]) {
+//       newSelections[templateId] = new Set();
+//     }
+//     if (newSelections[templateId].has(cellKey)) {
+//       newSelections[templateId].delete(cellKey);
+//     } else {
+//       newSelections[templateId].add(cellKey);
+//     }
+//     return newSelections;
+//   });
+
+//   // ✅ Sync selectedCells for visual feedback (only for current template)
+//   setSelectedCells(prev => {
+//     const newSet = new Set(prev);
+//     const isSelected = multiTemplateSelections[templateId]?.has(cellKey);
+//     if (isSelected) {
+//       newSet.delete(cellKey);
+//     } else {
+//       newSet.add(cellKey);
+//     }
+//     return newSet;
+//   });
+// };
+
+//   // --- NEW FUNCTION: Handle Drag Start ---
+//   const handleDragStart = (e, cellKey) => {
+//     if (!selectedTemplate) return;
+//     setIsDragging(true);
+//     setDragStartCell(cellKey);
+//     // Prevent default drag behavior on the cell
+//     e.preventDefault();
+//   };
+
+//   // --- NEW FUNCTION: Handle Mouse Move for Drag Selection ---
+//   const handleMouseMove = (e) => {
+//     if (!isDragging || !dragStartCell || !selectedTemplate) return;
+
+//     const cellElements = document.querySelectorAll('.schedule-cell');
+//     const draggedOverCells = [];
+
+//     cellElements.forEach(cell => {
+//       const rect = cell.getBoundingClientRect();
+//       if (
+//         e.clientX >= rect.left &&
+//         e.clientX <= rect.right &&
+//         e.clientY >= rect.top &&
+//         e.clientY <= rect.bottom
+//       ) {
+//         draggedOverCells.push(cell);
+//       }
+//     });
+
+//     if (draggedOverCells.length > 0) {
+//       const firstCellKey = draggedOverCells[0].dataset.cellKey;
+//       const lastCellKey = draggedOverCells[draggedOverCells.length - 1].dataset.cellKey;
+
+//       // Create a range of cells between start and end
+//       const allCellKeys = new Set();
+//       const [startEmpId, startDateStr] = dragStartCell.split('|');
+//       const [endEmpId, endDateStr] = lastCellKey.split('|');
+
+//       const allEmployeeIds = filteredEmployees.map(emp => emp.id);
+//       const startEmpIndex = allEmployeeIds.indexOf(parseInt(startEmpId));
+//       const endEmpIndex = allEmployeeIds.indexOf(parseInt(endEmpId));
+
+//       const startDayIndex = weekDays.findIndex(day => format(day, 'yyyy-MM-dd') === startDateStr);
+//       const endDayIndex = weekDays.findIndex(day => format(day, 'yyyy-MM-dd') === endDateStr);
+
+//       for (let i = Math.min(startEmpIndex, endEmpIndex); i <= Math.max(startEmpIndex, endEmpIndex); i++) {
+//         for (let j = Math.min(startDayIndex, endDayIndex); j <= Math.max(startDayIndex, endDayIndex); j++) {
+//           const empId = allEmployeeIds[i];
+//           const dateStr = format(weekDays[j], 'yyyy-MM-dd');
+//           allCellKeys.add(`${empId}|${dateStr}`);
+//         }
+//       }
+
+//       // Update the multi-template selection for the current template
+//       setMultiTemplateSelections(prev => {
+//         const newSelections = { ...prev };
+//         if (!newSelections[selectedTemplate.id]) {
+//           newSelections[selectedTemplate.id] = new Set();
+//         }
+//         // Clear previous selections for this template
+//         newSelections[selectedTemplate.id] = new Set(allCellKeys);
+//         return newSelections;
+//       });
+//     }
+//   };
+
+//   // --- NEW FUNCTION: Handle Mouse Up for Drag Selection ---
+//   const handleMouseUp = () => {
+//     setIsDragging(false);
+//     setDragStartCell(null);
+//   };
+
+//   // Attach mouse event listeners to the document for drag selection
+//   useEffect(() => {
+//     if (isDragging) {
+//       document.addEventListener('mousemove', handleMouseMove);
+//       document.addEventListener('mouseup', handleMouseUp);
+//     } else {
+//       document.removeEventListener('mousemove', handleMouseMove);
+//       document.removeEventListener('mouseup', handleMouseUp);
+//     }
+
+//     return () => {
+//       document.removeEventListener('mousemove', handleMouseMove);
+//       document.removeEventListener('mouseup', handleMouseUp);
+//     };
+//   }, [isDragging, dragStartCell, selectedTemplate, weekDays, filteredEmployees, selectedCells, setSelectedCells, handleMultiTemplateSelection]); // Add dependencies
+
 
 //   if (!currentSchedule && !isMonthView) {
 //     return (
@@ -148,7 +278,6 @@
 //           )}
 //         </div>
 //         <div className="flex gap-3 flex-wrap">
-//           {/* Broadcast Button for Admin/HR */}
 //           {([1, 5].includes(userRole)) && (
 //             <button
 //               onClick={() => setShowBroadcastModal(true)}
@@ -258,22 +387,22 @@
 //                 <strong>Selected Template:</strong> {selectedTemplate.name}
 //               </p>
 //             )}
-//             {selectedCells && selectedCells.size > 0 && (
+//             {multiTemplateSelections[selectedTemplate.id] && multiTemplateSelections[selectedTemplate.id].size > 0 && (
 //               <p className="text-sm text-slate-600">
-//                 <strong>Selected Cells:</strong> {selectedCells.size}
+//                 <strong>Selected Cells:</strong> {multiTemplateSelections[selectedTemplate.id].size}
 //               </p>
 //             )}
 //           </div>
 //           <button
-//             onClick={applySelectedTemplateToCells}
-//             disabled={!selectedTemplate || (selectedCells && selectedCells.size === 0)}
+//             onClick={saveAllMultiTemplateSelections}
+//             disabled={Object.keys(multiTemplateSelections).length === 0}
 //             className={`px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
-//               selectedTemplate && selectedCells && selectedCells.size > 0
+//               Object.keys(multiTemplateSelections).length > 0
 //                 ? 'bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 text-white shadow-md'
 //                 : 'bg-slate-100 text-slate-400 cursor-not-allowed'
 //             }`}
 //           >
-//             Save Shifts
+//             Save All Shifts
 //           </button>
 //         </div>
 //       )}
@@ -284,7 +413,7 @@
 //           setSelectedMonth={setSelectedMonth}
 //           myPastEntries={myPastEntries}
 //           shiftTypes={shiftTypes}
-//           uniqueId={uniqueId} // Pass uniqueId
+//           uniqueId={uniqueId}
 //         />
 //       ) : (
 //         <>
@@ -312,6 +441,7 @@
 //               ))}
 //             </div>
 //           </div>
+
 //           {/* Main Table Container */}
 //           <div className="rounded-xl border border-slate-200 shadow-sm">
 //             {/* Fixed Header Row */}
@@ -319,7 +449,7 @@
 //               <ScheduleTableHeader weekDays={weekDays} />
 //             </div>
 //             {/* Scrollable Body */}
-//             <div className="max-h-[calc(100vh-350px)] overflow-y-auto" ref={tableBodyRef}> {/* Attach ref here */}
+//             <div className="max-h-[calc(100vh-350px)] overflow-y-auto" ref={tableBodyRef}>
 //               <DndContext
 //                 sensors={sensors}
 //                 collisionDetection={closestCenter}
@@ -341,14 +471,21 @@
 //                           weekDays={weekDays}
 //                           handleReorder={handleReorder}
 //                           isDayView={isDayView}
-//                           scheduleEntries={scheduleEntries} // Pass down required data
-//                           shiftTypes={shiftTypes}           // Pass down required data
-//                           openEditModal={openEditModal}     // Pass down required function
-//                           // Pass the template-related props
+//                           scheduleEntries={scheduleEntries}
+//                           shiftTypes={shiftTypes}
+//                           openEditModal={openEditModal}
 //                           selectedTemplate={selectedTemplate}
 //                           setSelectedCells={setSelectedCells}
 //                           selectedCells={selectedCells}
-//                           employeeRoles={employeeRoles} // Pass the employee roles map
+//                           employeeRoles={employeeRoles}
+//                           // --- PASS NEW PROPS ---
+//                           multiTemplateSelections={multiTemplateSelections}
+//                           handleMultiTemplateSelection={handleMultiTemplateSelection}
+//                           applyTemplateToAllDaysForEmployee={applyTemplateToAllDaysForEmployee}
+//                           isDragging={isDragging}
+//                           handleDragStart={handleDragStart}
+//                           employees={employees} // Pass employees
+//                           leaveTypes={leaveTypes} // Pass leave types
 //                         />
 //                       ))}
 //                     </SortableContext>
@@ -366,10 +503,16 @@
 // export default ScheduleMainView;
 
 
-// src/components/schedule/ScheduleMainView.jsx
 
-import React, { useMemo, useRef, useEffect, useState } from 'react'; // Add useState
-import { format, isToday, subDays, addDays, subWeeks, addWeeks, startOfWeek, startOfDay } from 'date-fns';
+
+
+
+
+
+
+// src/components/schedule/ScheduleMainView.jsx
+import React, { useMemo, useRef, useEffect, useState } from 'react';
+import { format, isToday, subDays, addDays, subWeeks, addWeeks, startOfWeek, startOfDay, subMonths } from 'date-fns';
 import {
   DndContext,
   closestCenter,
@@ -387,6 +530,7 @@ import {
 import SortableEmployeeRow from './SortableEmployeeRow';
 import ScheduleTableHeader from './ScheduleTableHeader';
 import MonthView from './MonthView';
+import ThreeMonthView from './ThreeMonthView'; // ✅ Import the new view
 
 const ScheduleMainView = ({
   currentSchedule,
@@ -427,8 +571,14 @@ const ScheduleMainView = ({
   setMultiTemplateSelections,
   saveAllMultiTemplateSelections,
   applyTemplateToAllDaysForEmployee,
-  employees, // Receive employees
-  leaveTypes, // Receive leave types
+  employees,
+  leaveTypes,
+  // --- 3-MONTH VIEW PROPS ---
+  isThreeMonthView,
+  setIsThreeMonthView,
+  allPastEntries,
+  threeMonthLoading,
+
 }) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -437,8 +587,8 @@ const ScheduleMainView = ({
     })
   );
 
-  const [isDragging, setIsDragging] = useState(false); // NEW: State for drag selection
-  const [dragStartCell, setDragStartCell] = useState(null); // NEW: State for drag start cell
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartCell, setDragStartCell] = useState(null);
   const tableBodyRef = useRef(null);
 
   const getDaysOfWeek = (baseDate) => {
@@ -467,7 +617,6 @@ const ScheduleMainView = ({
     }
   };
 
-  // Function to highlight an employee row and scroll to it
   const highlightEmployeeRow = (employeeId) => {
     if (tableBodyRef.current) {
       const rowElement = tableBodyRef.current.querySelector(`tr[data-employee-id="${employeeId}"]`);
@@ -481,61 +630,40 @@ const ScheduleMainView = ({
     }
   };
 
-  // // --- NEW FUNCTION: Handle Multi-Template Selection ---
-  // const handleMultiTemplateSelection = (cellKey, templateId) => {
-  //   if (!templateId) return;
-
-  //   setMultiTemplateSelections(prev => {
-  //     const newSelections = { ...prev };
-  //     if (!newSelections[templateId]) {
-  //       newSelections[templateId] = new Set();
-  //     }
-  //     if (newSelections[templateId].has(cellKey)) {
-  //       newSelections[templateId].delete(cellKey);
-  //     } else {
-  //       newSelections[templateId].add(cellKey);
-  //     }
-  //     return newSelections;
-  //   });
-  // };
   const handleMultiTemplateSelection = (cellKey, templateId) => {
-  if (!templateId) return;
-  setMultiTemplateSelections(prev => {
-    const newSelections = { ...prev };
-    if (!newSelections[templateId]) {
-      newSelections[templateId] = new Set();
-    }
-    if (newSelections[templateId].has(cellKey)) {
-      newSelections[templateId].delete(cellKey);
-    } else {
-      newSelections[templateId].add(cellKey);
-    }
-    return newSelections;
-  });
+    if (!templateId) return;
+    setMultiTemplateSelections(prev => {
+      const newSelections = { ...prev };
+      if (!newSelections[templateId]) {
+        newSelections[templateId] = new Set();
+      }
+      if (newSelections[templateId].has(cellKey)) {
+        newSelections[templateId].delete(cellKey);
+      } else {
+        newSelections[templateId].add(cellKey);
+      }
+      return newSelections;
+    });
 
-  // ✅ Sync selectedCells for visual feedback (only for current template)
-  setSelectedCells(prev => {
-    const newSet = new Set(prev);
-    const isSelected = multiTemplateSelections[templateId]?.has(cellKey);
-    if (isSelected) {
-      newSet.delete(cellKey);
-    } else {
-      newSet.add(cellKey);
-    }
-    return newSet;
-  });
-};
+    setSelectedCells(prev => {
+      const newSet = new Set(prev);
+      const isSelected = multiTemplateSelections[templateId]?.has(cellKey);
+      if (isSelected) {
+        newSet.delete(cellKey);
+      } else {
+        newSet.add(cellKey);
+      }
+      return newSet;
+    });
+  };
 
-  // --- NEW FUNCTION: Handle Drag Start ---
   const handleDragStart = (e, cellKey) => {
     if (!selectedTemplate) return;
     setIsDragging(true);
     setDragStartCell(cellKey);
-    // Prevent default drag behavior on the cell
     e.preventDefault();
   };
 
-  // --- NEW FUNCTION: Handle Mouse Move for Drag Selection ---
   const handleMouseMove = (e) => {
     if (!isDragging || !dragStartCell || !selectedTemplate) return;
 
@@ -558,7 +686,6 @@ const ScheduleMainView = ({
       const firstCellKey = draggedOverCells[0].dataset.cellKey;
       const lastCellKey = draggedOverCells[draggedOverCells.length - 1].dataset.cellKey;
 
-      // Create a range of cells between start and end
       const allCellKeys = new Set();
       const [startEmpId, startDateStr] = dragStartCell.split('|');
       const [endEmpId, endDateStr] = lastCellKey.split('|');
@@ -578,26 +705,22 @@ const ScheduleMainView = ({
         }
       }
 
-      // Update the multi-template selection for the current template
       setMultiTemplateSelections(prev => {
         const newSelections = { ...prev };
         if (!newSelections[selectedTemplate.id]) {
           newSelections[selectedTemplate.id] = new Set();
         }
-        // Clear previous selections for this template
         newSelections[selectedTemplate.id] = new Set(allCellKeys);
         return newSelections;
       });
     }
   };
 
-  // --- NEW FUNCTION: Handle Mouse Up for Drag Selection ---
   const handleMouseUp = () => {
     setIsDragging(false);
     setDragStartCell(null);
   };
 
-  // Attach mouse event listeners to the document for drag selection
   useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
@@ -611,10 +734,9 @@ const ScheduleMainView = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragStartCell, selectedTemplate, weekDays, filteredEmployees, selectedCells, setSelectedCells, handleMultiTemplateSelection]); // Add dependencies
+  }, [isDragging, dragStartCell, selectedTemplate, weekDays, filteredEmployees]);
 
-
-  if (!currentSchedule && !isMonthView) {
+  if (!currentSchedule && !isMonthView && !isThreeMonthView) {
     return (
       <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 flex items-center justify-center h-full min-h-[500px]">
         <div className="text-center">
@@ -632,11 +754,13 @@ const ScheduleMainView = ({
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-7 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-800">
-            {isMonthView
+            {isThreeMonthView
+              ? 'Full Schedule - Last 3 Months'
+              : isMonthView
               ? `My Schedule - ${format(selectedMonth, 'MMMM yyyy')}`
               : (currentSchedule ? currentSchedule.name : 'Full Schedule')}
           </h1>
-          {currentSchedule && !isMonthView && (
+          {currentSchedule && !isMonthView && !isThreeMonthView && (
             <div className="text-slate-600 mt-2 text-lg">
               {format(new Date(currentSchedule.start_date), 'MMM d, yyyy')} – {format(new Date(currentSchedule.end_date), 'MMM d, yyyy')}
             </div>
@@ -653,9 +777,9 @@ const ScheduleMainView = ({
           )}
           <div className="flex border border-slate-300 rounded-xl overflow-hidden">
             <button
-              onClick={() => { setIsDayView(false); setIsMonthView(false); }}
+              onClick={() => { setIsDayView(false); setIsMonthView(false); setIsThreeMonthView(false); }}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
-                !isDayView && !isMonthView
+                !isDayView && !isMonthView && !isThreeMonthView
                   ? 'bg-blue-500 text-white'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
@@ -663,16 +787,37 @@ const ScheduleMainView = ({
               Week View
             </button>
             <button
-              onClick={() => { setIsDayView(true); setIsMonthView(false); }}
+              onClick={() => { setIsDayView(true); setIsMonthView(false); setIsThreeMonthView(false); }}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
-                isDayView && !isMonthView
+                isDayView && !isMonthView && !isThreeMonthView
                   ? 'bg-blue-500 text-white'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
               Day View
             </button>
+            {/* <button
+              onClick={() => { setIsDayView(false); setIsMonthView(true); setIsThreeMonthView(false); }}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                isMonthView
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Month View
+            </button> */}
+            <button
+              onClick={() => { setIsDayView(false); setIsMonthView(false); setIsThreeMonthView(true); }}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                isThreeMonthView
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Month View
+            </button>
           </div>
+
           {isMonthView ? (
             <>
               <button
@@ -688,7 +833,7 @@ const ScheduleMainView = ({
                 Current Month
               </button>
             </>
-          ) : (
+          ) : !isThreeMonthView ? (
             <>
               <button
                 onClick={() => {
@@ -727,11 +872,11 @@ const ScheduleMainView = ({
                 Today
               </button>
             </>
-          )}
+          ) : null}
         </div>
       </div>
 
-      {!isMonthView && (
+      {!isMonthView && !isThreeMonthView && (
         <div className="mb-6">
           <input
             type="text"
@@ -743,8 +888,7 @@ const ScheduleMainView = ({
         </div>
       )}
 
-      {/* Save Shift Button for Admin/HR when template is selected and cells are highlighted */}
-      {([1, 5].includes(userRole) && currentSchedule && selectedTemplate && applySelectedTemplateToCells) && (
+      {([1, 5].includes(userRole) && currentSchedule && selectedTemplate && applySelectedTemplateToCells && !isThreeMonthView) && (
         <div className="mb-4 flex items-center justify-between">
           <div>
             {selectedTemplate && (
@@ -772,7 +916,15 @@ const ScheduleMainView = ({
         </div>
       )}
 
-      {isMonthView ? (
+      {isThreeMonthView ? (
+        <ThreeMonthView
+          allPastEntries={allPastEntries}
+          employees={employees}
+          shiftTypes={shiftTypes}
+          leaveTypes={leaveTypes}
+          loading={threeMonthLoading}
+        />
+      ) : isMonthView ? (
         <MonthView
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
@@ -807,13 +959,10 @@ const ScheduleMainView = ({
             </div>
           </div>
 
-          {/* Main Table Container */}
           <div className="rounded-xl border border-slate-200 shadow-sm">
-            {/* Fixed Header Row */}
             <div className="sticky top-0 z-50 bg-white border-b border-slate-200">
               <ScheduleTableHeader weekDays={weekDays} />
             </div>
-            {/* Scrollable Body */}
             <div className="max-h-[calc(100vh-350px)] overflow-y-auto" ref={tableBodyRef}>
               <DndContext
                 sensors={sensors}
@@ -843,14 +992,13 @@ const ScheduleMainView = ({
                           setSelectedCells={setSelectedCells}
                           selectedCells={selectedCells}
                           employeeRoles={employeeRoles}
-                          // --- PASS NEW PROPS ---
                           multiTemplateSelections={multiTemplateSelections}
                           handleMultiTemplateSelection={handleMultiTemplateSelection}
                           applyTemplateToAllDaysForEmployee={applyTemplateToAllDaysForEmployee}
                           isDragging={isDragging}
                           handleDragStart={handleDragStart}
-                          employees={employees} // Pass employees
-                          leaveTypes={leaveTypes} // Pass leave types
+                          employees={employees}
+                          leaveTypes={leaveTypes}
                         />
                       ))}
                     </SortableContext>
@@ -866,9 +1014,3 @@ const ScheduleMainView = ({
 };
 
 export default ScheduleMainView;
-
-
-
-
-
-
