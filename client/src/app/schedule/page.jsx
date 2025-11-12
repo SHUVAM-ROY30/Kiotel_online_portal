@@ -4237,7 +4237,7 @@ const handleCreateSchedule = async () => {
                 <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
                   <h4 className="font-bold text-red-800 mb-2">⚠️ Excessive Week Offs Detected</h4>
                   <p className="text-red-700 mb-3">
-                    The following employees have <strong>more than 2</strong> "Week OFF" days:
+                    The following employees have <strong>2 or more</strong> Week OFF days:
                   </p>
                   <ul className="space-y-2 max-h-40 overflow-y-auto">
                     {excessiveUnavailability.map((emp, index) => (
@@ -4252,7 +4252,7 @@ const handleCreateSchedule = async () => {
               {unavailableEmployees.length > 0 && (
                 <div className="mb-6">
                   <p className="text-slate-700 mb-3">
-                    All employees with "Week OFF" ({format(new Date(targetScheduleDates.start), 'MMM d')} – {format(new Date(targetScheduleDates.end), 'MMM d, yyyy')}):
+                    All employees with Week OFF ({format(new Date(targetScheduleDates.start), 'MMM d')} – {format(new Date(targetScheduleDates.end), 'MMM d, yyyy')}):
                   </p>
                   <ul className="space-y-2 max-h-40 overflow-y-auto">
                     {unavailableEmployees.map((emp, index) => (
@@ -4266,7 +4266,7 @@ const handleCreateSchedule = async () => {
               )}
               {excessiveUnavailability.length === 0 && unavailableEmployees.length > 0 && (
                 <p className="text-slate-600 mb-4 text-sm">
-                  No employee has more than 2 "Week OFF" days.
+                  No employee has more than 2 Week OFF days.
                 </p>
               )}
               <div className="flex justify-end gap-4">
