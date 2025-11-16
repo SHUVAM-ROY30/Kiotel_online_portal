@@ -325,260 +325,6 @@
 // }
 
 
-// "use client";
-
-// import { useEffect, useState } from "react";
-// import Link from "next/link";
-// import { FaBell, FaUserCircle, FaSignOutAlt } from "react-icons/fa";
-// import axios from "axios";
-// import { useRouter } from "next/navigation";
-// import ProtectedRoute from "../../context/ProtectedRoute"; // Your authentication wrapper
-
-// function Dashboard() {
-//   const [userFname, setUserFname] = useState(null);
-//   const [userRole, setUserRole] = useState(null);
-//   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState(null);
-//   const [userId, setUserId] = useState(null);
-//   const router = useRouter();
-
-//   useEffect(() => {
-//     const fetchUserFname = async () => {
-//       try {
-//         const response = await axios.get(
-//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
-//           { withCredentials: true }
-//         );
-//         setUserFname(response.data.fname);
-//         console.log(response.data.id);
-//       } catch (error) {
-//         console.error("Failed to fetch user name:", error);
-//         setError("Failed to fetch user name");
-//         setUserFname(null);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchUserFname();
-//   }, []);
-
-//   useEffect(() => {
-//     const fetchUserId = async () => {
-//       try {
-//         const response = await axios.get(
-//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
-//           { withCredentials: true }
-//         );
-//         const role = response.data.role;
-//         const id = response.data.id;
-//         const url = response.data.link
-//         console.log("Fetched Role ID:", role);
-//         console.log("Fetched ID:", id);
-//         console.log("link", url)
-//         setUserId(id);
-//       } catch (error) {
-//         console.error("Failed to fetch user ID:", error);
-//         setError("Failed to fetch user ID");
-//         setUserId(null);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchUserId();
-//   }, []);
-
-//   useEffect(() => {
-//     const fetchUserRole = async () => {
-//       try {
-//         const response = await axios.get(
-//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
-//           { withCredentials: true }
-//         );
-//         setUserRole(response.data.role);
-//       } catch (error) {
-//         console.error("Failed to fetch user name:", error);
-//         setError("Failed to fetch user name");
-//         setUserRole(null);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchUserRole();
-//   }, []);
-
-//   const toggleProfileMenu = () => {
-//     setIsProfileMenuOpen(!isProfileMenuOpen);
-//   };
-
-//   const handleLogout = async () => {
-//     try {
-//       await axios.post(
-//         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/logout`,
-//         {},
-//         { withCredentials: true }
-//       );
-//       router.push("/sign-in");
-//     } catch (error) {
-//       console.error("Logout failed", error);
-//     }
-//   };
-
-//   const toreview = () => {
-//     console.log(userId);
-//     router.push(`/Review/${userId}`);
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
-//       <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-xl overflow-hidden">
-//         {/* Header */}
-//         <div className="flex justify-between items-center border-b pb-4 mb-6">
-//           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-//             {loading ? "Loading..." : error ? "Error loading email" : `Welcome, ${userFname}`}
-//           </h1>
-//           <div className="flex items-center space-x-4">
-//             {/* Notification Bell */}
-//             <button
-//               aria-label="Notifications"
-//               className="p-2 rounded-full text-gray-600 hover:bg-gray-200 transition duration-300"
-//             >
-//               <FaBell className="text-xl" />
-//             </button>
-
-//             {/* Profile Icon Dropdown */}
-//             <div className="relative">
-//               <button
-//                 onClick={toggleProfileMenu}
-//                 className="flex items-center gap-2 focus:outline-none"
-//               >
-//                 <FaUserCircle className="text-3xl text-gray-700 hover:text-blue-600 transition-colors" />
-//               </button>
-
-//               {/* Dropdown Menu */}
-//               {isProfileMenuOpen && (
-//                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 animate-fadeIn">
-//                   <ul className="py-2 text-sm text-gray-700">
-//                     <li>
-//                       <Link href="/components/updateProfile" legacyBehavior>
-//                         <a className="block px-4 py-2 hover:bg-gray-100 transition">Update Profile</a>
-//                       </Link>
-//                     </li>
-//                     <li>
-//                       <button
-//                         onClick={handleLogout}
-//                         className="w-full text-left block px-4 py-2 hover:bg-gray-100 transition flex items-center gap-2 text-red-600"
-//                       >
-//                         <FaSignOutAlt /> Logout
-//                       </button>
-//                     </li>
-//                   </ul>
-//                 </div>
-//               )}
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Main Content */}
-//         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-//           {/* Helpdesk */}
-//           {/* <Link
-//             href="/Helpdesk"
-//             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-blue-300"
-//           >
-//             <h2 className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-//               Helpdesk
-//             </h2>
-//           </Link> */}
-
-//           {/* My Kiosk */}
-//           {/* <Link
-//             href="/accounts"
-//             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-green-300"
-//           >
-//             <h2 className="text-lg font-semibold text-gray-800 group-hover:text-green-600 transition-colors">
-//               My Kiosk
-//             </h2>
-//           </Link> */}
-//           <Link
-//             href="/emp-dashboard"
-//             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-green-300"
-//           >
-//             <h2 className="text-lg font-semibold text-gray-800 group-hover:text-green-600 transition-colors">
-//               HR
-//             </h2>
-//           </Link>
-//           <Link
-//             href="/schedule"
-//             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-green-300"
-//           >
-//             <h2 className="text-lg font-semibold text-gray-800 group-hover:text-green-600 transition-colors">
-//               Schedule
-//             </h2>
-//           </Link>
-
-//           {/* Task Manager */}
-//           <Link
-//             href="/TaskManager"
-//             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-purple-300"
-//           >
-//             <h2 className="text-lg font-semibold text-gray-800 group-hover:text-purple-600 transition-colors">
-//               Task Manager
-//             </h2>
-//           </Link>
-
-//           {/* Admin Panel - Only visible if role is 1 */}
-//           {(userRole === 1 || userRole === 4 ) && (
-//             <Link
-//               href="/Customer_Portal"
-//               className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
-//             >
-//               <h2 className="text-lg font-semibold text-gray-800 group-hover:text-red-600 transition-colors">
-//                 MethordCRM
-//               </h2>
-//             </Link>
-//           )}
-
-//           {/* Admin Panel - Only visible if role is 1 */}
-//           {(userRole === 1 || userRole === 5 ) && (
-//             <Link
-//               href="/admin-dashboard"
-//               className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
-//             >
-//               <h2 className="text-lg font-semibold text-gray-800 group-hover:text-red-600 transition-colors">
-//                 HR (Admin)
-//               </h2>
-//             </Link>
-//           )}
-//           {userRole === 1 && (
-//             <Link
-//               href="/components/Admin"
-//               className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
-//             >
-//               <h2 className="text-lg font-semibold text-gray-800 group-hover:text-red-600 transition-colors">
-//                 Admin Panel
-//               </h2>
-//             </Link>
-//           )}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// // Wrap with ProtectedRoute
-// export default function DashboardWrapper() {
-//   return (
-//     <ProtectedRoute>
-//       <Dashboard />
-//     </ProtectedRoute>
-//   );
-// }
-
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -586,42 +332,87 @@ import Link from "next/link";
 import { FaBell, FaUserCircle, FaSignOutAlt } from "react-icons/fa";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import ProtectedRoute from "../../context/ProtectedRoute"; // Auth wrapper
+import ProtectedRoute from "../../context/ProtectedRoute"; // Your authentication wrapper
 
 function Dashboard() {
   const [userFname, setUserFname] = useState(null);
   const [userRole, setUserRole] = useState(null);
-  const [userId, setUserId] = useState(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [userId, setUserId] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchUserFname = async () => {
       try {
-        const { data } = await axios.get(
+        const response = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
           { withCredentials: true }
         );
-
-        setUserFname(data.fname);
-        setUserRole(data.role);
-        setUserId(data.id);
-
-        console.log("Fetched User Data:", data);
-      } catch (err) {
-        console.error("Failed to fetch user data:", err);
-        setError("Failed to load user data");
+        setUserFname(response.data.fname);
+        console.log(response.data.id);
+      } catch (error) {
+        console.error("Failed to fetch user name:", error);
+        setError("Failed to fetch user name");
+        setUserFname(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserData();
+    fetchUserFname();
   }, []);
 
-  const toggleProfileMenu = () => setIsProfileMenuOpen((prev) => !prev);
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          { withCredentials: true }
+        );
+        const role = response.data.role;
+        const id = response.data.id;
+        const url = response.data.link
+        console.log("Fetched Role ID:", role);
+        console.log("Fetched ID:", id);
+        console.log("link", url)
+        setUserId(id);
+      } catch (error) {
+        console.error("Failed to fetch user ID:", error);
+        setError("Failed to fetch user ID");
+        setUserId(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserId();
+  }, []);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          { withCredentials: true }
+        );
+        setUserRole(response.data.role);
+      } catch (error) {
+        console.error("Failed to fetch user name:", error);
+        setError("Failed to fetch user name");
+        setUserRole(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserRole();
+  }, []);
+
+  const toggleProfileMenu = () => {
+    setIsProfileMenuOpen(!isProfileMenuOpen);
+  };
 
   const handleLogout = async () => {
     try {
@@ -632,103 +423,25 @@ function Dashboard() {
       );
       router.push("/sign-in");
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error("Logout failed", error);
     }
   };
 
-  const toReview = () => {
-    if (userId) router.push(`/Review/${userId}`);
+  const toreview = () => {
+    console.log(userId);
+    router.push(`/Review/${userId}`);
   };
 
-  // ✅ If role 8, show ONLY the Admin Panel
-  if (!loading && userRole === 8) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
-        <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-xl overflow-hidden">
-          {/* Header */}
-          <div className="flex justify-between items-center border-b pb-4 mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-              {loading
-                ? "Loading..."
-                : error
-                ? "Error loading user"
-                : `Welcome, ${userFname}`}
-            </h1>
-
-            <div className="flex items-center space-x-4">
-              {/* Notification Bell */}
-              <button
-                aria-label="Notifications"
-                className="p-2 rounded-full text-gray-600 hover:bg-gray-200 transition duration-300"
-              >
-                <FaBell className="text-xl" />
-              </button>
-
-              {/* Profile Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={toggleProfileMenu}
-                  className="flex items-center gap-2 focus:outline-none"
-                >
-                  <FaUserCircle className="text-3xl text-gray-700 hover:text-blue-600 transition-colors" />
-                </button>
-
-                {isProfileMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 animate-fadeIn">
-                    <ul className="py-2 text-sm text-gray-700">
-                      <li>
-                        <Link href="/components/updateProfile" legacyBehavior>
-                          <a className="block px-4 py-2 hover:bg-gray-100 transition">
-                            Update Profile
-                          </a>
-                        </Link>
-                      </li>
-                      <li>
-                        <button
-                          onClick={handleLogout}
-                          className="w-full text-left block px-4 py-2 hover:bg-gray-100 transition flex items-center gap-2 text-red-600"
-                        >
-                          <FaSignOutAlt /> Logout
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* ✅ Only Admin Panel visible for role 8 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            <Link
-              href="/components/Admin"
-              className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
-            >
-              <h2 className="text-lg font-semibold text-gray-800 group-hover:text-red-600 transition-colors">
-                Admin Panel
-              </h2>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ✅ Normal dashboard for all other roles
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
       <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-xl overflow-hidden">
         {/* Header */}
         <div className="flex justify-between items-center border-b pb-4 mb-6">
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-            {loading
-              ? "Loading..."
-              : error
-              ? "Error loading user"
-              : `Welcome, ${userFname}`}
+            {loading ? "Loading..." : error ? "Error loading email" : `Welcome, ${userFname}`}
           </h1>
-
           <div className="flex items-center space-x-4">
+            {/* Notification Bell */}
             <button
               aria-label="Notifications"
               className="p-2 rounded-full text-gray-600 hover:bg-gray-200 transition duration-300"
@@ -736,6 +449,7 @@ function Dashboard() {
               <FaBell className="text-xl" />
             </button>
 
+            {/* Profile Icon Dropdown */}
             <div className="relative">
               <button
                 onClick={toggleProfileMenu}
@@ -744,14 +458,13 @@ function Dashboard() {
                 <FaUserCircle className="text-3xl text-gray-700 hover:text-blue-600 transition-colors" />
               </button>
 
+              {/* Dropdown Menu */}
               {isProfileMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 animate-fadeIn">
                   <ul className="py-2 text-sm text-gray-700">
                     <li>
                       <Link href="/components/updateProfile" legacyBehavior>
-                        <a className="block px-4 py-2 hover:bg-gray-100 transition">
-                          Update Profile
-                        </a>
+                        <a className="block px-4 py-2 hover:bg-gray-100 transition">Update Profile</a>
                       </Link>
                     </li>
                     <li>
@@ -771,7 +484,25 @@ function Dashboard() {
 
         {/* Main Content */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {/* HR */}
+          {/* Helpdesk */}
+          {/* <Link
+            href="/Helpdesk"
+            className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-blue-300"
+          >
+            <h2 className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+              Helpdesk
+            </h2>
+          </Link> */}
+
+          {/* My Kiosk */}
+          {/* <Link
+            href="/accounts"
+            className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-green-300"
+          >
+            <h2 className="text-lg font-semibold text-gray-800 group-hover:text-green-600 transition-colors">
+              My Kiosk
+            </h2>
+          </Link> */}
           <Link
             href="/emp-dashboard"
             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-green-300"
@@ -780,8 +511,6 @@ function Dashboard() {
               HR
             </h2>
           </Link>
-
-          {/* Schedule */}
           <Link
             href="/schedule"
             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-green-300"
@@ -801,8 +530,8 @@ function Dashboard() {
             </h2>
           </Link>
 
-          {/* MethordCRM */}
-          {(userRole === 1 || userRole === 4) && (
+          {/* Admin Panel - Only visible if role is 1 */}
+          {(userRole === 1 || userRole === 4 ) && (
             <Link
               href="/Customer_Portal"
               className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
@@ -813,8 +542,8 @@ function Dashboard() {
             </Link>
           )}
 
-          {/* HR Admin */}
-          {(userRole === 1 || userRole === 5) && (
+          {/* Admin Panel - Only visible if role is 1 */}
+          {(userRole === 1 || userRole === 5 ) && (
             <Link
               href="/admin-dashboard"
               className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
@@ -824,9 +553,7 @@ function Dashboard() {
               </h2>
             </Link>
           )}
-
-          {/* Admin Panel */}
-          {userRole === 1 && (
+          {(userRole === 1 || userRole === 8 ) && (
             <Link
               href="/components/Admin"
               className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
@@ -842,7 +569,7 @@ function Dashboard() {
   );
 }
 
-// ✅ Wrap with ProtectedRoute
+// Wrap with ProtectedRoute
 export default function DashboardWrapper() {
   return (
     <ProtectedRoute>
@@ -850,3 +577,276 @@ export default function DashboardWrapper() {
     </ProtectedRoute>
   );
 }
+
+
+// "use client";
+
+// import { useEffect, useState } from "react";
+// import Link from "next/link";
+// import { FaBell, FaUserCircle, FaSignOutAlt } from "react-icons/fa";
+// import axios from "axios";
+// import { useRouter } from "next/navigation";
+// import ProtectedRoute from "../../context/ProtectedRoute"; // Auth wrapper
+
+// function Dashboard() {
+//   const [userFname, setUserFname] = useState(null);
+//   const [userRole, setUserRole] = useState(null);
+//   const [userId, setUserId] = useState(null);
+//   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+//   const router = useRouter();
+
+//   useEffect(() => {
+//     const fetchUserData = async () => {
+//       try {
+//         const { data } = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+//           { withCredentials: true }
+//         );
+
+//         setUserFname(data.fname);
+//         setUserRole(data.role);
+//         setUserId(data.id);
+
+//         console.log("Fetched User Data:", data);
+//       } catch (err) {
+//         console.error("Failed to fetch user data:", err);
+//         setError("Failed to load user data");
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchUserData();
+//   }, []);
+
+//   const toggleProfileMenu = () => setIsProfileMenuOpen((prev) => !prev);
+
+//   const handleLogout = async () => {
+//     try {
+//       await axios.post(
+//         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/logout`,
+//         {},
+//         { withCredentials: true }
+//       );
+//       router.push("/sign-in");
+//     } catch (error) {
+//       console.error("Logout failed:", error);
+//     }
+//   };
+
+//   const toReview = () => {
+//     if (userId) router.push(`/Review/${userId}`);
+//   };
+
+//   // ✅ If role 8, show ONLY the Admin Panel
+//   if (!loading && userRole === 8) {
+//     return (
+//       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
+//         <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-xl overflow-hidden">
+//           {/* Header */}
+//           <div className="flex justify-between items-center border-b pb-4 mb-6">
+//             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+//               {loading
+//                 ? "Loading..."
+//                 : error
+//                 ? "Error loading user"
+//                 : `Welcome, ${userFname}`}
+//             </h1>
+
+//             <div className="flex items-center space-x-4">
+//               {/* Notification Bell */}
+//               <button
+//                 aria-label="Notifications"
+//                 className="p-2 rounded-full text-gray-600 hover:bg-gray-200 transition duration-300"
+//               >
+//                 <FaBell className="text-xl" />
+//               </button>
+
+//               {/* Profile Dropdown */}
+//               <div className="relative">
+//                 <button
+//                   onClick={toggleProfileMenu}
+//                   className="flex items-center gap-2 focus:outline-none"
+//                 >
+//                   <FaUserCircle className="text-3xl text-gray-700 hover:text-blue-600 transition-colors" />
+//                 </button>
+
+//                 {isProfileMenuOpen && (
+//                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 animate-fadeIn">
+//                     <ul className="py-2 text-sm text-gray-700">
+//                       <li>
+//                         <Link href="/components/updateProfile" legacyBehavior>
+//                           <a className="block px-4 py-2 hover:bg-gray-100 transition">
+//                             Update Profile
+//                           </a>
+//                         </Link>
+//                       </li>
+//                       <li>
+//                         <button
+//                           onClick={handleLogout}
+//                           className="w-full text-left block px-4 py-2 hover:bg-gray-100 transition flex items-center gap-2 text-red-600"
+//                         >
+//                           <FaSignOutAlt /> Logout
+//                         </button>
+//                       </li>
+//                     </ul>
+//                   </div>
+//                 )}
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* ✅ Only Admin Panel visible for role 8 */}
+//           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+//             <Link
+//               href="/components/Admin"
+//               className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
+//             >
+//               <h2 className="text-lg font-semibold text-gray-800 group-hover:text-red-600 transition-colors">
+//                 Admin Panel
+//               </h2>
+//             </Link>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   // ✅ Normal dashboard for all other roles
+//   return (
+//     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
+//       <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-xl overflow-hidden">
+//         {/* Header */}
+//         <div className="flex justify-between items-center border-b pb-4 mb-6">
+//           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+//             {loading
+//               ? "Loading..."
+//               : error
+//               ? "Error loading user"
+//               : `Welcome, ${userFname}`}
+//           </h1>
+
+//           <div className="flex items-center space-x-4">
+//             <button
+//               aria-label="Notifications"
+//               className="p-2 rounded-full text-gray-600 hover:bg-gray-200 transition duration-300"
+//             >
+//               <FaBell className="text-xl" />
+//             </button>
+
+//             <div className="relative">
+//               <button
+//                 onClick={toggleProfileMenu}
+//                 className="flex items-center gap-2 focus:outline-none"
+//               >
+//                 <FaUserCircle className="text-3xl text-gray-700 hover:text-blue-600 transition-colors" />
+//               </button>
+
+//               {isProfileMenuOpen && (
+//                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 animate-fadeIn">
+//                   <ul className="py-2 text-sm text-gray-700">
+//                     <li>
+//                       <Link href="/components/updateProfile" legacyBehavior>
+//                         <a className="block px-4 py-2 hover:bg-gray-100 transition">
+//                           Update Profile
+//                         </a>
+//                       </Link>
+//                     </li>
+//                     <li>
+//                       <button
+//                         onClick={handleLogout}
+//                         className="w-full text-left block px-4 py-2 hover:bg-gray-100 transition flex items-center gap-2 text-red-600"
+//                       >
+//                         <FaSignOutAlt /> Logout
+//                       </button>
+//                     </li>
+//                   </ul>
+//                 </div>
+//               )}
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Main Content */}
+//         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+//           {/* HR */}
+//           <Link
+//             href="/emp-dashboard"
+//             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-green-300"
+//           >
+//             <h2 className="text-lg font-semibold text-gray-800 group-hover:text-green-600 transition-colors">
+//               HR
+//             </h2>
+//           </Link>
+
+//           {/* Schedule */}
+//           <Link
+//             href="/schedule"
+//             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-green-300"
+//           >
+//             <h2 className="text-lg font-semibold text-gray-800 group-hover:text-green-600 transition-colors">
+//               Schedule
+//             </h2>
+//           </Link>
+
+//           {/* Task Manager */}
+//           <Link
+//             href="/TaskManager"
+//             className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-purple-300"
+//           >
+//             <h2 className="text-lg font-semibold text-gray-800 group-hover:text-purple-600 transition-colors">
+//               Task Manager
+//             </h2>
+//           </Link>
+
+//           {/* MethordCRM */}
+//           {(userRole === 1 || userRole === 4) && (
+//             <Link
+//               href="/Customer_Portal"
+//               className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
+//             >
+//               <h2 className="text-lg font-semibold text-gray-800 group-hover:text-red-600 transition-colors">
+//                 MethordCRM
+//               </h2>
+//             </Link>
+//           )}
+
+//           {/* HR Admin */}
+//           {(userRole === 1 || userRole === 5) && (
+//             <Link
+//               href="/admin-dashboard"
+//               className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
+//             >
+//               <h2 className="text-lg font-semibold text-gray-800 group-hover:text-red-600 transition-colors">
+//                 HR (Admin)
+//               </h2>
+//             </Link>
+//           )}
+
+//           {/* Admin Panel */}
+//           {userRole === 1 && (
+//             <Link
+//               href="/components/Admin"
+//               className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
+//             >
+//               <h2 className="text-lg font-semibold text-gray-800 group-hover:text-red-600 transition-colors">
+//                 Admin Panel
+//               </h2>
+//             </Link>
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// // ✅ Wrap with ProtectedRoute
+// export default function DashboardWrapper() {
+//   return (
+//     <ProtectedRoute>
+//       <Dashboard />
+//     </ProtectedRoute>
+//   );
+// }

@@ -3441,19 +3441,48 @@ export default function SchedulePage() {
     }
   };
 
-  const handleReorder = (oldIndex, newIndex) => {
-    if (![1, 5].includes(userRole) || !currentSchedule) return;
-    const newOrder = arrayMove(employeeOrder, oldIndex, newIndex);
-    setEmployeeOrder(newOrder);
-    axios.patch(`${API}/api/schedules/${currentSchedule.id}/employee-order`,
-      { employee_order: newOrder },
-      { headers: { 'X-Unique-ID': uniqueId } }
-    ).catch(err => {
-      console.error('Failed to save order:', err);
-      setEmployeeOrder([...employeeOrder]);
-      alert('Failed to save employee order.');
-    });
-  };
+// Locate your handleReorder function
+const handleReorder = (oldIndex, newIndex) => {
+  if (![1, 5].includes(userRole) || !currentSchedule) return;
+
+  // 1. Create the new order array based on the CURRENT state of filteredEmployees
+  // This ensures we are using the IDs in the current display order
+  const currentOrder = filteredEmployees.map(emp => emp.id);
+  const newOrder = arrayMove(currentOrder, oldIndex, newIndex);
+
+  // 2. Filter out any potential null/undefined IDs (good practice)
+  const cleanedOrder = newOrder.filter(id => id != null && id !== '');
+
+  // 3. Update the local employeeOrder state optimistically
+  setEmployeeOrder(cleanedOrder);
+
+  // 4. Update the currentSchedule state optimistically to reflect the new order
+  // This helps ensure the UI updates immediately based on the new order
+  setCurrentSchedule(prevSchedule => ({
+    ...prevSchedule,
+    employee_order: cleanedOrder // Update the employee_order within the schedule object
+  }));
+
+  // 5. Send the update to the backend
+  axios.patch(`${API}/api/schedules/${currentSchedule.id}/employee-order`, {
+    employee_order: cleanedOrder,
+  }, { headers: { 'X-Unique-ID': uniqueId } })
+  .then(response => {
+    // Optional: Handle successful save if needed, e.g., show a success message
+    // The UI should already be updated due to state changes above and useMemo
+    console.log('Employee order saved successfully:', response.data);
+  })
+  .catch(err => {
+    console.error('Failed to save order:', err);
+    // 6. Revert the local state changes if the API call fails
+    setEmployeeOrder(prevOrder => [...prevOrder]); // Revert employeeOrder state
+    setCurrentSchedule(prevSchedule => ({
+      ...prevSchedule,
+      employee_order: [...prevOrder] // Revert currentSchedule's employee_order
+    }));
+    alert('Failed to save employee order.');
+  });
+};
 
   const moveEmployee = (index, direction) => {
     if (![1, 5].includes(userRole)) return;
