@@ -698,7 +698,7 @@ function SignUpForm({ existingUser = null }) {
                 <div>
                   <label htmlFor="link" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
                     <FaLink className="mr-2 text-blue-500" />
-                    Link <span className="text-red-500">*</span>
+                    MethodCRM Link <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="link"
