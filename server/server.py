@@ -3843,34 +3843,13 @@ def update_task_state():
         cur.callproc('Proc_tbltasks_UpdateTaskStatus', [task_id, taskstatus_id])
         conn.commit()
 
-        # Fetch the assigned user's ID for notification
-        # cur.execute("SELECT AssignedTo FROM tbltasks WHERE id = %s", (task_id,))
-        # assigned_user_row = cur.fetchone()
         
-        # if not assigned_user_row:
-        #     print(f"No assigned user found for task_id={task_id}")
-        #     return jsonify({"error": "Assigned user not found"}), 404
-
-        # assigned_user_id = assigned_user_row["AssignedTo"]
-        # print(f"Assigned user ID: {assigned_user_id}")
-
-        # Fetch assigned user's email
-        # cur.execute("SELECT emailid FROM tblusers WHERE id = %s", (assigned_user_id,))
-        # assigned_user_email_row = cur.fetchone()
-
-        # if not assigned_user_email_row:
-        #     print(f"No email found for assigned user ID: {assigned_user_id}")
-        #     return jsonify({"error": "Email for assigned user not found"}), 404
-
-        # assigned_user_email = assigned_user_email_row["emailid"]
-        # print(f"Assigned user email: {assigned_user_email}")
 
         # Close cursor and connection
         cur.close()
         conn.close()
 
-        # Send email notification
-        # send_email_notification_task_state_update(task_id, taskstatus_id, assigned_user_email)
+        
 
         return jsonify({'message': 'Task state updated successfully'}), 200
 
@@ -3986,34 +3965,13 @@ def update_task_priority():
         cur.callproc('Proc_tbltasks_UpdatePriority', [task_id, priority_id])
         conn.commit()
 
-        # # Fetch the assigned user's ID for notification
-        # cur.execute("SELECT AssignedTo FROM tbltasks WHERE id = %s", (task_id,))
-        # assigned_user_row = cur.fetchone()
         
-        # if not assigned_user_row:
-        #     print(f"No assigned user found for task_id={task_id}")
-        #     return jsonify({"error": "Assigned user not found"}), 404
-
-        # assigned_user_id = assigned_user_row["AssignedTo"]
-        # # print(f"Assigned user ID: {assigned_user_id}")
-
-        # # Fetch assigned user's email
-        # cur.execute("SELECT emailid FROM tblusers WHERE id = %s", (assigned_user_id,))
-        # assigned_user_email_row = cur.fetchone()
-
-        # if not assigned_user_email_row:
-        #     print(f"No email found for assigned user ID: {assigned_user_id}")
-        #     return jsonify({"error": "Email for assigned user not found"}), 404
-
-        # assigned_user_email = assigned_user_email_row["emailid"]
-        # print(f"Assigned user email: {assigned_user_email}")
 
         # Close cursor and connection
         cur.close()
         conn.close()
 
-        # Send email notification
-        # send_email_notification_priority_change(task_id, priority_id, assigned_user_email)
+        
 
         return jsonify({'message': 'Task priority updated successfully'}), 200
 
@@ -5229,6 +5187,67 @@ def get_tags():
         return jsonify([]), 500
     finally:
         connection.close()
+
+# In your Flask app (e.g., app.py or similar)
+
+@app.route('/api/update_task_due_date', methods=['POST'])
+def update_task_due_date():
+    try:
+        # Get data from the request
+        data = request.json
+        print("Received data:", data)
+
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+
+        task_id = data.get('ticketId')
+        due_date = data.get('due_date')
+
+        if not task_id or not due_date:
+            return jsonify({'error': 'Task ID and Due Date are required'}), 400
+
+        # Validate date format (YYYY-MM-DD)
+        try:
+            # Convert to datetime object to validate
+            from datetime import datetime
+            parsed_date = datetime.strptime(due_date, '%Y-%m-%d')
+            # Format back to ensure consistent format
+            formatted_date = parsed_date.strftime('%Y-%m-%d')
+        except ValueError:
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+
+        # Open database connection and cursor
+        conn = create_connection()
+        if conn is None:
+            print("Failed to establish a database connection.")
+            return jsonify({"error": "Database connection failed"}), 500
+
+        cur = conn.cursor()
+
+        # Update the due_date in the database
+        print(f"Updating due date in the database for task_id={task_id} to {formatted_date}")
+        cur.execute("""
+            UPDATE tbltasks 
+            SET due_date = %s 
+            WHERE id = %s
+        """, (formatted_date, task_id))
+        conn.commit()
+
+        # Close cursor and connection
+        cur.close()
+        conn.close()
+
+        return jsonify({'message': 'Task due date updated successfully'}), 200
+
+    except pymysql.MySQLError as e:
+        print(f"MySQL Error occurred: {e}")
+        return jsonify({'error': f"MySQL Error: {str(e)}"}), 500
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        return jsonify({'error': f"Error: {str(e)}"}), 500
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
