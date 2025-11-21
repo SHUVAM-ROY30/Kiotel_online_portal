@@ -1,100 +1,8 @@
-"use client";
-{/* --- NEW: Scheduling Section --- */}
-            <div>
-              {/* <h2 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-                <span className="bg-gray-100 p-2 rounded-lg mr-3">
-                  <FaCalendarPlus className="h-5 w-5 text-gray-600" />
-                </span>
-                Scheduling (Optional)
-              </h2> */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Clone Schedule */}
-                {/* <div>
-                  <label htmlFor="clone-schedule" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <FaCalendarPlus className="mr-2 text-indigo-500" />
-                    Clone Task On
-                  </label>
-                  <div className="relative">
-                    <DatePicker
-                      id="clone-schedule"
-                      selected={cloneScheduleDateTime}
-                      onChange={(date) => setCloneScheduleDateTime(date)}
-                      showTimeSelect
-                      timeFormat="HH:mm"
-                      timeIntervals={15}
-                      dateFormat="Pp"
-                      placeholderText="Select date and time"
-                      className={datePickerClassNames}
-                      minDate={new Date()} // Prevent selecting past dates
-                    />
-                    {cloneScheduleDateTime && (
-                      <button
-                        type="button"
-                        onClick={() => setCloneScheduleDateTime(null)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                        aria-label="Clear date"
-                      >
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                  {cloneScheduleDateTime && (
-                    <div className="mt-2 flex items-center">
-                      <input
-                        type="checkbox"
-                        id="is-subtask"
-                        checked={isSubtask}
-                        onChange={(e) => setIsSubtask(e.target.checked)}
-                        className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                      />
-                      <label htmlFor="is-subtask" className="ml-2 block text-sm text-gray-900">
-                        Create as Subtask
-                      </label>
-                    </div>
-                  )}
-                </div> */}
-
-                {/* Reminder Schedule */}
-                {/* <div>
-                  <label htmlFor="reminder-schedule" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <FaBell className="mr-2 text-yellow-500" />
-                    Set Reminder On
-                  </label>
-                  <div className="relative">
-                    <DatePicker
-                      id="reminder-schedule"
-                      selected={reminderDateTime}
-                      onChange={(date) => setReminderDateTime(date)}
-                      showTimeSelect
-                      timeFormat="HH:mm"
-                      timeIntervals={15}
-                      dateFormat="Pp"
-                      placeholderText="Select date and time"
-                      className={datePickerClassNames}
-                      minDate={new Date()} // Prevent selecting past dates
-                    />
-                    {reminderDateTime && (
-                      <button
-                        type="button"
-                        onClick={() => setReminderDateTime(null)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                        aria-label="Clear date"
-                      >
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                </div> */}
-              </div>
-            </div>
-            {/* --- END NEW: Scheduling Section --- */}
+// "use client";
 
 
 
+// // components/TicketCreateForm.jsx
 
 // import { useState, useEffect } from "react";
 // import { useRouter } from "next/navigation";
@@ -112,9 +20,9 @@
 //   FaUserFriends,
 //   FaUsers,
 //   FaSave,
-//   FaCalendarPlus,
 //   FaBell,
-//   FaSitemap
+//   FaSitemap,
+//   FaCalendarAlt
 // } from "react-icons/fa";
 
 // export default function TicketCreateForm() {
@@ -138,14 +46,16 @@
 //   const [groupMembers, setGroupMembers] = useState({});
 //   const [loadingGroupMembers, setLoadingGroupMembers] = useState({});
 
-//   const [cloneScheduleDateTime, setCloneScheduleDateTime] = useState(null);
-//   const [isSubtask, setIsSubtask] = useState(false);
-//   const [reminderDateTime, setReminderDateTime] = useState(null);
-
 //   // ✅ New states for parent task
 //   const [parentTasks, setParentTasks] = useState([]);
 //   const [selectedParentTask, setSelectedParentTask] = useState(null);
 //   const [loadingParentTasks, setLoadingParentTasks] = useState(false);
+
+//   // ✅ New state for subtask toggle
+//   const [isSubtask, setIsSubtask] = useState(false);
+
+//   // ✅ New state for due date
+//   const [dueDate, setDueDate] = useState(null);
 
 //   // Fetch users
 //   useEffect(() => {
@@ -255,9 +165,6 @@
 //         setSelectedParentTask(null);
 //         return;
 //       }
-//       // hello thsi is hte way you should be doing it on the go of the wedget of the light  
-//       // ok this is the way of the late night of the local in the seen of the things
-//       // hello this is the way of the come of the
 
 //       setLoadingParentTasks(true);
 //       try {
@@ -399,17 +306,15 @@
 //       formData.append("parent_task_id", selectedParentTask.value);
 //     }
 
+//     // ✅ Append due date if selected
+//     if (dueDate) {
+//       formData.append("due_date", dueDate.toISOString());
+//     }
+
 //     if (attachments && attachments.length > 0) {
 //       for (let i = 0; i < attachments.length; i++) {
 //         formData.append("attachments", attachments[i]);
 //       }
-//     }
-
-//     if (cloneScheduleDateTime) {
-//         formData.append("clone_schedule_datetime", cloneScheduleDateTime.toISOString());
-//     }
-//     if (reminderDateTime) {
-//         formData.append("reminder_datetime", reminderDateTime.toISOString());
 //     }
 
 //     try {
@@ -482,13 +387,14 @@
 //             </div>
 //             <div>
 //               <h1 className="text-2xl sm:text-3xl font-bold">Create New Task</h1>
-//               <p className="mt-1 text-blue-100">Fill in the details below to create a new task.</p>
+//               <p className="text-sm text-blue-100 mt-1">Fill in the details below to create a new task.</p>
 //             </div>
 //           </div>
 //         </div>
 
 //         <form onSubmit={handleSubmit} className="px-6 py-8 sm:px-8 sm:py-10">
 //           <div className="space-y-8">
+//             {/* Task Details Section */}
 //             <div>
 //               <h2 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
 //                 <span className="bg-gray-100 p-2 rounded-lg mr-3">
@@ -522,7 +428,7 @@
 //                     className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 hover:border-gray-400"
 //                   ></textarea>
 //                 </div>
-                
+
 //                 {/* ✅ Subtask Toggle */}
 //                 <div className="flex items-center">
 //                   <input
@@ -565,6 +471,7 @@
 //               </div>
 //             </div>
 
+//             {/* Assignment & Metadata Section */}
 //             <div>
 //               <h2 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
 //                 <span className="bg-gray-100 p-2 rounded-lg mr-3">
@@ -604,7 +511,7 @@
 //                     id="ticketState"
 //                     value={ticketState}
 //                     onChange={(e) => setTicketState(e.target.value)}
-//                     className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 hover:border-gray-400 transition duration-200"
+//                     className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 transition duration-200 hover:border-gray-400"
 //                   >
 //                     <option value="">Select State</option>
 //                     {taskStates.map((state) => (
@@ -624,7 +531,7 @@
 //                     id="ticketPriority"
 //                     value={ticketPriority}
 //                     onChange={(e) => setTicketPriority(e.target.value)}
-//                     className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 hover:border-gray-400 transition duration-200"
+//                     className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition duration-200 hover:border-gray-400"
 //                   >
 //                     <option value="">Select Priority</option>
 //                     {priorities.map((priority) => (
@@ -670,28 +577,45 @@
 //                     placeholder="Select groups..."
 //                   />
 //                 </div>
+                
+//                 {/* ✅ Due Date Field */}
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+//                     <FaCalendarAlt className="mr-2 text-blue-500" />
+//                     Due Date
+//                   </label>
+//                   <div className="relative">
+//                     <DatePicker
+//                       selected={dueDate}
+//                       onChange={(date) => setDueDate(date)}
+//                       className={datePickerClassNames}
+//                       placeholderText="Select due date (optional)"
+//                       minDate={new Date()}
+//                     />
+//                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+//                       <FaCalendarAlt className="text-gray-400" />
+//                     </div>
+//                   </div>
+//                 </div>
 //               </div>
 //             </div>
 
+//             {/* Attachments Section */}
 //             <div>
 //               <h2 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
 //                 <span className="bg-gray-100 p-2 rounded-lg mr-3">
 //                   <FaPaperclip className="h-5 w-5 text-gray-600" />
 //                 </span>
 //                 Attachments
-//                 {/* hello this is the thing on the the come of the open of then of the local ages of the way ot 
-//                 to discusses is the of the way of the perform of the local way of the beloved ages of the worden
-//                 of the the past with the local of the with own ages for the fuel to perform in the middle of the 
-//                 local 
-//                   */}
 //               </h2>
 //               <div>
 //                 <label className="block mb-2 text-sm font-medium text-gray-700">Upload Files</label>
 //                 <div className="flex items-center justify-center w-full">
 //                   <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
 //                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
-//                       <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-//                         <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+//                       <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 01-3 3H0V5a3 3 0 013-3h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a3 3 0 01-3 3h-1v-1z"></path>
+//                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 17v2a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2h2"></path>
 //                       </svg>
 //                       <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
 //                       <p className="text-xs text-gray-500">PNG, JPG, GIF, PDF, DOC up to 10MB</p>
@@ -719,6 +643,7 @@
 //             </div>
 //           </div>
 
+//           {/* Submit Button */}
 //           <div className="mt-10 flex justify-end">
 //             <button
 //               type="submit"
@@ -752,6 +677,8 @@
 // }
 
 
+"use client";
+
 // components/TicketCreateForm.jsx
 
 import { useState, useEffect } from "react";
@@ -772,7 +699,9 @@ import {
   FaSave,
   FaBell,
   FaSitemap,
-  FaCalendarAlt
+  FaCalendarAlt,
+  FaSync,
+  FaInfoCircle
 } from "react-icons/fa";
 
 export default function TicketCreateForm() {
@@ -806,6 +735,14 @@ export default function TicketCreateForm() {
 
   // ✅ New state for due date
   const [dueDate, setDueDate] = useState(null);
+
+  // --- NEW: Recurring Task States ---
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState("daily");
+  const [weeklyDay, setWeeklyDay] = useState(1); // Monday (0=Sunday, 1=Monday, ...)
+  const [monthlyDate, setMonthlyDate] = useState(1); // 1st of the month
+  const [endDate, setEndDate] = useState(null);
+  // --- END NEW ---
 
   // Fetch users
   useEffect(() => {
@@ -1007,6 +944,12 @@ export default function TicketCreateForm() {
     setSelectedParentTask(selectedOption);
   };
 
+  // --- NEW: Handle Recurrence Type Change ---
+  const handleRecurrenceTypeChange = (e) => {
+    setRecurrenceType(e.target.value);
+  };
+  // --- END NEW ---
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -1026,6 +969,23 @@ export default function TicketCreateForm() {
       return;
     }
 
+    // --- NEW: Validate Recurring Task Fields ---
+    if (isRecurring) {
+      if (recurrenceType === "weekly" && (weeklyDay < 0 || weeklyDay > 6)) {
+        toast.error("Please select a valid day for weekly recurrence.");
+        return;
+      }
+      if (recurrenceType === "monthly" && (monthlyDate < 1 || monthlyDate > 31)) {
+        toast.error("Please select a valid date for monthly recurrence.");
+        return;
+      }
+      if (endDate && new Date(endDate) < new Date()) {
+        toast.error("End date cannot be in the past.");
+        return;
+      }
+    }
+    // --- END NEW ---
+
     setIsSubmitting(true);
 
     const userIdsFromIndividuals = assignedUsers.map(userOption => userOption.value);
@@ -1042,7 +1002,25 @@ export default function TicketCreateForm() {
 
     const allAssignedUserIds = [...new Set([...userIdsFromIndividuals, ...userIdsFromGroups])];
 
-    const formData = new FormData();
+    // --- NEW: Determine API endpoint and append recurrence data ---
+    let apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task`;
+    let formData = new FormData();
+
+    if (isRecurring) {
+      apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/recurring-task`;
+      formData.append("recurrence_type", recurrenceType);
+      if (recurrenceType === "weekly") {
+        formData.append("weekly_day", weeklyDay);
+      }
+      if (recurrenceType === "monthly") {
+        formData.append("monthly_date", monthlyDate);
+      }
+      if (endDate) {
+        formData.append("end_date", endDate.toISOString().split('T')[0]);
+      }
+    }
+    // --- END NEW ---
+
     formData.append("title", title);
     formData.append("description", description);
     allAssignedUserIds.forEach((userId) => formData.append("assignedUsers[]", userId));
@@ -1068,7 +1046,7 @@ export default function TicketCreateForm() {
     }
 
     try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task`, formData, {
+      const response = await axios.post(apiUrl, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -1079,7 +1057,7 @@ export default function TicketCreateForm() {
         const message = response.data.scheduled ? "✅ Task scheduled successfully!" : "✅ Task created successfully!";
         toast.success(message);
         setTimeout(() => {
-            router.push("/TaskManager");
+            router.push("/TaskManager/openTasks");
         }, 1500);
       }
     } catch (error) {
@@ -1217,6 +1195,114 @@ export default function TicketCreateForm() {
                       <p className="mt-1 text-sm text-gray-500">Loading parent tasks...</p>
                     )}
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recurring Task Section */}
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
+                <span className="bg-gray-100 p-2 rounded-lg mr-3">
+                  <FaSync className="h-5 w-5 text-gray-600" />
+                </span>
+                Recurring Task Settings
+              </h2>
+              <div className="grid grid-cols-1 gap-6">
+                {/* Toggle Recurring */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isRecurring"
+                    checked={isRecurring}
+                    onChange={(e) => setIsRecurring(e.target.checked)}
+                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  />
+                  <label htmlFor="isRecurring" className="ml-2 block text-sm text-gray-900">
+                    This is a recurring task
+                  </label>
+                  <span className="ml-2 text-blue-500">
+                    <FaInfoCircle title="Enabling this will create a template for recurring tasks based on your settings." />
+                  </span>
+                </div>
+
+                {/* Recurrence Settings - Only show if recurring is enabled */}
+                {isRecurring && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Recurrence Type */}
+                      <div>
+                        <label htmlFor="recurrenceType" className="block text-sm font-medium text-gray-700 mb-1">Recurrence Type</label>
+                        <select
+                          id="recurrenceType"
+                          value={recurrenceType}
+                          onChange={handleRecurrenceTypeChange}
+                          className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition duration-200 hover:border-gray-400"
+                        >
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                        </select>
+                      </div>
+
+                      {/* Weekly Day */}
+                      {recurrenceType === "weekly" && (
+                        <div>
+                          <label htmlFor="weeklyDay" className="block text-sm font-medium text-gray-700 mb-1">Day of Week</label>
+                          <select
+                            id="weeklyDay"
+                            value={weeklyDay}
+                            onChange={(e) => setWeeklyDay(parseInt(e.target.value))}
+                            className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition duration-200 hover:border-gray-400"
+                          >
+                            <option value="0">Sunday</option>
+                            <option value="1">Monday</option>
+                            <option value="2">Tuesday</option>
+                            <option value="3">Wednesday</option>
+                            <option value="4">Thursday</option>
+                            <option value="5">Friday</option>
+                            <option value="6">Saturday</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Monthly Date */}
+                      {recurrenceType === "monthly" && (
+                        <div>
+                          <label htmlFor="monthlyDate" className="block text-sm font-medium text-gray-700 mb-1">Day of Month</label>
+                          <select
+                            id="monthlyDate"
+                            value={monthlyDate}
+                            onChange={(e) => setMonthlyDate(parseInt(e.target.value))}
+                            className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition duration-200 hover:border-gray-400"
+                          >
+                            {Array.from({ length: 31 }, (_, i) => (
+                              <option key={i + 1} value={i + 1}>{i + 1}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* End Date */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                        <FaCalendarAlt className="mr-2 text-blue-500" />
+                        End Date (Optional)
+                      </label>
+                      <div className="relative">
+                        <DatePicker
+                          selected={endDate}
+                          onChange={(date) => setEndDate(date)}
+                          className={datePickerClassNames}
+                          placeholderText="Select end date (optional)"
+                          minDate={new Date()}
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <FaCalendarAlt className="text-gray-400" />
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
@@ -1415,7 +1501,7 @@ export default function TicketCreateForm() {
               ) : (
                 <>
                   <FaSave className="mr-2" />
-                  Create Task
+                  {isRecurring ? "Create Recurring Task" : "Create Task"}
                 </>
               )}
             </button>

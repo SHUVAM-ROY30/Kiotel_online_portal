@@ -11,6 +11,11 @@ import os
 from flask import send_from_directory
 import traceback
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime, date
+import mysql.connector
+# import json
+
 
 import hashlib
 import uuid
@@ -3257,203 +3262,7 @@ def get_subtasks(parent_task_id):
         return jsonify({"error": "Failed to fetch subtasks"}), 500
     finally:
         connection.close()
-# @app.route("/api/task", methods=["POST"])
-# @login_required
-# def create_task():
-#     if session.get("is_creating_task"):
-#         return jsonify({"error": "Request already in progress"}), 429
 
-#     session["is_creating_task"] = True
-
-#     try:
-#         user_id = session.get("user_id")
-#         if not user_id:
-#             return jsonify({"error": "User ID not found in session"}), 400
-
-#         title = request.form.get("title")
-#         description = request.form.get("description")
-#         assigned_users = request.form.getlist("assignedUsers[]")
-#         task_state = request.form.get("ticketState")
-#         task_priority = request.form.get("ticketPriority")
-#         attachments = request.files.getlist("attachments")
-
-#         # ✅ Get selected tags
-#         tags = request.form.getlist("tags[]")  # List of tag IDs like ['1', '3']
-#         tags_str = ",".join([str(t) for t in tags]) if tags else None
-
-#         if not title or not description:
-#             return jsonify({"error": "Title and description are required"}), 400
-
-#         connection = create_connection()
-#         if connection is None:
-#             return jsonify({"error": "Failed to connect to the database"}), 500
-
-#         try:
-#             unique_filenames = []  # Store unique names for DB/storage
-#             upload_folder = app.config['UPLOAD_FOLDER']
-
-#             # Validate Upload Folder
-#             if not os.path.exists(upload_folder):
-#                 print(f"ERROR: Upload folder does not exist: {upload_folder}")
-#                 return jsonify({"error": "Server configuration error: Upload folder missing"}), 500
-#             if not os.access(upload_folder, os.W_OK):
-#                 print(f"ERROR: No write permission for upload folder: {upload_folder}")
-#                 return jsonify({"error": "Server configuration error: Insufficient permissions for upload folder"}), 500
-
-#             # Handle File Attachments
-#             if attachments:
-#                 print(f"INFO: Processing {len(attachments)} attachments.")
-#                 for attachment in attachments:
-#                     if attachment and attachment.filename != '':
-#                         original_filename = attachment.filename
-#                         print(f"INFO: Processing file: {original_filename}")
-
-#                         # Generate unique name
-#                         unique_name = generate_unique_name(original_filename)
-#                         print(f"DEBUG: Generated unique name: {unique_name}")
-
-#                         # Define full file path
-#                         file_path = os.path.join(upload_folder, unique_name)
-#                         print(f"DEBUG: Full file path: {file_path}")
-
-#                         try:
-#                             # Save the file
-#                             attachment.save(file_path)
-#                             print(f"INFO: File saved successfully: {file_path}")
-
-#                             # Store the unique name (THIS IS THE CHANGE)
-#                             unique_filenames.append(unique_name)  # Use unique_name here
-
-#                         except Exception as save_error:
-#                             print(f"ERROR: Failed to save file {original_filename} -> {file_path}. Error: {save_error}")
-#                             raise save_error
-#                     else:
-#                         print("WARNING: Received an empty or unnamed file part. Skipping.")
-#             else:
-#                 print("INFO: No attachments received.")
-
-#             # Prepare Data for DB
-#             attachments_json = json.dumps(unique_filenames)  # Pass unique names to the SP
-#             print(f"DEBUG: attachments_json to store in DB: {attachments_json}")
-
-#             with connection.cursor() as cursor:
-#                 # Set current user context
-#                 cursor.execute("SET @current_user_id = %s", (user_id,))
-
-#                 # Call SP with unique filenames and tags
-#                 print(f"DEBUG: Calling Proc_tbltasks_Upsert_test_2 with attachments_json: {attachments_json}, tags_str: {tags_str}")
-#                 cursor.callproc('Proc_tbltasks_Upsert_test_2', (
-#                     0,                              # IN p_task_id (0 = insert)
-#                     title,                          # IN p_title
-#                     description,                    # IN p_description
-#                     attachments_json,               # IN p_attachments_json (now unique names)
-#                     unique_name,                           # IN p_attachment_name (legacy, likely unused)
-#                     task_state,                     # IN p_status_id
-#                     json.dumps(assigned_users),     # IN p_assigned_users_json
-#                     task_priority,                  # IN p_priority_id
-#                     tags_str                        # IN p_tags
-#                 ))
-
-#                 connection.commit()
-#                 new_task_id = cursor.lastrowid
-#                 print(f"INFO: Task created successfully with ID: {new_task_id}")
-
-#             return jsonify({"message": "Task created successfully", "task_id": new_task_id}), 201
-
-#         except Exception as file_save_error:
-#             connection.rollback()
-#             print(f"ERROR (File Save/DB): {file_save_error}")
-#             return jsonify({"error": f"Failed to process attachments or save task: {str(file_save_error)}"}), 500
-
-#         finally:
-#             connection.close()
-#             print("DEBUG: Database connection closed.")
-
-#     except Exception as e:
-#         print(f"ERROR (Unexpected): {e}")
-#         return jsonify({"error": f"An internal error occurred: {str(e)}"}), 500
-
-#     finally:
-#         session.pop("is_creating_task", None)
-#         print("DEBUG: Session lock released.")
-
-
-
-
-# @app.route("/api/task", methods=["POST"])
-# @login_required
-# def create_task():
-#     if session.get("is_creating_task"):
-#         return jsonify({"error": "Request already in progress"}), 429  # Too Many Requests
-
-#     session["is_creating_task"] = True  # Lock
-
-#     try:
-#         user_id = session.get("user_id")
-#         if not user_id:
-#             return jsonify({"error": "User ID not found in session"}), 400
-
-#         title = request.form.get("title")
-#         description = request.form.get("description")
-#         assigned_users = request.form.getlist("assignedUsers[]")
-#         task_state = request.form.get("ticketState")
-#         task_priority = request.form.get("ticketPriority")
-#         attachments = request.files.getlist("attachments")
-
-#         if not title or not description:
-#             return jsonify({"error": "Title and description are required"}), 400
-
-#         connection = create_connection()
-#         if connection is None:
-#             return jsonify({"error": "Failed to connect to the database"}), 500
-
-#         try:
-#             attachment_filenames = []
-#             upload_folder = app.config['UPLOAD_FOLDER']
-
-#             with connection.cursor() as cursor:
-#                 if attachments:
-#                     for attachment in attachments:
-#                         original_filename = attachment.filename
-#                         unique_name = generate_unique_name(original_filename)
-#                         file_path = os.path.join(upload_folder, unique_name)
-#                         attachment.save(file_path)
-#                         attachment_filenames.append(original_filename)
-
-#                 attachments_json = json.dumps(attachment_filenames)
-
-#                 cursor.execute("SET @current_user_id = %s", (user_id,))
-#                 cursor.callproc('Proc_tbltasks_Upsert_test', (
-#                     0, title, description, attachments_json, None, task_state,
-#                     json.dumps(assigned_users), task_priority
-#                 ))
-
-#                 connection.commit()
-
-#                 # Fetch emails and send notifications
-#                 assigned_user_emails = []
-#                 if assigned_users:
-#                     cursor.execute(
-#                         "SELECT emailid FROM tblusers WHERE id IN ({})".format(','.join(map(str, assigned_users)))
-#                     )
-#                     assigned_user_emails = [row['emailid'] for row in cursor.fetchall()]
-
-#                 cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
-#                 creator_email = cursor.fetchone()['emailid']
-
-#                 send_email_notification_new_task(title, description, cursor.lastrowid, creator_email, assigned_user_emails)
-
-#         except pymysql.MySQLError as e:
-#             connection.rollback()
-#             print(f"Database error: {e}")
-#             return jsonify({"error": "Database operation failed"}), 500
-#         finally:
-#             connection.close()
-
-#         return jsonify({"message": "Task created successfully"}), 201
-
-#     finally:
-#         session.pop("is_creating_task", None)  # Unlock
 
 def send_email_notification_new_task(title, description, ticket_id, creator_email, assigned_user_emails):
     try:
@@ -3773,47 +3582,6 @@ def get_taskstate():
         conn.close()
 
 
-# @app.route('/api/update_task_state', methods=['POST'])
-# def update_task_state():
-#     try:
-#         # Get data from the request
-#         data = request.json
-        
-#         # Debugging step: print received data
-#         print("Received data:", data)
-
-#         if not data:
-#             return jsonify({'error': 'No JSON data provided'}), 400
-        
-#         task_id = data.get('task_id')
-#         taskstatus_id = data.get('taskstatus_id')
-
-#         if not task_id or not taskstatus_id:
-#             return jsonify({'error': 'Task ID and Task Status ID are required'}), 400
-
-#         # Open database cursor
-#         conn = create_connection()
-#         cur = conn.cursor()
-
-#         # Call the stored procedure with correct parameters
-#         cur.callproc('Proc_tbltasks_UpdateTaskStatus', [task_id, taskstatus_id])
-
-#         # Commit the transaction
-#         conn.commit()
-
-#         # Close cursor
-#         cur.close()
-#         conn.close()
-
-#         return jsonify({'message': 'Task state updated successfully'}), 200
-
-#     except pymysql.MySQLError as e:
-#         # MySQL error handling
-#         return jsonify({'error': f"MySQL Error: {str(e)}"}), 500
-
-#     except Exception as e:
-#         # Generic error handling
-#         return jsonify({'error': f"Error: {str(e)}"}), 500
 @app.route('/api/update_task_state', methods=['POST'])
 def update_task_state():
     try:
@@ -3893,47 +3661,7 @@ def send_email_notification_task_state_update(task_id, taskstatus_id, assigned_u
 
 
 
-# @app.route('/api/update_task_priority', methods=['POST'])
-# def update_task_priority():
-#     try:
-#         # Get data from the request
-#         data = request.json
-        
-#         # Debugging step: print received data
-#         print("Received data:", data)
 
-#         if not data:
-#             return jsonify({'error': 'No JSON data provided'}), 400
-        
-#         task_id = data.get('task_id')
-#         priority_id = data.get('priority_id')
-
-#         if not task_id or not priority_id:
-#             return jsonify({'error': 'Task ID and Task Status ID are required'}), 400
-
-#         # Open database cursor
-#         conn = create_connection()
-#         cur = conn.cursor()
-
-#         # Call the stored procedure with correct parameters
-#         cur.callproc('Proc_tbltasks_UpdatePriority', [task_id, priority_id])
-
-#         # Commit the transaction
-#         conn.commit()
-
-#         # Close cursor
-#         cur.close()
-#         conn.close()
-
-#         return jsonify({'message': 'Task state updated successfully'}), 200
-
-#     except pymysql.MySQLError as e:
-#         # MySQL error handling
-#         return jsonify({'error': f"MySQL Error: {str(e)}"}), 500
-
-#     except Exception as e:
-#         # Generic error handling
-#         return jsonify({'error': f"Error: {str(e)}"}), 500
 
 
 @app.route('/api/update_task_priority', methods=['POST'])
@@ -4017,66 +3745,6 @@ def send_email_notification_priority_change(task_id, priority_id, assigned_user_
 
 
 
-# @app.route('/api/assign_task', methods=['POST'])
-# def assign_task():
-#     data = request.json
-#     ticket_id = data.get('ticket_id')
-#     user_id = data.get('user_id')
-#     print("Received data:", data)
-#     if not ticket_id or not user_id:
-#         return jsonify({"error": "Missing required fields"}), 400
-
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         with connection.cursor() as cursor:
-#             # Update the assigned user for the ticket
-#             cursor.callproc('Proc_tbltasks_UpdateAssignedTo', (ticket_id, user_id))
-#             connection.commit()
-#             return jsonify({"message": "Ticket assigned successfully"})
-            
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Failed to assign ticket"}), 500
-#     finally:
-#         connection.close()
-
-# @app.route('/api/assign_task', methods=['POST'])
-# def assign_task():
-#     data = request.json
-#     ticket_id = data.get('ticket_id')
-#     user_id = data.get('user_id')
-#     print("Received data:", data)
-    
-#     if not ticket_id or not user_id:
-#         return jsonify({"error": "Missing required fields"}), 400
-
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         with connection.cursor() as cursor:
-#             # Update the assigned user for the ticket
-#             cursor.callproc('Proc_tbltasks_UpdateAssignedTo', (ticket_id, user_id))
-#             connection.commit()
-            
-#             # Fetch the assigned user's email
-#             cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
-#             assigned_user_email = cursor.fetchone()["emailid"]
-
-#             # Send an email notification to the assigned user
-#             send_email_notification_task_assignment(ticket_id, assigned_user_email)
-
-#             return jsonify({"message": "Ticket assigned successfully"})
-
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Failed to assign ticket"}), 500
-#     finally:
-#         connection.close()
 
 @app.route('/api/assign_task', methods=['POST'])
 def assign_task():
@@ -4153,30 +3821,7 @@ def send_email_notification_task_assignment(ticket_id, assigned_user_email):
 
 
 
-# @app.route('/api/get_assigned_user_for_task/<int:task_id>', methods=['GET'])
-# def get_assigned_user_for_task(task_id):
-#     # Create database connection
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
 
-#     try:
-#         with connection.cursor() as cursor:
-#             # Call the stored procedure to fetch the assigned user for the given ticket ID
-#             cursor.callproc('Proc_tbltasks_GetAssignedUser', [task_id])
-#             result = cursor.fetchone()  # Assuming the stored procedure returns one row
-            
-#             if result:
-#                 return jsonify(result), 200
-#             else:
-#                 return jsonify({"message": "No user assigned to this ticket"}), 404
-
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({'error': 'Failed to fetch assigned user'}), 500
-
-#     finally:
-#         connection.close()
 
 @app.route('/api/get_assigned_user_for_task/<int:task_id>', methods=['GET'])
 def get_assigned_user_for_task(task_id):
@@ -4483,534 +4128,6 @@ def assign_user_to_task():
         connection.close()
 
 
-# @app.route('/api/opened_tasks', methods=['GET'])
-# @login_required
-# def get_opened_taskss():
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Database connection failed"}), 500
-
-#     try:
-#         with connection.cursor() as cursor:
-#             query = """
-#                 SELECT 
-#                     t.id AS task_id,
-#                     t.title,
-#                     t.description,
-#                     t.created_at,
-#                     s.status_name,
-#                     p.priority_name,
-#                     creator.id AS creator_id,
-#                     creator.fname AS creator_fname,
-#                     creator.lname AS creator_lname,
-#                     creator.role_id AS creator_role,
-#                     GROUP_CONCAT(DISTINCT CONCAT(u.fname, ' ', u.lname, '|', u.role_id) SEPARATOR ', ') AS assigned_users
-#                 FROM 
-#                     tbltasks t
-#                 LEFT JOIN 
-#                     tbltaskstatus s ON t.taskstatus_id = s.id
-#                 LEFT JOIN 
-#                     tblpriority p ON t.priority_id = p.id
-#                 LEFT JOIN 
-#                     tblusers creator ON t.created_by = creator.id
-#                 LEFT JOIN 
-#                     tblTaskAssignments ta ON t.id = ta.task_id
-#                 LEFT JOIN 
-#                     tblusers u ON ta.AssignedTo = u.id
-#                 WHERE 
-#                     t.taskstatus_id != 4
-#                 GROUP BY 
-#                     t.id
-#                     ORDER BY 
-#                         t.id DESC;
-#             """
-#             cursor.execute(query)
-#             tasks = cursor.fetchall()
-
-#             # Process each task
-#             result = []
-#             for task in tasks:
-#                 assigned_users = []
-#                 if task['assigned_users']:
-#                     for user_str in task['assigned_users'].split(', '):
-#                         user_info = user_str.split('|')
-#                         if len(user_info) == 2:
-#                             fname, lname = user_info[0].split(' ', 1)
-#                             assigned_users.append({
-#                                 "fname": fname,
-#                                 "lname": lname,
-#                                 "role": user_info[1]
-#                             })
-
-#                 result.append({
-#                     "task_id": task['task_id'],
-#                     "title": task['title'],
-#                     "description": task['description'],
-#                     "created_at": task['created_at'],
-#                     "status_name": task['status_name'],
-#                     "priority_name": task['priority_name'],
-#                     "creator": {
-#                         "fname": task['creator_fname'],
-#                         "lname": task['creator_lname'],
-#                         "role": task['creator_role']
-#                     },
-#                     "assigned_users": assigned_users
-#                 })
-
-#             return jsonify(result), 200
-
-#     except pymysql.MySQLError as e:
-#         print(f"Database error: {e}")
-#         return jsonify({"error": "Failed to fetch tasks"}), 500
-
-#     finally:
-#         connection.close()
-
-
-
-# @app.route('/api/opened_tasks', methods=['GET'])
-# @login_required
-# def get_opened_taskss():
-#     user_id = session.get("user_id")
-#     if not user_id:
-#         return jsonify({"error": "User not logged in"}), 401
-
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Database connection failed"}), 500
-
-#     try:
-#         with connection.cursor() as cursor:
-#             # Get current user's role
-#             cursor.execute("SELECT role_id FROM tblusers WHERE id = %s", [user_id])
-#             user_row = cursor.fetchone()
-#             if not user_row:
-#                 return jsonify({"error": "User not found"}), 404
-#             user_role = int(user_row['role_id'])
-
-#             # Fetch all tasks with full details
-#             query = """
-#                 SELECT 
-#                     t.id AS task_id,
-#                     t.title,
-#                     t.description,
-#                     t.created_at,
-#                     s.status_name,
-#                     p.priority_name,
-#                     creator.id AS creator_id,
-#                     creator.fname AS creator_fname,
-#                     creator.lname AS creator_lname,
-#                     creator.role_id AS creator_role,
-#                     GROUP_CONCAT(
-#                         DISTINCT CONCAT(u.id, '|', u.fname, ' ', u.lname, '|', u.role_id)
-#                         SEPARATOR ', '
-#                     ) AS assigned_users_raw
-#                 FROM 
-#                     tbltasks t
-#                 LEFT JOIN 
-#                     tbltaskstatus s ON t.taskstatus_id = s.id
-#                 LEFT JOIN 
-#                     tblpriority p ON t.priority_id = p.id
-#                 LEFT JOIN 
-#                     tblusers creator ON t.created_by = creator.id
-#                 LEFT JOIN 
-#                     tblTaskAssignments ta ON t.id = ta.task_id
-#                 LEFT JOIN 
-#                     tblusers u ON ta.AssignedTo = u.id
-#                 WHERE 
-#                     t.taskstatus_id != 4
-#                 GROUP BY 
-#                     t.id
-#                 ORDER BY 
-#                     t.id DESC;
-#             """
-#             cursor.execute(query)
-#             tasks = cursor.fetchall()
-
-#             result = []
-
-#             for task in tasks:
-#                 # Parse assigned users
-#                 assigned_users = []
-#                 has_non_role_1_assigned = False
-#                 assigned_user_ids = set()
-
-#                 if task['assigned_users_raw']:
-#                     for item in task['assigned_users_raw'].split(', '):
-#                         parts = item.split('|', 2)
-#                         if len(parts) == 3:
-#                             uid_str, name, role_str = parts
-#                             try:
-#                                 uid = int(uid_str)
-#                                 role = int(role_str)
-#                                 assigned_users.append({
-#                                     "id": uid,
-#                                     "fname": name.split()[0],
-#                                     "lname": " ".join(name.split()[1:]) if len(name.split()) > 1 else "",
-#                                     "role": role
-#                                 })
-#                                 assigned_user_ids.add(uid)
-#                                 if role != 1:
-#                                     has_non_role_1_assigned = True
-#                             except (ValueError, IndexError):
-#                                 continue
-
-#                 creator_id = task['creator_id']
-#                 creator_role = int(task['creator_role']) if task['creator_role'] else 1
-
-#                 visible = False
-
-#                 if user_role in [2, 4]:
-#                     # Can only see own created or assigned tasks
-#                     if user_id == creator_id or user_id in assigned_user_ids:
-#                         visible = True
-
-#                 elif user_role == 3:
-#                     # Can see all tasks except those fully internal to role 1 (unless assigned)
-#                     if creator_role != 1 or user_id in assigned_user_ids:
-#                         visible = True
-
-#                 elif user_role == 1:
-#                     # Rule: Only hidden if:
-#                     # - Creator is role 1 AND all assigned users are role 1 → then only visible to creator & assigned
-#                     # Else → visible to all role 1 users
-#                     if creator_role == 1 and not has_non_role_1_assigned:
-#                         # Fully internal role-1 task → only visible to creator and assigned
-#                         if user_id == creator_id or user_id in assigned_user_ids:
-#                             visible = True
-#                     else:
-#                         # Either creator ≠ role 1 OR someone non-role-1 is involved → visible to ALL role 1
-#                         visible = True
-
-#                 if visible:
-#                     result.append({
-#                         "task_id": task['task_id'],
-#                         "title": task['title'],
-#                         "description": task['description'],
-#                         "created_at": task['created_at'],
-#                         "status_name": task['status_name'],
-#                         "priority_name": task['priority_name'],
-#                         "creator": {
-#                             "fname": task['creator_fname'],
-#                             "lname": task['creator_lname'],
-#                             "role": creator_role
-#                         },
-#                         "assigned_users": assigned_users
-#                     })
-
-#             return jsonify(result), 200
-
-#     except Exception as e:
-#         print(f"Error fetching opened tasks: {e}")
-#         return jsonify({"error": "Failed to fetch tasks"}), 500
-
-#     finally:
-#         connection.close()
-
-
-
-# @app.route('/api/opened_tasks', methods=['GET'])
-# @login_required
-# def get_opened_taskss():
-#     user_id = session.get("user_id")
-#     if not user_id:
-#         return jsonify({"error": "User not logged in"}), 401
-
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Database connection failed"}), 500
-
-#     try:
-#         with connection.cursor() as cursor:
-#             # Get current user's role
-#             cursor.execute("SELECT role_id FROM tblusers WHERE id = %s", [user_id])
-#             user_row = cursor.fetchone()
-#             if not user_row:
-#                 return jsonify({"error": "User not found"}), 404
-#             try:
-#                 user_role = int(user_row['role_id'])
-#             except (ValueError, TypeError):
-#                 return jsonify({"error": "Invalid role"}), 500
-
-#             # Fetch all tasks with full details
-#             query = """
-#                 SELECT 
-#                     t.id AS task_id,
-#                     t.title,
-#                     t.description,
-#                     t.created_at,
-#                     s.status_name,
-#                     p.priority_name,
-#                     creator.id AS creator_id,
-#                     creator.fname AS creator_fname,
-#                     creator.lname AS creator_lname,
-#                     creator.role_id AS creator_role,
-#                     GROUP_CONCAT(
-#                         DISTINCT CONCAT(u.id, '|', u.fname, ' ', u.lname, '|', u.role_id)
-#                         SEPARATOR ', '
-#                     ) AS assigned_users_raw
-#                 FROM 
-#                     tbltasks t
-#                 LEFT JOIN 
-#                     tbltaskstatus s ON t.taskstatus_id = s.id
-#                 LEFT JOIN 
-#                     tblpriority p ON t.priority_id = p.id
-#                 LEFT JOIN 
-#                     tblusers creator ON t.created_by = creator.id
-#                 LEFT JOIN 
-#                     tblTaskAssignments ta ON t.id = ta.task_id
-#                 LEFT JOIN 
-#                     tblusers u ON ta.AssignedTo = u.id
-#                 WHERE 
-#                     t.taskstatus_id != 4
-#                 GROUP BY 
-#                     t.id
-#                 ORDER BY 
-#                     t.id DESC;
-#             """
-#             cursor.execute(query)
-#             tasks = cursor.fetchall()
-
-#             result = []
-
-#             for task in tasks:
-#                 # Parse assigned users
-#                 assigned_users = []
-#                 has_non_role_1_assigned = False
-#                 assigned_user_ids = set()
-
-#                 if task['assigned_users_raw']:
-#                     for item in task['assigned_users_raw'].split(', '):
-#                         parts = item.split('|', 2)
-#                         if len(parts) == 3:
-#                             try:
-#                                 uid = int(parts[0])
-#                                 name = parts[1]
-#                                 role = int(parts[2])
-#                                 assigned_users.append({
-#                                     "id": uid,
-#                                     "fname": name.split()[0],
-#                                     "lname": " ".join(name.split()[1:]) if len(name.split()) > 1 else "",
-#                                     "role": role
-#                                 })
-#                                 assigned_user_ids.add(uid)
-#                                 if role != 1:
-#                                     has_non_role_1_assigned = True
-#                             except (ValueError, IndexError):
-#                                 continue
-
-#                 creator_id = task['creator_id']
-#                 creator_role = int(task['creator_role']) if task['creator_role'] else 1
-
-#                 visible = False
-
-#                 # === Role-Based Access Control ===
-#                 if user_role == 1:
-#                     # Fully internal role-1 task? Only visible to participants
-#                     if creator_role == 1 and not has_non_role_1_assigned:
-#                         if user_id == creator_id or user_id in assigned_user_ids:
-#                             visible = True
-#                     else:
-#                         # Otherwise, visible to all role 1 users
-#                         visible = True
-
-#                 elif user_role in [2, 4]:
-#                     # Can only see own created or assigned tasks
-#                     if user_id == creator_id or user_id in assigned_user_ids:
-#                         visible = True
-
-#                 elif user_role == 3:
-#                     # Can see all tasks except fully internal role-1 ones (unless assigned)
-#                     if creator_role != 1 or user_id in assigned_user_ids:
-#                         visible = True
-
-#                 else:
-#                     # 🔐 Fallback Rule: Unknown or new role (e.g., 5, 6, ...)
-#                     # Only allow access if user is creator or assigned
-#                     if user_id == creator_id or user_id in assigned_user_ids:
-#                         visible = True
-#                     # Else: no access
-
-#                 if visible:
-#                     result.append({
-#                         "task_id": task['task_id'],
-#                         "title": task['title'],
-#                         "description": task['description'],
-#                         "created_at": task['created_at'],
-#                         "status_name": task['status_name'],
-#                         "priority_name": task['priority_name'],
-#                         "creator": {
-#                             "fname": task['creator_fname'],
-#                             "lname": task['creator_lname'],
-#                             "role": creator_role
-#                         },
-#                         "assigned_users": assigned_users
-#                     })
-
-#             return jsonify(result), 200
-
-#     except Exception as e:
-#         print(f"Error fetching opened tasks: {e}")
-#         return jsonify({"error": "Failed to fetch tasks"}), 500
-
-#     finally:
-#         connection.close()
-
-# @app.route('/api/opened_tasks', methods=['GET'])
-# @login_required
-# def get_opened_taskss():
-#     user_id = session.get("user_id")
-#     if not user_id:
-#         return jsonify({"error": "User not logged in"}), 401
-
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Database connection failed"}), 500
-
-#     try:
-#         with connection.cursor() as cursor:
-#             # Get current user's role
-#             cursor.execute("SELECT role_id FROM tblusers WHERE id = %s", [user_id])
-#             user_row = cursor.fetchone()
-#             if not user_row:
-#                 return jsonify({"error": "User not found"}), 404
-
-#             try:
-#                 user_role = int(user_row['role_id'])
-#             except (ValueError, TypeError):
-#                 return jsonify({"error": "Invalid role"}), 500
-
-#             # ⬇️ Updated Query with tag support
-#             query = """
-#                 SELECT 
-#                     t.id AS task_id,
-#                     t.title,
-#                     t.description,
-#                     t.created_at,
-#                     s.status_name,
-#                     p.priority_name,
-#                     creator.id AS creator_id,
-#                     creator.fname AS creator_fname,
-#                     creator.lname AS creator_lname,
-#                     creator.role_id AS creator_role,
-#                     GROUP_CONCAT(
-#                         DISTINCT CONCAT(u.id, '|', u.fname, ' ', u.lname, '|', u.role_id)
-#                         SEPARATOR ', '
-#                     ) AS assigned_users_raw,
-#                     GROUP_CONCAT(
-#                         DISTINCT tg.tag 
-#                         ORDER BY tg.tag 
-#                         SEPARATOR ', '
-#                     ) AS task_tags
-#                 FROM 
-#                     tbltasks t
-#                 LEFT JOIN 
-#                     tbltaskstatus s ON t.taskstatus_id = s.id
-#                 LEFT JOIN 
-#                     tblpriority p ON t.priority_id = p.id
-#                 LEFT JOIN 
-#                     tblusers creator ON t.created_by = creator.id
-#                 LEFT JOIN 
-#                     tblTaskAssignments ta ON t.id = ta.task_id
-#                 LEFT JOIN 
-#                     tblusers u ON ta.AssignedTo = u.id
-#                 LEFT JOIN 
-#                     tags tg ON FIND_IN_SET(tg.id, t.tags) > 0
-#                 WHERE 
-#                     t.taskstatus_id != 4
-#                 GROUP BY 
-#                     t.id
-#                 ORDER BY 
-#                     t.id DESC;
-#             """
-#             cursor.execute(query)
-#             tasks = cursor.fetchall()
-
-#             result = []
-
-#             for task in tasks:
-#                 assigned_users = []
-#                 has_non_role_1_assigned = False
-#                 assigned_user_ids = set()
-
-#                 if task['assigned_users_raw']:
-#                     for item in task['assigned_users_raw'].split(', '):
-#                         parts = item.split('|', 2)
-#                         if len(parts) == 3:
-#                             try:
-#                                 uid = int(parts[0])
-#                                 name = parts[1]
-#                                 role = int(parts[2])
-#                                 assigned_users.append({
-#                                     "id": uid,
-#                                     "fname": name.split()[0],
-#                                     "lname": " ".join(name.split()[1:]) if len(name.split()) > 1 else "",
-#                                     "role": role
-#                                 })
-#                                 assigned_user_ids.add(uid)
-#                                 if role != 1:
-#                                     has_non_role_1_assigned = True
-#                             except (ValueError, IndexError):
-#                                 continue
-
-#                 creator_id = task['creator_id']
-#                 creator_role = int(task['creator_role']) if task['creator_role'] else 1
-
-#                 visible = False
-
-#                 # Role-Based Visibility
-#                 if user_role == 1:
-#                     if creator_role == 1 and not has_non_role_1_assigned:
-#                         if user_id == creator_id or user_id in assigned_user_ids:
-#                             visible = True
-#                     else:
-#                         visible = True
-#                 elif user_role in [2, 4]:
-#                     if user_id == creator_id or user_id in assigned_user_ids:
-#                         visible = True
-#                 elif user_role == 3:
-#                     if creator_role != 1 or user_id in assigned_user_ids:
-#                         visible = True
-#                 elif user_role == 6:
-#                     if creator_role == 6 and not has_non_role_1_assigned:
-#                         if user_id == creator_id or user_id in assigned_user_ids:
-#                             visible = True
-#                     else:
-#                         visible = True
-#                 else:
-#                     if user_id == creator_id or user_id in assigned_user_ids:
-#                         visible = True
-
-#                 if visible:
-#                     result.append({
-#                         "task_id": task['task_id'],
-#                         "title": task['title'],
-#                         "description": task['description'],
-#                         "created_at": task['created_at'],
-#                         "status_name": task['status_name'],
-#                         "priority_name": task['priority_name'],
-#                         "task_tags": task.get("task_tags", ""),
-#                         "creator": {
-#                             "fname": task['creator_fname'],
-#                             "lname": task['creator_lname'],
-#                             "role": creator_role
-#                         },
-#                         "assigned_users": assigned_users
-#                     })
-
-#             return jsonify(result), 200
-
-#     except Exception as e:
-#         print(f"Error fetching opened tasks: {e}")
-#         return jsonify({"error": "Failed to fetch tasks"}), 500
-
-#     finally:
-#         connection.close()
-
-
-
-
-
 
 @app.route('/api/opened_tasks', methods=['GET'])
 @login_required
@@ -5246,6 +4363,275 @@ def update_task_due_date():
     except Exception as e:
         print(f"Error occurred: {e}")
         return jsonify({'error': f"Error: {str(e)}"}), 500
+
+
+
+ 
+
+
+def generate_recurring_tasks():
+    today = date.today()
+
+    try:
+        db = mysql.connector.connect(
+            host="64.227.6.9",
+            user="kshiti",
+            password="Kiotel123!",
+            database="kiotel",
+            autocommit=False
+        )
+        cursor = db.cursor(dictionary=True)
+
+        cursor.execute("SELECT * FROM recurring_tasks")
+        rules = cursor.fetchall()
+
+        for r in rules:
+
+            if r["end_date"] and today > r["end_date"]:
+                continue
+
+            # Determine if a task should be created today
+            if r["recurrence_type"] == "daily":
+                should_create = True
+
+            elif r["recurrence_type"] == "weekly":
+                should_create = today.weekday() == r["weekly_day"]
+
+            elif r["recurrence_type"] == "monthly":
+                should_create = today.day == r["monthly_date"]
+
+            else:
+                should_create = False
+
+            if not should_create:
+                continue
+
+            # Fetch base task
+            cursor.execute("SELECT * FROM tbltasks WHERE id = %s", (r["task_id"],))
+            base = cursor.fetchone()
+            if not base:
+                continue
+
+            # Fetch assigned users
+            cursor.execute("""
+                SELECT assigned_to AS user_id 
+                FROM task_assignment 
+                WHERE task_id = %s
+            """, (r["task_id"],))
+            assigned_users = [row["user_id"] for row in cursor.fetchall()]
+
+            # Create new task using your SP
+            cursor.callproc("sp_save_task_with_due_date2", (
+                0,
+                base["title"],
+                base["description"],
+                base["attachments"],
+                base["unique_names"],
+                base["status_id"],
+                base["priority_id"],
+                base["tags"],
+                True,
+                base["due_date"],
+                False,
+                None,
+                None,
+                json.dumps(assigned_users) if assigned_users else None
+            ))
+
+            db.commit()
+
+            print(f"Recurring task generated for base task {r['task_id']} on {today}")
+
+    except Exception as e:
+        print("Recurring task error:", e)
+
+    finally:
+        try:
+            cursor.close()
+            db.close()
+        except:
+            pass
+
+
+# Run daily at 00:01 UTC
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=generate_recurring_tasks, trigger="cron", hour=0, minute=1)
+scheduler.start()
+
+
+
+@app.route("/api/recurring-task", methods=["POST"])
+@login_required
+def create_recurring_task():
+    if session.get("is_creating_task"):
+        return jsonify({"error": "Request already in progress"}), 429
+
+    session["is_creating_task"] = True
+
+    try:
+        user_id = session.get("user_id")
+        if not user_id:
+            return jsonify({"error": "User ID not found in session"}), 400
+
+        # --------------------------
+        # Required fields
+        # --------------------------
+        title = request.form.get("title")
+        description = request.form.get("description")
+
+        if not title or not description:
+            return jsonify({"error": "Title and description are required"}), 400
+
+        # --------------------------
+        # Task Meta
+        # --------------------------
+        assigned_users = request.form.getlist("assignedUsers[]")
+        task_state = request.form.get("ticketState")
+        task_priority = request.form.get("ticketPriority")
+        tags = request.form.getlist("tags[]")
+        attachments = request.files.getlist("attachments")
+
+        tags_str = ",".join([str(t) for t in tags]) if tags else None
+
+        # --------------------------
+        # Recurrence fields
+        # --------------------------
+        recurrence_type = request.form.get("recurrence_type")  # daily/weekly/monthly
+        weekly_day = request.form.get("weekly_day")            # optional
+        monthly_date = request.form.get("monthly_date")        # optional
+        end_date = request.form.get("end_date")                # optional
+
+        if recurrence_type not in ["daily", "weekly", "monthly"]:
+            return jsonify({"error": "Invalid recurrence type"}), 400
+
+        # --------------------------
+        # Due Date
+        # --------------------------
+        due_date_str = request.form.get("due_date")
+
+        def parse_datetime(dt):
+            if not dt:
+                return None
+            try:
+                parsed = datetime.fromisoformat(dt.replace("Z", "+00:00"))
+                if not parsed.tzinfo:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                return parsed
+            except:
+                return None
+
+        due_date = parse_datetime(due_date_str)
+        scheduled_clone = due_date is not None
+
+        # --------------------------
+        # Save Attachments
+        # --------------------------
+        upload_folder = app.config.get("UPLOAD_FOLDER")
+        original_files = []
+        last_unique = None
+
+        for file in attachments:
+            if file and file.filename:
+                orig = file.filename
+                unique = generate_unique_name(orig)
+                path = os.path.join(upload_folder, unique)
+                file.save(path)
+                original_files.append(orig)
+                last_unique = unique
+
+        attachments_json = json.dumps(original_files) if original_files else None
+
+        # --------------------------
+        # DB Insert
+        # --------------------------
+        connection = create_connection()
+        if not connection:
+            return jsonify({"error": "DB connection failed"}), 500
+
+        try:
+            with connection.cursor() as cursor:
+
+                cursor.execute("SET @current_user_id = %s", (user_id,))
+
+                # # 1️⃣ CREATE THE BASE TASK (normal task)
+                # cursor.callproc("sp_save_task_with_due_date2", (
+                #     0,
+                #     title,
+                #     description,
+                #     attachments_json,
+                #     last_unique,
+                #     task_state,
+                #     task_priority,
+                #     tags_str,
+                #     scheduled_clone,
+                #     due_date,
+                #     False,
+                #     None,
+                #     None,
+                #     json.dumps(assigned_users) if assigned_users else None
+                # ))
+
+                # connection.commit()
+                # base_task_id = cursor.lastrowid
+
+                args = (
+                    0,  # p_id for insert
+                    title,
+                    description,
+                    attachments_json,
+                    last_unique,
+                    task_state,
+                    task_priority,
+                    tags_str,
+                    scheduled_clone,
+                    due_date,
+                    False,
+                    None,
+                    None,
+                    json.dumps(assigned_users) if assigned_users else None
+                )
+
+                result = cursor.callproc("sp_save_task_with_due_date2", args)
+                connection.commit()
+
+                cursor.execute("SELECT id FROM tbltasks ORDER BY id DESC LIMIT 1")
+                row = cursor.fetchone()
+                base_task_id = row["id"]
+                print("FIXED BASE TASK ID:", base_task_id)
+
+
+
+                # 2️⃣ INSERT RECURRING RULE
+                cursor.execute("""
+                    INSERT INTO recurring_tasks 
+                    (task_id, recurrence_type, weekly_day, monthly_date, start_date, end_date)
+                    VALUES (%s, %s, %s, %s, CURDATE(), %s)
+                """, (base_task_id, recurrence_type, weekly_day, monthly_date, end_date))
+
+                connection.commit()
+                recurring_id = cursor.lastrowid
+
+                return jsonify({
+                    "message": "Recurring task created successfully",
+                    "base_task_id": base_task_id,
+                    "recurring_rule_id": recurring_id
+                }), 201
+
+        except Exception as db_err:
+            connection.rollback()
+            print("DB Error:", db_err)
+            return jsonify({"error": "Database operation failed"}), 500
+
+        finally:
+            connection.close()
+
+    except Exception as e:
+        print("API Error:", e)
+        return jsonify({"error": "Internal server error"}), 500
+
+    finally:
+        session.pop("is_creating_task", None)
+
 
 
 
