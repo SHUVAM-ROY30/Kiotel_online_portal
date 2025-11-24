@@ -781,6 +781,30 @@ function Dashboard() {
     }
   };
 
+  const handleDeleteUserAccount = async (accountNo) => {
+  try {
+    await axios.delete(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/delete-user-account/${accountNo}`,
+      { withCredentials: true }
+    );
+
+    console.log("Employee deleted from HR DB successfully");
+  } catch (error) {
+    console.error("Error deleting HR employee:", error);
+  }
+};
+
+
+  const deleteUserAndAccount = async (id, accountNo) => {
+  try {
+    await handleDeleteUser(id);           // existing delete (main DB)
+    await handleDeleteUserAccount(accountNo);  // new delete (HR DB)
+  } catch (err) {
+    console.error("Delete failed:", err);
+  }
+};
+
+
   const handleDeleteUser = async (userId) => {
     const confirmed = window.confirm("Are you sure you want to delete this user?");
     if (!confirmed) return;
@@ -897,7 +921,9 @@ function Dashboard() {
           </Link>
           <button
             className="text-red-600 hover:text-red-900 transition-colors duration-200"
-            onClick={() => handleDeleteUser(row.id)}
+            // onClick={() => handleDeleteUser(row.id)}
+            onClick={() => deleteUserAndAccount(row.id, row.account_no)}
+
             title="Delete User"
           >
             <FaTrash />

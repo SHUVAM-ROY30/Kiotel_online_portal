@@ -4414,8 +4414,8 @@ def generate_recurring_tasks():
 
             # Fetch assigned users
             cursor.execute("""
-                SELECT assigned_to AS user_id 
-                FROM task_assignment 
+                SELECT AssignedTo AS user_id 
+                FROM tblTaskAssignments 
                 WHERE task_id = %s
             """, (r["task_id"],))
             assigned_users = [row["user_id"] for row in cursor.fetchall()]
@@ -4631,6 +4631,35 @@ def create_recurring_task():
 
     finally:
         session.pop("is_creating_task", None)
+
+
+
+@app.route("/api/delete-user-account/<account_no>", methods=["DELETE"])
+def delete_user_by_unique_id(account_no):
+    try:
+        connection = create_connection2()
+        if not connection:
+            return jsonify({"error": "DB connection failed"}), 500
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "DELETE FROM employees WHERE unique_id = %s",
+                (account_no,)
+            )
+            connection.commit()
+
+        return jsonify({"message": "Deleted successfully"}), 200
+
+    except Exception as e:
+        print("Delete error:", e)
+        return jsonify({"error": "Internal Server Error"}), 500
+
+    finally:
+        try:
+            connection.close()
+        except:
+            pass
+
 
 
 
