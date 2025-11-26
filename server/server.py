@@ -3069,6 +3069,156 @@ from datetime import datetime, timezone # Import timezone
 
 
 
+# @app.route("/api/task", methods=["POST"])
+# @login_required
+# def create_task():
+#     if session.get("is_creating_task"):
+#         return jsonify({"error": "Request already in progress"}), 429
+
+#     session["is_creating_task"] = True
+
+#     try:
+#         user_id = session.get("user_id")
+#         if not user_id:
+#             return jsonify({"error": "User ID not found in session"}), 400
+
+#         # --- Required Fields ---
+#         title = request.form.get("title")
+#         description = request.form.get("description")
+#         if not title or not description:
+#             return jsonify({"error": "Title and description are required"}), 400
+
+#         # --- Task Meta ---
+#         assigned_users = request.form.getlist("assignedUsers[]")
+#         task_state = request.form.get("ticketState")
+#         task_priority = request.form.get("ticketPriority")
+#         attachments = request.files.getlist("attachments")
+#         tags = request.form.getlist("tags[]")
+#         tags_str = ",".join([str(t) for t in tags]) if tags else None
+
+#         # --- Parent / Subtask ---
+#         is_subtask = request.form.get("is_subtask", default=False, type=bool)
+#         parent_task_id = request.form.get("parent_task_id")  # optional
+#         if is_subtask and not parent_task_id:
+#             return jsonify({"error": "Parent task ID required for a subtask"}), 400
+
+#         # --- Scheduling ---
+#         due_date_str = request.form.get("due_date")   # ✅ changed from clone_schedule_datetime
+#         reminder_datetime_str = request.form.get("reminder_datetime")
+
+#         def parse_datetime(dt_str):
+#             if not dt_str:
+#                 return None
+#             try:
+#                 parsed_dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+#                 if parsed_dt.tzinfo is None:
+#                     parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
+#                 return parsed_dt
+#             except ValueError:
+#                 return None
+
+#         due_date = parse_datetime(due_date_str)   # ✅ changed
+#         reminder_datetime = parse_datetime(reminder_datetime_str)
+#         scheduled_clone = due_date is not None    # ✅ flag still works (true if due_date exists)
+
+#         # --- File Handling ---
+#         original_filenames, last_unique_name = [], None
+#         upload_folder = app.config.get('UPLOAD_FOLDER')
+
+#         if not upload_folder or not os.path.exists(upload_folder):
+#             return jsonify({"error": "Upload folder missing or misconfigured"}), 500
+
+#         for attachment in attachments:
+#             if attachment and attachment.filename != "":
+#                 original_filename = attachment.filename
+#                 unique_name = generate_unique_name(original_filename)
+#                 if not unique_name:
+#                     return jsonify({"error": "Failed to generate unique name"}), 500
+
+#                 file_path = os.path.join(upload_folder, unique_name)
+#                 try:
+#                     attachment.save(file_path)
+#                     original_filenames.append(original_filename)
+#                     last_unique_name = unique_name
+#                 except Exception as save_error:
+#                     print(f"ERROR saving file: {save_error}")
+#                     return jsonify({"error": f"Failed to save {original_filename}"}), 500
+
+#         attachments_json = json.dumps(original_filenames) if original_filenames else None
+
+#         # --- DB Operation ---
+#         connection = create_connection()
+#         if connection is None:
+#             return jsonify({"error": "Failed to connect to database"}), 500
+
+#         try:
+#             with connection.cursor() as cursor:
+#                 cursor.execute("SET @current_user_id = %s", (user_id,))
+
+#                 # ✅ Call the new SP with due_date instead of clone_schedule_datetime
+#                 cursor.callproc('sp_save_task_with_due_date2', (
+#                     0,                              # p_task_id (0 = insert)
+#                     title,                          # p_title
+#                     description,                    # p_description
+#                     attachments_json,               # p_attachments
+#                     last_unique_name,               # p_unique_names
+#                     task_state,                     # p_status_id
+#                     task_priority,                  # p_priority_id
+#                     tags_str,                       # p_tags
+#                     scheduled_clone,                # p_scheduled_clone
+#                     due_date,                       # ✅ p_due_date
+#                     is_subtask,                     # p_is_subtask
+#                     parent_task_id,                 # p_parent_task_id
+#                     reminder_datetime,              # p_reminder_datetime
+#                     json.dumps(assigned_users) if assigned_users else None  # p_assignedto
+#                 ))
+
+#                 connection.commit()
+#                 new_task_id = cursor.lastrowid
+
+#                 # --- Notifications ---
+#                 try:
+#                     assigned_user_emails = []
+#                     if assigned_users:
+#                         placeholders = ','.join(['%s'] * len(assigned_users))
+#                         cursor.execute(f"SELECT emailid FROM tblusers WHERE id IN ({placeholders})", assigned_users)
+#                         assigned_user_emails = [row['emailid'] for row in cursor.fetchall()]
+
+#                     cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
+#                     creator_email_row = cursor.fetchone()
+#                     creator_email = creator_email_row['emailid'] if creator_email_row else None
+
+#                     send_email_notification_new_task(
+#                         title, description, new_task_id,
+#                         creator_email, assigned_user_emails
+#                     )
+#                 except Exception as notify_error:
+#                     print(f"WARNING: Notification failed for task {new_task_id}: {notify_error}")
+
+#                 return jsonify({
+#                     "message": "Task created successfully",
+#                     "task_id": new_task_id,
+#                     "is_subtask": is_subtask,
+#                     "parent_task_id": parent_task_id
+#                 }), 201
+
+#         except pymysql.MySQLError as e:
+#             connection.rollback()
+#             print(f"DB Error: {e}")
+#             return jsonify({"error": "Database operation failed"}), 500
+
+#         finally:
+#             connection.close()
+
+#     except Exception as e:
+#         print(f"Unexpected error: {e}")
+#         return jsonify({"error": "Internal server error"}), 500
+
+#     finally:
+#         session.pop("is_creating_task", None)
+
+
+
 @app.route("/api/task", methods=["POST"])
 @login_required
 def create_task():
@@ -3082,118 +3232,154 @@ def create_task():
         if not user_id:
             return jsonify({"error": "User ID not found in session"}), 400
 
-        # --- Required Fields ---
+        # ---------------------------------------------
+        #  REQUIRED FIELDS
+        # ---------------------------------------------
         title = request.form.get("title")
         description = request.form.get("description")
+
         if not title or not description:
             return jsonify({"error": "Title and description are required"}), 400
 
-        # --- Task Meta ---
+        # ---------------------------------------------
+        #  TASK META
+        # ---------------------------------------------
         assigned_users = request.form.getlist("assignedUsers[]")
         task_state = request.form.get("ticketState")
         task_priority = request.form.get("ticketPriority")
         attachments = request.files.getlist("attachments")
         tags = request.form.getlist("tags[]")
-        tags_str = ",".join([str(t) for t in tags]) if tags else None
 
-        # --- Parent / Subtask ---
+        tags_str = json.dumps(tags) if tags else None
+
+        # ---------------------------------------------
+        #  SUBTASK HANDLING
+        # ---------------------------------------------
         is_subtask = request.form.get("is_subtask", default=False, type=bool)
-        parent_task_id = request.form.get("parent_task_id")  # optional
-        if is_subtask and not parent_task_id:
-            return jsonify({"error": "Parent task ID required for a subtask"}), 400
+        parent_task_id = request.form.get("parent_task_id")
 
-        # --- Scheduling ---
-        due_date_str = request.form.get("due_date")   # ✅ changed from clone_schedule_datetime
+        if is_subtask and not parent_task_id:
+            return jsonify({"error": "Parent task ID required for subtask"}), 400
+
+        # ---------------------------------------------
+        #  DUE DATE + REMINDER
+        # ---------------------------------------------
+        due_date_str = request.form.get("due_date")
         reminder_datetime_str = request.form.get("reminder_datetime")
 
-        def parse_datetime(dt_str):
-            if not dt_str:
+        def parse_datetime(dt):
+            if not dt:
                 return None
             try:
-                parsed_dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
-                if parsed_dt.tzinfo is None:
-                    parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
-                return parsed_dt
-            except ValueError:
+                parsed = datetime.fromisoformat(dt.replace("Z", "+00:00"))
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                return parsed
+            except:
                 return None
 
-        due_date = parse_datetime(due_date_str)   # ✅ changed
+        due_date = parse_datetime(due_date_str)
         reminder_datetime = parse_datetime(reminder_datetime_str)
-        scheduled_clone = due_date is not None    # ✅ flag still works (true if due_date exists)
 
-        # --- File Handling ---
-        original_filenames, last_unique_name = [], None
-        upload_folder = app.config.get('UPLOAD_FOLDER')
+        scheduled_clone = due_date is not None
 
+        # ---------------------------------------------
+        #  ATTACHMENT HANDLING (UPDATED)
+        # ---------------------------------------------
+        upload_folder = app.config.get("UPLOAD_FOLDER")
         if not upload_folder or not os.path.exists(upload_folder):
             return jsonify({"error": "Upload folder missing or misconfigured"}), 500
 
-        for attachment in attachments:
-            if attachment and attachment.filename != "":
-                original_filename = attachment.filename
-                unique_name = generate_unique_name(original_filename)
-                if not unique_name:
-                    return jsonify({"error": "Failed to generate unique name"}), 500
+        original_files = []
+        unique_names = []
 
-                file_path = os.path.join(upload_folder, unique_name)
-                try:
-                    attachment.save(file_path)
-                    original_filenames.append(original_filename)
-                    last_unique_name = unique_name
-                except Exception as save_error:
-                    print(f"ERROR saving file: {save_error}")
-                    return jsonify({"error": f"Failed to save {original_filename}"}), 500
+        for file in attachments:
+            if file and file.filename:
+                original = file.filename
+                unique = generate_unique_name(original)
 
-        attachments_json = json.dumps(original_filenames) if original_filenames else None
+                file_path = os.path.join(upload_folder, unique)
+                file.save(file_path)
 
-        # --- DB Operation ---
+                original_files.append(original)
+                unique_names.append(unique)
+
+        # Save original filenames in attachments JSON
+        attachments_json = json.dumps(original_files) if original_files else None
+
+        # ---------------------------------------------
+        #  SINGLE / MULTI UNIQUE NAME LOGIC
+        # ---------------------------------------------
+        if len(unique_names) == 1:
+            p_unique_name = unique_names[0]
+            p_unique_multi = None
+        elif len(unique_names) > 1:
+            p_unique_name = None
+            p_unique_multi = json.dumps(unique_names)
+        else:
+            p_unique_name = None
+            p_unique_multi = None
+
+        # ---------------------------------------------
+        #  DATABASE CALL
+        # ---------------------------------------------
         connection = create_connection()
-        if connection is None:
-            return jsonify({"error": "Failed to connect to database"}), 500
+        if not connection:
+            return jsonify({"error": "DB connection failed"}), 500
 
         try:
             with connection.cursor() as cursor:
+
                 cursor.execute("SET @current_user_id = %s", (user_id,))
 
-                # ✅ Call the new SP with due_date instead of clone_schedule_datetime
-                cursor.callproc('sp_save_task_with_due_date2', (
-                    0,                              # p_task_id (0 = insert)
-                    title,                          # p_title
-                    description,                    # p_description
-                    attachments_json,               # p_attachments
-                    last_unique_name,               # p_unique_names
-                    task_state,                     # p_status_id
-                    task_priority,                  # p_priority_id
-                    tags_str,                       # p_tags
-                    scheduled_clone,                # p_scheduled_clone
-                    due_date,                       # ✅ p_due_date
-                    is_subtask,                     # p_is_subtask
-                    parent_task_id,                 # p_parent_task_id
-                    reminder_datetime,              # p_reminder_datetime
-                    json.dumps(assigned_users) if assigned_users else None  # p_assignedto
+                cursor.callproc('sp_create_task_with_multi_files2', (
+                    0,                        # p_id
+                    title,
+                    description,
+                    attachments_json,
+                    p_unique_name,
+                    p_unique_multi,           # <--- NEW MULTI-FILE INPUT
+                    task_state,
+                    task_priority,
+                    tags_str,
+                    scheduled_clone,
+                    due_date,
+                    is_subtask,
+                    parent_task_id,
+                    reminder_datetime,
+                    json.dumps(assigned_users) if assigned_users else None
                 ))
 
                 connection.commit()
                 new_task_id = cursor.lastrowid
 
-                # --- Notifications ---
+                # ---------------------------------------------
+                #  NOTIFICATION (same as earlier)
+                # ---------------------------------------------
                 try:
                     assigned_user_emails = []
                     if assigned_users:
-                        placeholders = ','.join(['%s'] * len(assigned_users))
-                        cursor.execute(f"SELECT emailid FROM tblusers WHERE id IN ({placeholders})", assigned_users)
-                        assigned_user_emails = [row['emailid'] for row in cursor.fetchall()]
+                        placeholders = ",".join(["%s"] * len(assigned_users))
+                        cursor.execute(
+                            f"SELECT emailid FROM tblusers WHERE id IN ({placeholders})",
+                            assigned_users
+                        )
+                        assigned_user_emails = [row["emailid"] for row in cursor.fetchall()]
 
                     cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
                     creator_email_row = cursor.fetchone()
-                    creator_email = creator_email_row['emailid'] if creator_email_row else None
+                    creator_email = creator_email_row["emailid"] if creator_email_row else None
 
                     send_email_notification_new_task(
-                        title, description, new_task_id,
-                        creator_email, assigned_user_emails
+                        title,
+                        description,
+                        new_task_id,
+                        creator_email,
+                        assigned_user_emails
                     )
-                except Exception as notify_error:
-                    print(f"WARNING: Notification failed for task {new_task_id}: {notify_error}")
+
+                except Exception as notify_err:
+                    print("WARNING: Notification failed:", notify_err)
 
                 return jsonify({
                     "message": "Task created successfully",
@@ -3204,18 +3390,19 @@ def create_task():
 
         except pymysql.MySQLError as e:
             connection.rollback()
-            print(f"DB Error: {e}")
-            return jsonify({"error": "Database operation failed"}), 500
+            print("DB Error:", e)
+            return jsonify({"error": "Database failed"}), 500
 
         finally:
             connection.close()
 
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        print("Unexpected error:", e)
         return jsonify({"error": "Internal server error"}), 500
 
     finally:
         session.pop("is_creating_task", None)
+
 
 
 

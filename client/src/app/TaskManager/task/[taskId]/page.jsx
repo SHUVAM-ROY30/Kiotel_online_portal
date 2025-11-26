@@ -119,7 +119,24 @@ export default function TicketDetails({ params }) {
           ),
         ]);
         const ticketData = ticketResponse.data;
-        setTicketDetails(ticketData);
+        // --- SAFE PARSE unique_multi ---
+let multi = ticketData.unique_multi;
+
+if (!multi) {
+  ticketData.unique_multi = [];
+} else if (typeof multi === "string") {
+  try {
+    ticketData.unique_multi = JSON.parse(multi);
+    if (!Array.isArray(ticketData.unique_multi)) ticketData.unique_multi = [];
+  } catch {
+    ticketData.unique_multi = [];
+  }
+} else if (!Array.isArray(multi)) {
+  ticketData.unique_multi = [];
+}
+
+setTicketDetails(ticketData);
+        // setTicketDetails(ticketData);
         setSelectedStatus(ticketData.status_id);
         setSelectedPriority(ticketData.priority_id);
         const repliesWithAttachments = repliesResponse.data.map((reply) => ({
@@ -649,7 +666,7 @@ export default function TicketDetails({ params }) {
             </p>
           </div>
           {/* Attachments */}
-          {ticketDetails.unique_name && (
+          {/* {ticketDetails.unique_name && (
             <div className="mt-4">
               <h4 className="text-lg font-semibold text-gray-800 mb-2">
                 Attachments
@@ -685,7 +702,95 @@ export default function TicketDetails({ params }) {
                 )}
               </div>
             </div>
-          )}
+          )} */}
+
+          {/* Attachments */}
+{/* Attachments */}
+{(
+  (ticketDetails.unique_name && ticketDetails.unique_name !== "") ||
+  (Array.isArray(ticketDetails.unique_multi) && ticketDetails.unique_multi.length > 0)
+) && (
+  <div className="mt-4">
+    <h4 className="text-lg font-semibold text-gray-800 mb-2">
+      Attachments
+    </h4>
+
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+
+      {/* SINGLE FILE (unique_name) */}
+      {ticketDetails.unique_name && ticketDetails.unique_name !== "" && (
+        isImage(ticketDetails.unique_name) ? (
+          <div className="relative group overflow-hidden rounded-lg shadow-md">
+            <a
+              href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${ticketDetails.unique_name}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${ticketDetails.unique_name}`}
+                alt="Attachment"
+                className="w-full h-32 object-cover transition-transform group-hover:scale-105"
+              />
+            </a>
+          </div>
+        ) : (
+          <button
+            onClick={() =>
+              handleDownload(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${ticketDetails.unique_name}`,
+                ticketDetails.unique_name
+              )
+            }
+            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg shadow"
+          >
+            Download
+          </button>
+        )
+      )}
+
+      {/* MULTIPLE FILES (unique_multi) */}
+      {(!ticketDetails.unique_name || ticketDetails.unique_name === "") &&
+        Array.isArray(ticketDetails.unique_multi) &&
+        ticketDetails.unique_multi.length > 0 &&
+        ticketDetails.unique_multi.map((file, idx) => (
+          <div key={idx}>
+            {isImage(file) ? (
+              <div className="relative group overflow-hidden rounded-lg shadow-md">
+                <a
+                  href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${file}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <img
+                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${file}`}
+                    alt={`Attachment ${idx}`}
+                    className="w-full h-32 object-cover transition-transform group-hover:scale-105"
+                  />
+                </a>
+              </div>
+            ) : (
+              <button
+                onClick={() =>
+                  handleDownload(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${file}`,
+                    file
+                  )
+                }
+                className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg shadow"
+              >
+                Download
+              </button>
+            )}
+          </div>
+        ))}
+
+    </div>
+  </div>
+)}
+
+
+  
+  
           {/* Replies Section */}
           {replies.length > 0 && (
             <div className="mt-8">
