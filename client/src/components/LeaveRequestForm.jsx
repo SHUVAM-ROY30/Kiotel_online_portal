@@ -260,7 +260,7 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
             </div>
 
             {/* FESTIVE LEAVES */}
-            <div>
+            {/* <div>
               <h3 className="text-lg font-semibold text-blue-700 mb-2">FESTIVE LEAVES</h3>
               <ol className="list-decimal pl-5 space-y-1 text-sm text-gray-700">
                 <li>If you choose to take a week off that overlaps with a festive off on the same day, it will be considered as having been used.</li>
@@ -270,10 +270,10 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
                 <li>If a request for festive leave is denied for any reason, and its approaching its expiration date, the expiration cannot be prolonged.</li>
                 <li>Once you have exhausted your six festive offs, taking leave on a festival day later to that will result in Loss of Pay (LOP).</li>
               </ol>
-            </div>
+            </div> */}
 
             {/* CASUAL LEAVES */}
-            <div>
+            {/* <div>
               <h3 className="text-lg font-semibold text-blue-700 mb-2">CASUAL LEAVES</h3>
               <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
                 <li>One leave will be credited every 2 months.</li>
@@ -284,7 +284,7 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
                 <li>Casual leaves remain valid until the end of the year and will not be carried forward.</li>
                 <li>If a request for Casual leave is denied for any reason, and its approaching its expiration date, the expiration cannot be prolonged.</li>
               </ul>
-            </div>
+            </div> */}
 
             {/* LAST MINUTE LOPs */}
             <div>
@@ -382,7 +382,7 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
                   <option value="LOP">Loss of Pay (LOP)</option>
                   <option value="Week Off">Week Off</option>
                   <option value="Paid Leave">Paid Leave</option>
-                  <option value="Festive Leave">Festive Leave</option>
+                  {/* <option value="Festive Leave">Festive Leave</option> */}
                   {/* <option value="Casual Leave">Casual Leave</option> */}
                 </select>
               </div>
@@ -504,7 +504,7 @@ export default function LeaveRequestForm({ employeeName, onClose }) {
                       <option value="LOP">Loss of Pay (LOP)</option>
                       <option value="Week Off">Week Off</option>
                       <option value="Paid Leave">Paid Leave</option>
-                      <option value="Festive Leave">Festive Leave</option>
+                      {/* <option value="Festive Leave">Festive Leave</option> */}
                       {/* <option value="Casual Leave">Casual Leave</option> */}
                     </select>
                   </div>
