@@ -3192,6 +3192,7 @@ import ScheduleSidebar from '@/components/schedule/ScheduleSidebar';
 import ScheduleMainView from '@/components/schedule/ScheduleMainView';
 import ScheduleModals, { CreateScheduleModal } from '@/components/schedule/ScheduleModals';
 import BroadcastModal from '@/components/schedule/BroadcastModal';
+import ScheduleUploadModal from '@/components/schedule/ScheduleUploadModal';
 import {
   arrayMove,
 } from '@dnd-kit/sortable';
@@ -3256,6 +3257,8 @@ export default function SchedulePage() {
 
   const [sourceScheduleId, setSourceScheduleId] = useState('');
   const [availableSchedules, setAvailableSchedules] = useState([]);
+
+    const [showUploadModal, setShowUploadModal] = useState(false); // Add this state
 
 
   const uniqueId = typeof window !== 'undefined' ? localStorage.getItem('uniqueId') : null;
@@ -4182,8 +4185,34 @@ const handleCreateSchedule = async () => {
               threeMonthStart={threeMonthStart}
               setThreeMonthStart={setThreeMonthStart}
             />
+
+            {/* Add Upload Button in the main view header or sidebar */}
+        {/* Example: Adding it similarly to the download button in ScheduleMainView */}
+        {/* Or, add it here in the main page if preferred */}
+         {currentSchedule && !isMonthView && !isThreeMonthView && (
+            <button
+              onClick={() => setShowUploadModal(true)}
+              className="mt-4 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-md hover:shadow-lg"
+            >
+              Upload Schedule File
+            </button>
+          )}
+          
           </div>
         </div>
+        <ScheduleUploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        currentSchedule={currentSchedule}
+        employees={employees}
+        shiftTypes={shiftTypes}
+        leaveTypes={leaveTypes}
+        setScheduleEntries={setScheduleEntries} // Pass the setter function
+        setFilteredEmployees={filteredEmployees} // Pass if needed
+        setEmployeeOrder={orderedEmployees}
+        uniqueId={uniqueId} // Pass if needed
+        API={API}
+      />
         <ScheduleModals
           showEditModal={showEditModal}
           setShowEditModal={setShowEditModal}

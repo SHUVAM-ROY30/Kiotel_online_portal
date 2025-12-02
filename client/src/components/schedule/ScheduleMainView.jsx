@@ -532,6 +532,8 @@ import ScheduleTableHeader from './ScheduleTableHeader';
 import MonthView from './MonthView';
 import ThreeMonthView from './ThreeMonthView'; // ✅ Import the new view
 
+import { utils, writeFile } from 'xlsx'; // Add this import
+
 const ScheduleMainView = ({
   currentSchedule,
   isMonthView,
@@ -590,6 +592,135 @@ const ScheduleMainView = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartCell, setDragStartCell] = useState(null);
   const tableBodyRef = useRef(null);
+
+  // --- UPDATED: Function to Download Currently Displayed Schedule Data with Comprehensive Instructions ---
+  const downloadScheduleData = () => {
+    if (!currentSchedule || !scheduleEntries || !employees || !shiftTypes || !leaveTypes) {
+      console.error("Required data for download is missing.");
+      alert("Cannot download schedule data. Required information is missing.");
+      return;
+    }
+
+    // Create maps for quick lookup of shift/leave names
+    const shiftTypeMap = new Map(shiftTypes.map(st => [st.id, st.name]));
+    const leaveTypeMap = new Map(leaveTypes.map(lt => [lt.id, lt.name]));
+
+    // --- NEW LOGIC: Use currently displayed employees and dates ---
+    // Get the list of employees currently being displayed (filtered and ordered)
+    const displayedEmployees = filteredEmployees; // This is the state variable you use for rendering
+
+    // Get the list of dates currently being displayed (for the current week/day view)
+    const displayedDates = weekDays; // This is the state variable you use for rendering the header
+    // Convert Date objects to 'YYYY-MM-DD' strings for comparison
+    const displayedDateStrings = displayedDates.map(date => format(date, 'yyyy-MM-dd'));
+    // --- END NEW LOGIC ---
+
+    // --- NEW: Prepare Comprehensive List of Available Assignments ---
+    // Combine names from shiftTypes, leaveTypes, and hardcoded status names
+    const shiftNames = shiftTypes.map(st => st.name);
+    const leaveNames = leaveTypes.map(lt => lt.name);
+    const statusNames = ['Paid Leave', 'LOP', 'LLOP', 'Week OFF']; // Add other status names if needed
+    const allAvailableAssignments = [...shiftNames, ...leaveNames, ...statusNames];
+    // --- END NEW ---
+
+    // Prepare data rows
+    const dataRows = [];
+
+    // --- NEW: Add Detailed Instructions Rows ---
+    // Row 1: Available Assignments Header
+    dataRows.push(["Available Assignments:"]);
+
+    // Row 2: List All Available Assignments (filling columns under the header)
+    // Start the row with an empty cell to align with the "Employee Name" column
+    const assignmentsRow = ["", ...allAvailableAssignments];
+    dataRows.push(assignmentsRow);
+
+    // Row 3: Paste Instruction Header
+    dataRows.push(["Paste Assignments Here:"]);
+
+    // Row 4: Placeholder row for paste area (matching date columns)
+    // Start the row with an empty cell to align with the "Employee Name" column
+    const pasteHeaderRow = ["Employee Name", ...displayedDateStrings];
+    dataRows.push(pasteHeaderRow);
+    // --- END NEW ---
+
+    // Iterate through ALL currently displayed employees
+    displayedEmployees.forEach(emp => {
+      const empId = emp.id;
+      const empName = `${emp.first_name} ${emp.last_name}`;
+      const row = [empName];
+
+      // Iterate through ALL currently displayed dates for this employee
+      displayedDateStrings.forEach(date => {
+        // Find the entry for this employee on this date
+        const entry = scheduleEntries.find(e => e.user_id == empId && e.entry_date === date);
+        let cellValue = ""; // Default empty cell for no assignment
+
+        if (entry) {
+          if (entry.assignment_status === 'ASSIGNED' && entry.shift_type_id) {
+            cellValue = shiftTypeMap.get(entry.shift_type_id) || `Shift ID: ${entry.shift_type_id}`;
+          } else if (entry.assignment_status !== 'UNASSIGNED' && leaveTypes.some(lt => lt.id == entry.assignment_status)) {
+            // Check if assignment_status is a leave type ID
+            const leaveTypeName = leaveTypeMap.get(entry.assignment_status);
+            if (leaveTypeName) {
+              cellValue = leaveTypeName;
+            } else {
+              cellValue = `Leave ID: ${entry.assignment_status}`;
+            }
+          } else if (entry.assignment_status === 'UNASSIGNED') {
+             cellValue = "Unassigned"; // Or keep it empty ""
+          } else {
+              // Handle other statuses like 'PTO_APPROVED', 'PTO_REQUESTED', 'FESTIVE_LEAVE', 'UNAVAILABLE', 'OFF'
+              // Map the internal status code to the display name
+              switch(entry.assignment_status) {
+                  case 'PTO_APPROVED':
+                      cellValue = 'Paid Leave';
+                      break;
+                  case 'PTO_REQUESTED':
+                      cellValue = 'LLOP';
+                      break;
+                  case 'FESTIVE_LEAVE':
+                      cellValue = 'Festive Leave';
+                      break;
+                  case 'UNAVAILABLE':
+                      cellValue = 'Week OFF';
+                      break;
+                  case 'OFF':
+                      cellValue = 'LOP';
+                      break;
+                  default:
+                      // If it's not a shift, not a leave type ID, and not a known status, show the raw status or an ID
+                      cellValue = entry.assignment_status;
+              }
+          }
+          // Add other status checks if necessary
+        }
+        // If no entry was found, cellValue remains ""
+        row.push(cellValue);
+      });
+      dataRows.push(row);
+    });
+
+    // Create a worksheet and workbook
+    const ws = utils.aoa_to_sheet(dataRows);
+    const wb = utils.book_new();
+
+    // --- FIX: Truncate sheet name to 31 characters ---
+    let sheetName = `Schedule_${currentSchedule.name.replace(/\s+/g, '_')}`;
+    if (sheetName.length > 31) {
+      sheetName = sheetName.substring(0, 28) + '...'; // Keep first 28 chars + '...'
+    }
+
+    utils.book_append_sheet(wb, ws, sheetName); // Use the truncated name
+
+    // --- FIX: Ensure the filename has .xlsx extension ---
+    // Generate file name
+    const fileName = `Schedule_${currentSchedule.name.replace(/\s+/g, '_')}_${currentSchedule.start_date}_to_${currentSchedule.end_date}.xlsx`;
+
+    // Write the file with the correct extension
+    writeFile(wb, fileName);
+  };
+  // --- END UPDATED ---
 
   const getDaysOfWeek = (baseDate) => {
     if (isDayView) {
@@ -775,6 +906,16 @@ const ScheduleMainView = ({
               Broadcast
             </button>
           )}
+          {/* Add Download Button */}
+          {([1, 5].includes(userRole)) && currentSchedule && !isMonthView && !isThreeMonthView && ( // Only show for a specific schedule, not month/three-month view
+            <button
+              onClick={downloadScheduleData}
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-md hover:shadow-lg"
+            >
+              Download Schedule
+            </button>
+          )}
+          
           <div className="flex border border-slate-300 rounded-xl overflow-hidden">
             <button
               onClick={() => { setIsDayView(false); setIsMonthView(false); setIsThreeMonthView(false); }}
