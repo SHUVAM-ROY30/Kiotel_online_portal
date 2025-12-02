@@ -4343,46 +4343,56 @@ def get_opened_taskss():
             # Keep your existing SQL query
             query = """
                 SELECT 
-                    t.id AS task_id,
-                    t.title,
-                    t.description,
-                    t.created_at,
-                    t.due_date,
-                    s.status_name,
-                    p.priority_name,
-                    creator.id AS creator_id,
-                    creator.fname AS creator_fname,
-                    creator.lname AS creator_lname,
-                    creator.role_id AS creator_role,
-                    GROUP_CONCAT(
-                        DISTINCT CONCAT(u.id, '|', u.fname, ' ', u.lname, '|', u.role_id)
-                        SEPARATOR ', '
-                    ) AS assigned_users_raw,
-                    GROUP_CONCAT(
-                        DISTINCT tg.tag 
-                        ORDER BY tg.tag 
-                        SEPARATOR ', '
-                    ) AS task_tags
-                FROM 
-                    tbltasks t
-                LEFT JOIN 
-                    tbltaskstatus s ON t.taskstatus_id = s.id
-                LEFT JOIN 
-                    tblpriority p ON t.priority_id = p.id
-                LEFT JOIN 
-                    tblusers creator ON t.created_by = creator.id
-                LEFT JOIN 
-                    tblTaskAssignments ta ON t.id = ta.task_id
-                LEFT JOIN 
-                    tblusers u ON ta.AssignedTo = u.id
-                LEFT JOIN 
-                    tags tg ON FIND_IN_SET(tg.id, t.tags) > 0
-                WHERE 
-                    t.taskstatus_id != 4
-                GROUP BY 
-                    t.id
-                ORDER BY 
-                    t.id DESC;
+    t.id AS task_id,
+
+    MAX(t.title) AS title,
+    MAX(t.description) AS description,
+    MAX(t.created_at) AS created_at,
+    MAX(t.due_date) AS due_date,
+
+    MAX(s.status_name) AS status_name,
+    MAX(p.priority_name) AS priority_name,
+
+    MAX(creator.id) AS creator_id,
+    MAX(creator.fname) AS creator_fname,
+    MAX(creator.lname) AS creator_lname,
+    MAX(creator.role_id) AS creator_role,
+
+    GROUP_CONCAT(
+        DISTINCT CONCAT(u.id, '|', u.fname, ' ', u.lname, '|', u.role_id)
+        SEPARATOR ', '
+    ) AS assigned_users_raw,
+
+    GROUP_CONCAT(
+        DISTINCT tg.tag
+        ORDER BY tg.tag 
+        SEPARATOR ', '
+    ) AS task_tags
+
+FROM tbltasks t
+LEFT JOIN tbltaskstatus s ON t.taskstatus_id = s.id
+LEFT JOIN tblpriority p ON t.priority_id = p.id
+LEFT JOIN tblusers creator ON t.created_by = creator.id
+LEFT JOIN tblTaskAssignments ta ON t.id = ta.task_id
+LEFT JOIN tblusers u ON ta.AssignedTo = u.id
+
+-- ⭐ FIX TAGS: Convert JSON ["8","11","4"] → CSV 8,11,4
+LEFT JOIN tags tg 
+       ON FIND_IN_SET(
+            tg.id,
+            REPLACE(REPLACE(REPLACE(t.tags, '[', ''), ']', ''), '"', '')
+          ) > 0
+
+WHERE 
+    t.taskstatus_id != 4
+
+GROUP BY 
+    t.id
+
+ORDER BY 
+    t.id DESC;
+
+
             """
             cursor.execute(query)
             tasks = cursor.fetchall()

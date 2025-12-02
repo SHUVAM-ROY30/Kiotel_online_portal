@@ -243,7 +243,7 @@ const ScheduleUploadModal = ({
         <h3 className="font-bold text-xl text-slate-800 mb-4">Upload Schedule File</h3>
         <p className="text-sm text-slate-600 mb-4">
           Upload an Excel (.xlsx) or CSV file to update the current schedule ({currentSchedule?.name}).
-          The file should have "Employee Name" as the first column and dates as subsequent columns.
+          The file should have Employee Name as the first column and dates as subsequent columns.
           Cell values should match Shift/Leave type names configured in the system.
         </p>
         <input
