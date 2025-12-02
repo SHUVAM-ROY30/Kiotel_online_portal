@@ -620,7 +620,7 @@ const ScheduleMainView = ({
     const shiftNames = shiftTypes.map(st => st.name);
     const leaveNames = leaveTypes.map(lt => lt.name);
     const statusNames = ['Paid Leave', 'LOP', 'LLOP', 'Week OFF']; // Add other status names if needed
-    const allAvailableAssignments = [...shiftNames, ...leaveNames, ...statusNames];
+    const allAvailableAssignments = [...shiftNames, ...leaveNames];
     // --- END NEW ---
 
     // Prepare data rows
@@ -636,7 +636,7 @@ const ScheduleMainView = ({
     dataRows.push(assignmentsRow);
 
     // Row 3: Paste Instruction Header
-    dataRows.push(["Paste Assignments Here:"]);
+    dataRows.push(["Copy the available shifts from above and Paste according to you: "]);
 
     // Row 4: Placeholder row for paste area (matching date columns)
     // Start the row with an empty cell to align with the "Employee Name" column
