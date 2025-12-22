@@ -90,12 +90,12 @@ export default function LeaveBalances() {
               <th className="border border-blue-300 px-4 py-2 text-left">
                 Paid Leave
               </th>
-              <th className="border border-blue-300 px-4 py-2 text-left">
+              {/* <th className="border border-blue-300 px-4 py-2 text-left">
                 Festive Leave
               </th>
               <th className="border border-blue-300 px-4 py-2 text-left">
                 Casual Leave
-              </th>
+              </th> */}
               <th className="border border-blue-300 px-4 py-2 text-left">
                 Actions
               </th>
@@ -116,12 +116,12 @@ export default function LeaveBalances() {
                 <td className="border border-blue-300 px-4 py-2 text-gray-800 text-center">
                   {employee.annual_leave}
                 </td>
-                <td className="border border-blue-300 px-4 py-2 text-gray-800 text-center">
+                {/* <td className="border border-blue-300 px-4 py-2 text-gray-800 text-center">
                   {employee.sick_leave}
                 </td>
                 <td className="border border-blue-300 px-4 py-2 text-gray-800 text-center">
                   {employee.casual_leave}
-                </td>
+                </td> */}
                 <td className="border border-blue-300 px-4 py-2 text-center">
                   <button
                     onClick={() => setEditingEmployee(employee)}

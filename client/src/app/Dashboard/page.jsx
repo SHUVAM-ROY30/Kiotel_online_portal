@@ -529,6 +529,14 @@ function Dashboard() {
               Task Manager
             </h2>
           </Link>
+          {/* <Link
+            href="/Attendance"
+            className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-purple-300"
+          >
+            <h2 className="text-lg font-semibold text-gray-800 group-hover:text-purple-600 transition-colors">
+              Attandance
+            </h2>
+          </Link> */}
 
           {/* Admin Panel - Only visible if role is 1 */}
           {(userRole === 1 || userRole === 4 ) && (

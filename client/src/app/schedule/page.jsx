@@ -4056,6 +4056,18 @@ const handleCreateSchedule = async () => {
 
   const performPublish = async (scheduleId) => {
     try {
+       // --- NEW: Call the single, efficient backend endpoint ---
+      const response = await axios.put(
+        `${API}/schedules/${scheduleId}/publish-with-leave-deduction`, // Use the new endpoint
+        {}, // No body needed for this request, data is derived server-side
+        {
+          headers: { 'X-Unique-ID': uniqueId },
+          withCredentials: true
+        }
+      );
+
+      console.log("Publish and deduction response:", response.data);
+
       await axios.put(`${API}/api/schedules/${scheduleId}/status`, { status: 'LIVE' }, {
         headers: { 'X-Unique-ID': uniqueId }
       });

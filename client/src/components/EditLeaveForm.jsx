@@ -198,7 +198,7 @@ export default function EditLeaveForm({ employee, onClose, onUpdate }) {
             />
           </div>
 
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700">Festive Leave</label>
             <input
               type="number"
@@ -218,7 +218,7 @@ export default function EditLeaveForm({ employee, onClose, onUpdate }) {
               onChange={handleInputChange}
               className="mt-1 block w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
-          </div>
+          </div> */}
 
           {/* <div>
             <label className="block text-sm font-medium text-gray-700">Other Leave</label>

@@ -1277,6 +1277,9 @@ def get_users():
                     "emailid": user['emailid'],
                     "role": user['role'], # Assuming your SP returns 'role' (from tblrole.name)
                     "account_no": user['account_no'],
+
+                    # New 
+                    "shift_name": user['shift_name'],
                     # --- NEW: Include the processed groups list ---
                     "groups": groups_list # Add the list of group names
                     # --- END NEW ---
