@@ -1,36 +1,60 @@
+// // // Admin_Attandance/page.jsx
+
+
+
+
 // 'use client';
 
 // import { useState, useEffect, useCallback } from 'react';
 // import { format, parseISO } from 'date-fns';
 
-// // ✅ Use the correct base URL
 // const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
 
-// // Status Badge Component
+// // Status Badge Component (Refined)
 // const StatusBadge = ({ status }) => {
 //   const config = {
-//     Present: { bg: 'bg-emerald-100', text: 'text-emerald-800', icon: '✓' },
-//     Late: { bg: 'bg-amber-100', text: 'text-amber-800', icon: '⚠️' },
-//     Absent: { bg: 'bg-rose-100', text: 'text-rose-800', icon: '✗' },
-//   }[status] || { bg: 'bg-gray-100', text: 'text-gray-800', icon: '–' };
+//     Present: { 
+//       bg: 'bg-emerald-50', 
+//       text: 'text-emerald-700', 
+//       border: 'border-emerald-200',
+//       icon: '✓' 
+//     },
+//     Late: { 
+//       bg: 'bg-amber-50', 
+//       text: 'text-amber-700', 
+//       border: 'border-amber-200',
+//       icon: '⚠️' 
+//     },
+//     Absent: { 
+//       bg: 'bg-rose-50', 
+//       text: 'text-rose-700', 
+//       border: 'border-rose-200',
+//       icon: '✗' 
+//     },
+//   }[status] || { 
+//     bg: 'bg-gray-50', 
+//     text: 'text-gray-600', 
+//     border: 'border-gray-200',
+//     icon: '–' 
+//   };
 
 //   return (
-//     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
-//       {config.icon} {status}
+//     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium text-sm border ${config.bg} ${config.text} ${config.border}`}>
+//       <span>{config.icon}</span> {status}
 //     </span>
 //   );
 // };
 
-// // Skeleton Loader
+// // Skeleton Loader (Enhanced)
 // const TableSkeleton = () => (
 //   <div className="animate-pulse">
-//     {[...Array(5)].map((_, i) => (
-//       <div key={i} className="flex items-center justify-between py-4 border-b border-gray-200">
+//     {[...Array(6)].map((_, i) => (
+//       <div key={i} className="flex items-center justify-between py-4 border-b border-gray-100">
 //         <div className="flex items-center gap-4">
-//           <div className="w-24 h-4 bg-gray-200 rounded"></div>
-//           <div className="w-32 h-4 bg-gray-200 rounded"></div>
+//           <div className="w-20 h-4 bg-gray-200 rounded"></div>
+//           <div className="w-28 h-4 bg-gray-200 rounded"></div>
 //         </div>
-//         <div className="w-16 h-4 bg-gray-200 rounded"></div>
+//         <div className="w-12 h-4 bg-gray-200 rounded"></div>
 //       </div>
 //     ))}
 //   </div>
@@ -44,11 +68,11 @@
 //   const [monthlyData, setMonthlyData] = useState([]);
 //   const [loadingDaily, setLoadingDaily] = useState(false);
 //   const [loadingMonthly, setLoadingMonthly] = useState(false);
+//   const [activeTab, setActiveTab] = useState('daily');
 
 //   const fetchDaily = useCallback(async () => {
 //     setLoadingDaily(true);
 //     try {
-//       // ✅ Fixed API path: /admin/daily (not /clockin/admin/daily)
 //       const res = await fetch(`${API_BASE}/clockin/admin/daily?date=${date}`);
 //       const result = await res.json();
 //       setDailyData(result.success ? result.data : []);
@@ -63,7 +87,6 @@
 //   const fetchMonthly = useCallback(async () => {
 //     setLoadingMonthly(true);
 //     try {
-//       // ✅ Fixed API path: /admin/monthly
 //       const res = await fetch(`${API_BASE}/clockin/admin/monthly?year=${monthlyYear}&month=${monthlyMonth}`);
 //       const result = await res.json();
 //       setMonthlyData(result.success ? result.data : []);
@@ -79,12 +102,11 @@
 //   useEffect(() => { fetchMonthly(); }, [fetchMonthly]);
 
 //   const handleExport = (type) => {
-//     // ✅ Fixed export path
 //     const url = `${API_BASE}/clockin/admin/export?type=${type}`;
 //     if (type === 'daily') {
 //       window.open(`${url}&date=${date}`, '_blank');
 //     } else {
-//       window.open(`${url}&year=${monthlyYear}&month=${monthlyMonth}`, '_blank');
+//       window.open(`${url}&year=${monthlyYear}&month=${String(monthlyMonth).padStart(2, '0')}`, '_blank');
 //     }
 //   };
 
@@ -93,7 +115,6 @@
 //     'July', 'August', 'September', 'October', 'November', 'December'
 //   ];
 
-//   // ✅ Safe date formatting helper
 //   const formatTime = (isoString) => {
 //     if (!isoString) return '—';
 //     try {
@@ -103,204 +124,274 @@
 //     }
 //   };
 
+//   // Summary cards data
+//   const dailySummary = {
+//     present: dailyData.filter(e => e.status === 'Present').length,
+//     late: dailyData.filter(e => e.status === 'Late').length,
+//     absent: dailyData.filter(e => e.status === 'Absent').length
+//   };
+
+//   const monthlySummary = monthlyData.reduce((acc, emp) => {
+//     acc.present += emp.present;
+//     acc.late += emp.late;
+//     acc.absent += emp.absent;
+//     acc.totalOt += emp.total_ot_minutes || 0;
+//     return acc;
+//   }, { present: 0, late: 0, absent: 0, totalOt: 0 });
+
 //   return (
-//     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+//     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
 //       <div className="max-w-7xl mx-auto">
+//         {/* Header */}
 //         <div className="mb-8">
-//           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Attendance Analytics</h1>
-//           <p className="text-gray-600 mt-1">Real-time insights into team attendance and productivity</p>
+//           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Attendance Analytics</h1>
+//           <p className="text-gray-600 mt-2"></p>
+//         </div>
+
+//         {/* Summary Cards */}
+//         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+//           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all duration-200 hover:shadow-md">
+//             <div className="flex items-center gap-3">
+//               <div className="p-2 bg-emerald-100 rounded-lg">
+//                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+//                 </svg>
+//               </div>
+//               <div>
+//                 <h3 className="text-gray-500 text-sm font-medium">Today Present</h3>
+//                 <p className="text-2xl font-bold text-emerald-700 mt-1">{dailySummary.present}</p>
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all duration-200 hover:shadow-md">
+//             <div className="flex items-center gap-3">
+//               <div className="p-2 bg-amber-100 rounded-lg">
+//                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+//                 </svg>
+//               </div>
+//               <div>
+//                 <h3 className="text-gray-500 text-sm font-medium">Today Late</h3>
+//                 <p className="text-2xl font-bold text-amber-700 mt-1">{dailySummary.late}</p>
+//               </div>
+//             </div>
+//           </div>
+
+          
+
+          
+//         </div>
+
+//         {/* Tabs */}
+//         <div className="flex border-b border-gray-200 mb-8">
+//           <button
+//             className={`px-5 py-3 font-medium text-sm relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 ${
+//               activeTab === 'daily'
+//                 ? 'text-blue-700 after:bg-blue-600'
+//                 : 'text-gray-600 hover:text-gray-900 after:bg-transparent'
+//             }`}
+//             onClick={() => setActiveTab('daily')}
+//           >
+//             Daily Attendance
+//           </button>
+//           <button
+//             className={`px-5 py-3 font-medium text-sm relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 ml-8 ${
+//               activeTab === 'monthly'
+//                 ? 'text-blue-700 after:bg-blue-600'
+//                 : 'text-gray-600 hover:text-gray-900 after:bg-transparent'
+//             }`}
+//             onClick={() => setActiveTab('monthly')}
+//           >
+//             Monthly Summary
+//           </button>
 //         </div>
 
 //         {/* Daily Report */}
-//         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8 transition-all hover:shadow-md">
-//           <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-//             <div>
-//               <h2 className="text-lg font-semibold text-gray-800">Daily Attendance</h2>
-//               <p className="text-gray-600 text-sm mt-1">
-//                 {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
-//               </p>
-//             </div>
-//             <div className="flex flex-wrap gap-3">
-//               <div className="flex items-center gap-2">
-//                 <label htmlFor="daily-date" className="text-sm font-medium text-gray-700">Date:</label>
-//                 {/* ✅ Fixed typo: border-gray-300 (not border-gray-30周转) */}
-//                 <input
-//                   id="daily-date"
-//                   type="date"
-//                   value={date}
-//                   onChange={(e) => setDate(e.target.value)}
-//                   className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-//                 />
+//         {activeTab === 'daily' && (
+//           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-md">
+//             <div className="px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+//               <div>
+//                 <h2 className="text-xl font-semibold text-gray-900">Daily Attendance Report</h2>
+//                 <p className="text-gray-600 text-sm mt-1">
+//                   {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
+//                 </p>
 //               </div>
-//               <button
-//                 onClick={() => handleExport('daily')}
-//                 className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition shadow-sm hover:shadow"
-//               >
-//                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-//                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-//                 </svg>
-//                 Export XLSX
-//               </button>
-//             </div>
-//           </div>
-// {/* hello this is the way you should be doing it in the way of the magic as it si in the logins as they were int he game
-//     Hello this iss the way you should be doing the things as it is done in, its like that i want to mark the keys 
-//     as it is in the way you should be doing in 
-//     Hello all this is the way you should be doing the locals in the logics as it is done int he 
-//     So there are some way in which you should be doing the things as it is done in the way of the locals investers
-//     Hello all, this are the gamings of the locals int he internet as its in the local thunder of the allowence as well 
-//     as well as the logins as i so this is the way you should be doing the things as its done in the way of the of the locals of the things in the main way of the seens as mentioned 
-    
-// */}
-//           <div className="overflow-x-auto">
-//             {loadingDaily ? (
-//               <div className="px-6 py-6"><TableSkeleton /></div>
-//             ) : dailyData && dailyData.length > 0 ? (
-//               <table className="w-full">
-//                 <thead>
-//                   <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-//                     <th className="px-6 py-3">Employee</th>
-//                     <th className="px-6 py-3">Shift</th>
-//                     <th className="px-6 py-3">Clock-in</th>
-//                     <th className="px-6 py-3">Clock-out</th>
-//                     <th className="px-6 py-3">Status</th>
-//                     <th className="px-6 py-3 text-right">OT (min)</th>
-//                     <th className="px-6 py-3 text-center">Photo</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody className="divide-y divide-gray-200">
-//                   {dailyData.map((row) => (
-//                     <tr key={row.unique_id || row.employee_id} className="hover:bg-gray-50 transition-colors">
-//                       <td className="px-6 py-4 whitespace-nowrap">
-//                         <div className="font-medium text-gray-900">{row.name}</div>
-//                         <div className="text-gray-500 text-sm">{row.unique_id}</div>
-//                       </td>
-//                       <td className="px-6 py-4 whitespace-nowrap text-gray-700">{row.shift_name}</td>
-//                       <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-//                         {formatTime(row.clock_in)}
-//                       </td>
-//                       <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-//                         {formatTime(row.clock_out)}
-//                       </td>
-//                       <td className="px-6 py-4 whitespace-nowrap">
-//                         <StatusBadge status={row.status} />
-//                       </td>
-//                       <td className="px-6 py-4 whitespace-nowrap text-right font-medium text-gray-900">
-//                         {row.overtime_minutes || 0}
-//                       </td>
-//                       <td className="px-6 py-4 whitespace-nowrap text-center">
-//                         {row.photo_captured ? (
-//                           <span className="text-green-600">✓</span>
-//                         ) : (
-//                           <span className="text-gray-400">–</span>
-//                         )}
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             ) : (
-//               <div className="px-6 py-12 text-center">
-//                 <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-//                   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-//                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-//                   </svg>
+//               <div className="flex flex-wrap items-center gap-3">
+//                 <div className="flex items-center gap-2">
+//                   <label htmlFor="daily-date" className="text-sm font-medium text-gray-700 whitespace-nowrap">Select Date:</label>
+//                   <input
+//                     id="daily-date"
+//                     type="date"
+//                     value={date}
+//                     onChange={(e) => setDate(e.target.value)}
+//                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+//                   />
 //                 </div>
-//                 <h3 className="text-lg font-medium text-gray-900">No attendance records</h3>
-//                 <p className="text-gray-500 mt-1">No clock-in data found for this date.</p>
+//                 <button
+//                   onClick={() => handleExport('daily')}
+//                   className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium px-4 py-2 rounded-lg transition shadow-md hover:shadow-lg"
+//                 >
+//                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+//                   </svg>
+//                   Export XLSX
+//                 </button>
 //               </div>
-//             )}
+//             </div>
+
+//             <div className="overflow-x-auto">
+//               {loadingDaily ? (
+//                 <div className="px-6 py-6"><TableSkeleton /></div>
+//               ) : dailyData && dailyData.length > 0 ? (
+//                 <div className="overflow-x-auto">
+//                   <table className="w-full min-w-[768px]">
+//                     <thead>
+//                       <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+//                         <th className="px-6 py-3.5">Employee</th>
+//                         <th className="px-6 py-3.5">Shift</th>
+//                         <th className="px-6 py-3.5">Clock-in</th>
+//                         <th className="px-6 py-3.5">Clock-out</th>
+//                         <th className="px-6 py-3.5">Status</th>
+//                         <th className="px-6 py-3.5 text-right">OT (min)</th>
+//                         <th className="px-6 py-3.5 text-center">Photo</th>
+//                       </tr>
+//                     </thead>
+//                     <tbody className="divide-y divide-gray-100">
+//                       {dailyData.map((row) => (
+//                         <tr key={row.unique_id} className="hover:bg-gray-50 transition-colors">
+//                           <td className="px-6 py-4">
+//                             <div className="font-medium text-gray-900">{row.name}</div>
+//                             <div className="text-gray-500 text-sm mt-0.5">{row.unique_id}</div>
+//                           </td>
+//                           <td className="px-6 py-4 text-gray-700">{row.shift_name}</td>
+//                           <td className="px-6 py-4 text-gray-600">{formatTime(row.clock_in)}</td>
+//                           <td className="px-6 py-4 text-gray-600">{formatTime(row.clock_out)}</td>
+//                           <td className="px-6 py-4">
+//                             <StatusBadge status={row.status} />
+//                           </td>
+//                           <td className="px-6 py-4 text-right font-medium text-gray-900">
+//                             {row.overtime_minutes || 0}
+//                           </td>
+//                           <td className="px-6 py-4 text-center">
+//                             {row.photo_captured ? (
+//                               <span className="text-emerald-600 text-lg">✓</span>
+//                             ) : (
+//                               <span className="text-gray-300">—</span>
+//                             )}
+//                           </td>
+//                         </tr>
+//                       ))}
+//                     </tbody>
+//                   </table>
+//                 </div>
+//               ) : (
+//                 <div className="px-6 py-12 text-center">
+//                   <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+//                     <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+//                     </svg>
+//                   </div>
+//                   <h3 className="text-lg font-semibold text-gray-900">No Attendance Records</h3>
+//                   <p className="text-gray-500 mt-2 max-w-md mx-auto">
+//                     There are no clock-in/out records for this date. Try selecting a different date or ensure agents have logged in.
+//                   </p>
+//                 </div>
+//               )}
+//             </div>
 //           </div>
-//         </div>
+//         )}
 
 //         {/* Monthly Report */}
-//         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all hover:shadow-md">
-//           <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-//             <div>
-//               <h2 className="text-lg font-semibold text-gray-800">Monthly Summary</h2>
-//               <p className="text-gray-600 text-sm mt-1">
-//                 {monthNames[monthlyMonth - 1]} {monthlyYear}
-//               </p>
-//             </div>
-//             <div className="flex flex-wrap gap-3">
-//               <div className="flex items-center gap-2">
+//         {activeTab === 'monthly' && (
+//           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-md">
+//             <div className="px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+//               <div>
+//                 <h2 className="text-xl font-semibold text-gray-900">Monthly Attendance Summary</h2>
+//                 <p className="text-gray-600 text-sm mt-1">
+//                   {monthNames[monthlyMonth - 1]} {monthlyYear}
+//                 </p>
+//               </div>
+//               <div className="flex flex-wrap items-center gap-3">
 //                 <select
 //                   value={monthlyYear}
 //                   onChange={(e) => setMonthlyYear(Number(e.target.value))}
-//                   className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+//                   className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
 //                 >
-//                   {[2023, 2024, 2025, 2026].map(y => (
+//                   {[2023, 2024, 2025, 2026, 2027, 2028].map(y => (
 //                     <option key={y} value={y}>{y}</option>
 //                   ))}
 //                 </select>
-//               </div>
-//               <div className="flex items-center gap-2">
 //                 <select
 //                   value={monthlyMonth}
 //                   onChange={(e) => setMonthlyMonth(Number(e.target.value))}
-//                   className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+//                   className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
 //                 >
 //                   {monthNames.map((name, idx) => (
 //                     <option key={idx} value={idx + 1}>{name}</option>
 //                   ))}
 //                 </select>
+//                 <button
+//                   onClick={() => handleExport('monthly')}
+//                   className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium px-4 py-2 rounded-lg transition shadow-md hover:shadow-lg"
+//                 >
+//                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+//                   </svg>
+//                   Export XLSX
+//                 </button>
 //               </div>
-//               <button
-//                 onClick={() => handleExport('monthly')}
-//                 className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition shadow-sm hover:shadow"
-//               >
-//                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-//                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-//                 </svg>
-//                 Export XLSX
-//               </button>
+//             </div>
+
+//             <div className="overflow-x-auto">
+//               {loadingMonthly ? (
+//                 <div className="px-6 py-6"><TableSkeleton /></div>
+//               ) : monthlyData && monthlyData.length > 0 ? (
+//                 <div className="overflow-x-auto">
+//                   <table className="w-full min-w-[700px]">
+//                     <thead>
+//                       <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+//                         <th className="px-6 py-3.5">Employee</th>
+//                         <th className="px-6 py-3.5 text-right">Total Days</th>
+//                         <th className="px-6 py-3.5 text-right">Present</th>
+//                         <th className="px-6 py-3.5 text-right">Late</th>
+//                         <th className="px-6 py-3.5 text-right">Absent</th>
+//                         <th className="px-6 py-3.5 text-right">OT (min)</th>
+//                       </tr>
+//                     </thead>
+//                     <tbody className="divide-y divide-gray-100">
+//                       {monthlyData.map((row) => (
+//                         <tr key={row.unique_id} className="hover:bg-gray-50 transition-colors">
+//                           <td className="px-6 py-4">
+//                             <div className="font-medium text-gray-900">{row.name}</div>
+//                             <div className="text-gray-500 text-sm mt-0.5">{row.unique_id}</div>
+//                           </td>
+//                           <td className="px-6 py-4 text-right text-gray-700 font-medium">{row.total_working_days || '—'}</td>
+//                           <td className="px-6 py-4 text-right font-medium text-emerald-700">{row.present}</td>
+//                           <td className="px-6 py-4 text-right font-medium text-amber-700">{row.late}</td>
+//                           <td className="px-6 py-4 text-right font-medium text-rose-700">{row.absent}</td>
+//                           <td className="px-6 py-4 text-right font-medium text-blue-700">{row.total_ot_minutes}</td>
+//                         </tr>
+//                       ))}
+//                     </tbody>
+//                   </table>
+//                 </div>
+//               ) : (
+//                 <div className="px-6 py-12 text-center">
+//                   <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+//                     <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+//                     </svg>
+//                   </div>
+//                   <h3 className="text-lg font-semibold text-gray-900">No Monthly Data Found</h3>
+//                   <p className="text-gray-500 mt-2 max-w-md mx-auto">
+//                     Attendance records for this period are not available. Please select a different month.
+//                   </p>
+//                 </div>
+//               )}
 //             </div>
 //           </div>
-
-//           <div className="overflow-x-auto">
-//             {loadingMonthly ? (
-//               <div className="px-6 py-6"><TableSkeleton /></div>
-//             ) : monthlyData && monthlyData.length > 0 ? ( // ✅ Added monthlyData check
-//               <table className="w-full">
-//                 <thead>
-//                   <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-//                     <th className="px-6 py-3">Employee</th>
-//                     <th className="px-6 py-3 text-right">Total Days</th>
-//                     <th className="px-6 py-3 text-right">Present</th>
-//                     <th className="px-6 py-3 text-right">Late</th>
-//                     <th className="px-6 py-3 text-right">Absent</th>
-//                     <th className="px-6 py-3 text-right">OT (min)</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody className="divide-y divide-gray-200">
-//                   {monthlyData.map((row) => (
-//                     <tr key={row.unique_id || row.employee_id} className="hover:bg-gray-50 transition-colors">
-//                       <td className="px-6 py-4">
-//                         <div className="font-medium text-gray-900">{row.name}</div>
-//                         <div className="text-gray-500 text-sm">{row.unique_id}</div>
-//                       </td>
-//                       <td className="px-6 py-4 text-right text-gray-700">{row.total_working_days || '—'}</td>
-//                       <td className="px-6 py-4 text-right font-medium text-emerald-700">{row.present}</td>
-//                       <td className="px-6 py-4 text-right font-medium text-amber-700">{row.late}</td>
-//                       <td className="px-6 py-4 text-right font-medium text-rose-700">{row.absent}</td>
-//                       <td className="px-6 py-4 text-right font-medium text-blue-700">{row.total_ot_minutes}</td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             ) : (
-//               <div className="px-6 py-12 text-center">
-//                 <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-//                   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-//                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-//                   </svg>
-//                 </div>
-//                 <h3 className="text-lg font-medium text-gray-900">No monthly data</h3>
-//                 <p className="text-gray-500 mt-1">Attendance records not available for this period.</p>
-//               </div>
-//             )}
-//           </div>
-//         </div>
+//         )}
 //       </div>
 //     </div>
 //   );
@@ -308,54 +399,65 @@
 
 
 
-'use client';
 
+// Admin_Attandance/page.jsx
+'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { format, parseISO } from 'date-fns';
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
 
-// Status Badge Component
+// Status Badge Component (Refined)
 const StatusBadge = ({ status }) => {
   const config = {
-    Present: { 
-      bg: 'bg-emerald-100', 
-      text: 'text-emerald-800', 
-      icon: '✓' 
+    Present: {
+      bg: 'bg-emerald-50',
+      text: 'text-emerald-700',
+      border: 'border-emerald-200',
+      icon: '✓'
     },
-    Late: { 
-      bg: 'bg-amber-100', 
-      text: 'text-amber-800', 
-      icon: '⚠️' 
+    Late: {
+      bg: 'bg-amber-50',
+      text: 'text-amber-700',
+      border: 'border-amber-200',
+      icon: '⚠️'
     },
-    Absent: { 
-      bg: 'bg-rose-100', 
-      text: 'text-rose-800', 
-      icon: '✗' 
+    'Early Clock Out': { // Added new status badge
+      bg: 'bg-orange-50',
+      text: 'text-orange-700',
+      border: 'border-orange-200',
+      icon: '⏱️'
     },
-  }[status] || { 
-    bg: 'bg-gray-100', 
-    text: 'text-gray-800', 
-    icon: '–' 
+    Absent: {
+      bg: 'bg-rose-50',
+      text: 'text-rose-700',
+      border: 'border-rose-200',
+      icon: '✗'
+    },
+  }[status] || {
+    bg: 'bg-gray-50',
+    text: 'text-gray-600',
+    border: 'border-gray-200',
+    icon: '–'
   };
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
-      {config.icon} {status}
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium text-sm border ${config.bg} ${config.text} ${config.border}`}>
+      <span>{config.icon}</span> {status}
     </span>
   );
 };
 
-// Skeleton Loader
+// Skeleton Loader (Enhanced)
 const TableSkeleton = () => (
   <div className="animate-pulse">
-    {[...Array(5)].map((_, i) => (
-      <div key={i} className="flex items-center justify-between py-4 border-b border-gray-200">
+    {[...Array(6)].map((_, i) => (
+      <div key={i} className="flex items-center justify-between py-4 border-b border-gray-100">
         <div className="flex items-center gap-4">
-          <div className="w-24 h-4 bg-gray-200 rounded"></div>
-          <div className="w-32 h-4 bg-gray-200 rounded"></div>
+          <div className="w-20 h-4 bg-gray-200 rounded"></div>
+          <div className="w-28 h-4 bg-gray-200 rounded"></div>
         </div>
-        <div className="w-16 h-4 bg-gray-200 rounded"></div>
+        <div className="w-12 h-4 bg-gray-200 rounded"></div>
       </div>
     ))}
   </div>
@@ -374,7 +476,6 @@ export default function AdminDashboard() {
   const fetchDaily = useCallback(async () => {
     setLoadingDaily(true);
     try {
-      // Remove 'clockin' from path to match your backend route
       const res = await fetch(`${API_BASE}/clockin/admin/daily?date=${date}`);
       const result = await res.json();
       setDailyData(result.success ? result.data : []);
@@ -389,7 +490,6 @@ export default function AdminDashboard() {
   const fetchMonthly = useCallback(async () => {
     setLoadingMonthly(true);
     try {
-      // Remove 'clockin' from path to match your backend route
       const res = await fetch(`${API_BASE}/clockin/admin/monthly?year=${monthlyYear}&month=${monthlyMonth}`);
       const result = await res.json();
       setMonthlyData(result.success ? result.data : []);
@@ -405,13 +505,13 @@ export default function AdminDashboard() {
   useEffect(() => { fetchMonthly(); }, [fetchMonthly]);
 
   const handleExport = (type) => {
-    // Remove 'clockin' from path to match your backend route
-    const url = `${API_BASE}/clockin/admin/export?type=${type}`;
+    let url = `${API_BASE}/clockin/admin/export?type=${type}`;
     if (type === 'daily') {
-      window.open(`${url}&date=${date}`, '_blank');
-    } else {
-      window.open(`${url}&year=${monthlyYear}&month=${monthlyMonth}`, '_blank');
+      url += `&date=${date}`;
+    } else if (type === 'monthly') {
+      url += `&year=${monthlyYear}&month=${String(monthlyMonth).padStart(2, '0')}`;
     }
+    window.open(url, '_blank'); // Open export in new tab
   };
 
   const monthNames = [
@@ -430,65 +530,116 @@ export default function AdminDashboard() {
 
   // Summary cards data
   const dailySummary = {
-    present: dailyData.filter(e => e.status === 'Present').length,
+    present: dailyData.filter(e => e.status === 'Present' || e.status === 'Late' || e.status === 'Early Clock Out').length,
     late: dailyData.filter(e => e.status === 'Late').length,
+    earlyClockOut: dailyData.filter(e => e.status === 'Early Clock Out').length,
     absent: dailyData.filter(e => e.status === 'Absent').length
   };
 
   const monthlySummary = monthlyData.reduce((acc, emp) => {
     acc.present += emp.present;
     acc.late += emp.late;
+    acc.earlyClockOut += emp.early_clock_out || 0; // Assuming backend sends 'early_clock_out'
     acc.absent += emp.absent;
     acc.totalOt += emp.total_ot_minutes || 0;
     return acc;
-  }, { present: 0, late: 0, absent: 0, totalOt: 0 });
+  }, { present: 0, late: 0, earlyClockOut: 0, absent: 0, totalOt: 0 });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Attendance Analytics</h1>
-          <p className="text-gray-600 mt-2">Monitor team attendance and productivity in real-time</p>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Attendance Analytics</h1>
+          <p className="text-gray-600 mt-2">View and analyze daily and monthly attendance reports.</p>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-            <h3 className="text-gray-500 text-sm font-medium">Daily Present</h3>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">{dailySummary.present}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all duration-200 hover:shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-gray-500 text-sm font-medium">Today Present</h3>
+                <p className="text-2xl font-bold text-emerald-700 mt-1">{dailySummary.present}</p>
+              </div>
+            </div>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-            <h3 className="text-gray-500 text-sm font-medium">Daily Late</h3>
-            <p className="text-2xl font-bold text-amber-600 mt-1">{dailySummary.late}</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all duration-200 hover:shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-gray-500 text-sm font-medium">Today Late</h3>
+                <p className="text-2xl font-bold text-amber-700 mt-1">{dailySummary.late}</p>
+              </div>
+            </div>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-            <h3 className="text-gray-500 text-sm font-medium">Daily Absent</h3>
-            <p className="text-2xl font-bold text-rose-600 mt-1">{dailySummary.absent}</p>
+           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all duration-200 hover:shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-gray-500 text-sm font-medium">Early Clock Out</h3>
+                <p className="text-2xl font-bold text-orange-700 mt-1">{dailySummary.earlyClockOut}</p>
+              </div>
+            </div>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-            <h3 className="text-gray-500 text-sm font-medium">Monthly OT (min)</h3>
-            <p className="text-2xl font-bold text-blue-600 mt-1">{monthlySummary.totalOt}</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all duration-200 hover:shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-rose-100 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-gray-500 text-sm font-medium">Today Absent</h3>
+                <p className="text-2xl font-bold text-rose-700 mt-1">{dailySummary.absent}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all duration-200 hover:shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-gray-500 text-sm font-medium">Monthly OT (hrs)</h3>
+                <p className="text-2xl font-bold text-blue-700 mt-1">{Math.floor(monthlySummary.totalOt / 60)}</p>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 mb-6">
+        <div className="flex border-b border-gray-200 mb-8">
           <button
-            className={`px-4 py-2 font-medium text-sm ${
+            className={`px-5 py-3 font-medium text-sm relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 ${
               activeTab === 'daily'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-blue-700 after:bg-blue-600'
+                : 'text-gray-600 hover:text-gray-900 after:bg-transparent'
             }`}
             onClick={() => setActiveTab('daily')}
           >
             Daily Attendance
           </button>
           <button
-            className={`px-4 py-2 font-medium text-sm ml-6 ${
+            className={`px-5 py-3 font-medium text-sm relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 ml-8 ${
               activeTab === 'monthly'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-blue-700 after:bg-blue-600'
+                : 'text-gray-600 hover:text-gray-900 after:bg-transparent'
             }`}
             onClick={() => setActiveTab('monthly')}
           >
@@ -498,28 +649,28 @@ export default function AdminDashboard() {
 
         {/* Daily Report */}
         {activeTab === 'daily' && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all hover:shadow-md">
-            <div className="px-6 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-md">
+            <div className="px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-800">Daily Attendance Report</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Daily Attendance Report</h2>
                 <p className="text-gray-600 text-sm mt-1">
                   {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <label htmlFor="daily-date" className="text-sm font-medium text-gray-700">Date:</label>
+                  <label htmlFor="daily-date" className="text-sm font-medium text-gray-700 whitespace-nowrap">Select Date:</label>
                   <input
                     id="daily-date"
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                   />
                 </div>
                 <button
                   onClick={() => handleExport('daily')}
-                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition shadow-sm hover:shadow"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium px-4 py-2 rounded-lg transition shadow-md hover:shadow-lg"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -528,49 +679,47 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </div>
-
             <div className="overflow-x-auto">
               {loadingDaily ? (
                 <div className="px-6 py-6"><TableSkeleton /></div>
               ) : dailyData && dailyData.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[700px]">
+                  <table className="w-full min-w-[800px]">
                     <thead>
                       <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <th className="px-6 py-3">Employee</th>
-                        <th className="px-6 py-3">Shift</th>
-                        <th className="px-6 py-3">Clock-in</th>
-                        <th className="px-6 py-3">Clock-out</th>
-                        <th className="px-6 py-3">Status</th>
-                        <th className="px-6 py-3 text-right">OT (min)</th>
-                        <th className="px-6 py-3 text-center">Photo</th>
+                        <th className="px-6 py-3.5">Employee</th>
+                        <th className="px-6 py-3.5">Shift</th>
+                        <th className="px-6 py-3.5">Clock-in</th>
+                        <th className="px-6 py-3.5">Clock-out</th>
+                        <th className="px-6 py-3.5">Status</th>
+                        <th className="px-6 py-3.5 text-right">OT (min)</th>
+                        <th className="px-6 py-3.5 text-center">Photo</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-100">
                       {dailyData.map((row) => (
                         <tr key={row.unique_id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4">
                             <div className="font-medium text-gray-900">{row.name}</div>
-                            <div className="text-gray-500 text-sm">{row.unique_id}</div>
+                            <div className="text-gray-500 text-sm mt-0.5">{row.unique_id}</div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-700">{row.shift_name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                            {formatTime(row.clock_in)}
+                          <td className="px-6 py-4 text-gray-700">
+                              <div>{row.shift_name}</div>
+                              <div className="text-xs text-gray-500">{row.shift_start} - {row.shift_end}</div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                            {formatTime(row.clock_out)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 text-gray-600">{formatTime(row.clock_in)}</td>
+                          <td className="px-6 py-4 text-gray-600">{formatTime(row.clock_out)}</td>
+                          <td className="px-6 py-4">
                             <StatusBadge status={row.status} />
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right font-medium text-gray-900">
+                          <td className="px-6 py-4 text-right font-medium text-gray-900">
                             {row.overtime_minutes || 0}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <td className="px-6 py-4 text-center">
                             {row.photo_captured ? (
-                              <span className="text-green-600 text-xl">✓</span>
+                              <span className="text-emerald-600 text-lg">✓</span>
                             ) : (
-                              <span className="text-gray-300">–</span>
+                              <span className="text-gray-300">—</span>
                             )}
                           </td>
                         </tr>
@@ -580,13 +729,15 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="px-6 py-12 text-center">
-                  <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900">No attendance records</h3>
-                  <p className="text-gray-500 mt-1">No data found for this date. Try selecting a different date.</p>
+                  <h3 className="text-lg font-semibold text-gray-900">No Attendance Records</h3>
+                  <p className="text-gray-500 mt-2 max-w-md mx-auto">
+                    There are no clock-in/out records for this date. Try selecting a different date or ensure agents have logged in.
+                  </p>
                 </div>
               )}
             </div>
@@ -595,40 +746,36 @@ export default function AdminDashboard() {
 
         {/* Monthly Report */}
         {activeTab === 'monthly' && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all hover:shadow-md">
-            <div className="px-6 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-md">
+            <div className="px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-800">Monthly Attendance Summary</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Monthly Attendance Summary</h2>
                 <p className="text-gray-600 text-sm mt-1">
                   {monthNames[monthlyMonth - 1]} {monthlyYear}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-3">
-                <div className="flex items-center gap-2">
-                  <select
-                    value={monthlyYear}
-                    onChange={(e) => setMonthlyYear(Number(e.target.value))}
-                    className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  >
-                    {[2023, 2024, 2025, 2026].map(y => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={monthlyMonth}
-                    onChange={(e) => setMonthlyMonth(Number(e.target.value))}
-                    className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  >
-                    {monthNames.map((name, idx) => (
-                      <option key={idx} value={idx + 1}>{name}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <select
+                  value={monthlyYear}
+                  onChange={(e) => setMonthlyYear(Number(e.target.value))}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                  {[2023, 2024, 2025, 2026, 2027, 2028].map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+                <select
+                  value={monthlyMonth}
+                  onChange={(e) => setMonthlyMonth(Number(e.target.value))}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                  {monthNames.map((name, idx) => (
+                    <option key={idx} value={idx + 1}>{name}</option>
+                  ))}
+                </select>
                 <button
                   onClick={() => handleExport('monthly')}
-                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition shadow-sm hover:shadow"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium px-4 py-2 rounded-lg transition shadow-md hover:shadow-lg"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -637,35 +784,38 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </div>
-
             <div className="overflow-x-auto">
               {loadingMonthly ? (
                 <div className="px-6 py-6"><TableSkeleton /></div>
               ) : monthlyData && monthlyData.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[700px]">
+                  <table className="w-full min-w-[900px]">
                     <thead>
                       <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <th className="px-6 py-3">Employee</th>
-                        <th className="px-6 py-3 text-right">Total Days</th>
-                        <th className="px-6 py-3 text-right">Present</th>
-                        <th className="px-6 py-3 text-right">Late</th>
-                        <th className="px-6 py-3 text-right">Absent</th>
-                        <th className="px-6 py-3 text-right">OT (min)</th>
+                        <th className="px-6 py-3.5">Employee</th>
+                        <th className="px-6 py-3.5 text-right">Total Days</th>
+                        <th className="px-6 py-3.5 text-right">Present</th>
+                        <th className="px-6 py-3.5 text-right">Late</th>
+                         <th className="px-6 py-3.5 text-right">Early Clock Out</th>
+                        <th className="px-6 py-3.5 text-right">Absent</th>
+                        <th className="px-6 py-3.5 text-right">OT (min)</th>
+                        <th className="px-6 py-3.5 text-right">OT (hrs)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-100">
                       {monthlyData.map((row) => (
                         <tr key={row.unique_id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4">
                             <div className="font-medium text-gray-900">{row.name}</div>
-                            <div className="text-gray-500 text-sm">{row.unique_id}</div>
+                            <div className="text-gray-500 text-sm mt-0.5">{row.unique_id}</div>
                           </td>
-                          <td className="px-6 py-4 text-right text-gray-700">{row.total_working_days || '—'}</td>
+                          <td className="px-6 py-4 text-right text-gray-700 font-medium">{row.total_working_days || '—'}</td>
                           <td className="px-6 py-4 text-right font-medium text-emerald-700">{row.present}</td>
                           <td className="px-6 py-4 text-right font-medium text-amber-700">{row.late}</td>
+                           <td className="px-6 py-4 text-right font-medium text-orange-700">{row.early_clock_out || 0}</td>
                           <td className="px-6 py-4 text-right font-medium text-rose-700">{row.absent}</td>
                           <td className="px-6 py-4 text-right font-medium text-blue-700">{row.total_ot_minutes}</td>
+                          <td className="px-6 py-4 text-right font-medium text-blue-700">{Math.floor(row.total_ot_minutes / 60)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -673,13 +823,15 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="px-6 py-12 text-center">
-                  <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900">No monthly data</h3>
-                  <p className="text-gray-500 mt-1">No attendance records found for this period.</p>
+                  <h3 className="text-lg font-semibold text-gray-900">No Monthly Data Found</h3>
+                  <p className="text-gray-500 mt-2 max-w-md mx-auto">
+                    Attendance records for this period are not available. Please select a different month.
+                  </p>
                 </div>
               )}
             </div>
