@@ -906,13 +906,27 @@ const TableSkeleton = () => (
   </div>
 );
 
-// Helper function to calculate late minutes on the frontend
-function calculateLateMinutes(clockIn, shiftStart, graceMinutes = 0) {
-  if (!clockIn || !shiftStart) return 0;
+// Helper function to calculate status, late minutes, and early clock-out minutes on the frontend
+function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, graceMinutes = 0, earlyGraceMinutes = 15) {
+  const details = {
+    status: 'Absent',
+    late_minutes: 0,
+    early_clock_out_minutes: 0
+  };
+
+  if (!clockIn) {
+    // No clock-in, status remains 'Absent'
+    return details;
+  }
 
   const clockInDate = new Date(clockIn);
-  const shiftStartParsed = parse(shiftStart, 'HH:mm:ss', new Date()); // Parse time string
-  // Create a full date object for shift start on the same day as clock-in
+  const clockOutDate = clockOut ? new Date(clockOut) : null;
+
+  // Parse shift times
+  const shiftStartParsed = parse(shiftStart, 'HH:mm:ss', new Date());
+  const shiftEndParsed = parse(shiftEnd, 'HH:mm:ss', new Date());
+
+  // Create full date objects for shift start/end on the same day as clock-in
   const shiftStartDate = new Date(
     clockInDate.getFullYear(),
     clockInDate.getMonth(),
@@ -922,13 +936,37 @@ function calculateLateMinutes(clockIn, shiftStart, graceMinutes = 0) {
     shiftStartParsed.getSeconds()
   );
 
-  const shiftStartWithGrace = new Date(shiftStartDate.getTime() + graceMinutes * 60000); // Add grace in milliseconds
+  const shiftEndDate = new Date(
+    clockInDate.getFullYear(),
+    clockInDate.getMonth(),
+    clockInDate.getDate(),
+    shiftEndParsed.getHours(),
+    shiftEndParsed.getMinutes(),
+    shiftEndParsed.getSeconds()
+  );
 
+  // Calculate late minutes
+  const shiftStartWithGrace = new Date(shiftStartDate.getTime() + graceMinutes * 60000); // Add grace in milliseconds
   if (clockInDate > shiftStartWithGrace) {
-    const diffMs = clockInDate - shiftStartWithGrace;
-    return Math.floor(diffMs / 60000); // Convert to minutes
+    details.late_minutes = Math.floor((clockInDate - shiftStartWithGrace) / 60000); // Convert to minutes
+    details.status = 'Late';
+  } else {
+    details.status = 'Present'; // Or 'On-Time' if you prefer
   }
-  return 0;
+
+  // Calculate early clock-out minutes (if clocked out)
+  if (clockOutDate) {
+    const shiftEndWithEarlyGrace = new Date(shiftEndDate.getTime() - earlyGraceMinutes * 60000); // Subtract early grace in milliseconds
+    if (clockOutDate < shiftEndWithEarlyGrace) {
+      details.early_clock_out_minutes = Math.floor((shiftEndWithEarlyGrace - clockOutDate) / 60000); // Convert to minutes
+      // If status was already 'Late', keep it as 'Late'. Otherwise, set to 'Early Clock Out'.
+      if (details.status === 'Present') {
+        details.status = 'Early Clock Out';
+      }
+    }
+  }
+
+  return details;
 }
 
 export default function AdminDashboard() {
@@ -946,7 +984,23 @@ export default function AdminDashboard() {
     try {
       const res = await fetch(`${API_BASE}/clockin/admin/daily?date=${date}`);
       const result = await res.json();
-      setDailyData(result.success ? result.data : []);
+      // Process daily data to calculate status and times on the frontend
+      const processedData = (result.success ? result.data : []).map(employee => {
+        const { status, late_minutes, early_clock_out_minutes } = calculateAttendanceDetails(
+          employee.clock_in,
+          employee.clock_out,
+          employee.shift_start, // Assuming this is in HH:MM:SS format
+          employee.shift_end,   // Assuming this is in HH:MM:SS format
+          0 // Grace minutes, can be made configurable if needed
+        );
+        return {
+          ...employee,
+          status, // Override backend status with frontend calculation
+          late_minutes,
+          early_clock_out_minutes
+        };
+      });
+      setDailyData(processedData);
     } catch (err) {
       console.error('Failed to fetch daily data', err);
       setDailyData([]);
@@ -996,9 +1050,9 @@ export default function AdminDashboard() {
     }
   };
 
-  // Summary cards data
+  // Summary cards data - Now uses frontend-calculated status
   const dailySummary = {
-    present: dailyData.filter(e => e.status === 'Present' || e.status === 'Late' || e.status === 'Early Clock Out').length,
+    present: dailyData.filter(e => e.status === 'Present').length,
     late: dailyData.filter(e => e.status === 'Late').length,
     earlyClockOut: dailyData.filter(e => e.status === 'Early Clock Out').length,
     absent: dailyData.filter(e => e.status === 'Absent').length
@@ -1007,20 +1061,11 @@ export default function AdminDashboard() {
   const monthlySummary = monthlyData.reduce((acc, emp) => {
     acc.present += emp.present;
     acc.late += emp.late;
-    acc.earlyClockOut += emp.early_clock_out || 0; // Assuming backend sends 'early_clock_out'
+    acc.earlyClockOut += emp.early_clock_out || 0;
     acc.absent += emp.absent;
     acc.totalOt += emp.total_ot_minutes || 0;
     return acc;
   }, { present: 0, late: 0, earlyClockOut: 0, absent: 0, totalOt: 0 });
-
-  // Pre-process daily data to add late minutes
-  const processedDailyData = dailyData.map(employee => {
-    const lateMinutes = calculateLateMinutes(employee.clock_in, employee.shift_start, 0); // Assuming grace is handled in status
-    return {
-      ...employee,
-      late_minutes: lateMinutes
-    };
-  });
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
@@ -1159,9 +1204,9 @@ export default function AdminDashboard() {
             <div className="overflow-x-auto">
               {loadingDaily ? (
                 <div className="px-6 py-6"><TableSkeleton /></div>
-              ) : processedDailyData && processedDailyData.length > 0 ? (
+              ) : dailyData && dailyData.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[900px]"> {/* Increased min-width for new column */}
+                  <table className="w-full min-w-[900px]">
                     <thead>
                       <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         <th className="px-6 py-3.5">Employee</th>
@@ -1169,13 +1214,14 @@ export default function AdminDashboard() {
                         <th className="px-6 py-3.5">Clock-in</th>
                         <th className="px-6 py-3.5">Clock-out</th>
                         <th className="px-6 py-3.5">Status</th>
-                        <th className="px-6 py-3.5 text-right">Late Min</th> {/* New column */}
+                        <th className="px-6 py-3.5 text-right">Late Min</th>
+                        <th className="px-6 py-3.5 text-right">Early Min</th> {/* New column */}
                         <th className="px-6 py-3.5 text-right">OT (min)</th>
                         <th className="px-6 py-3.5 text-center">Photo</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {processedDailyData.map((row) => (
+                      {dailyData.map((row) => (
                         <tr key={row.unique_id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4">
                             <div className="font-medium text-gray-900">{row.name}</div>
@@ -1188,10 +1234,13 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4 text-gray-600">{formatTime(row.clock_in)}</td>
                           <td className="px-6 py-4 text-gray-600">{formatTime(row.clock_out)}</td>
                           <td className="px-6 py-4">
-                            <StatusBadge status={row.status} />
+                            <StatusBadge status={row.status} /> {/* Now uses frontend-calculated status */}
                           </td>
-                          <td className="px-6 py-4 text-right font-medium text-amber-700"> {/* New column */}
+                          <td className="px-6 py-4 text-right font-medium text-amber-700">
                             {row.status === 'Late' ? row.late_minutes : '—'}
+                          </td>
+                          <td className="px-6 py-4 text-right font-medium text-orange-700"> {/* New column */}
+                            {row.status === 'Early Clock Out' ? row.early_clock_out_minutes : '—'}
                           </td>
                           <td className="px-6 py-4 text-right font-medium text-gray-900">
                             {row.overtime_minutes || 0}
