@@ -444,6 +444,7 @@ function Dashboard() {
               {(userRole === 1 ) && (
                 <Link
                   href="/admin-attendance"
+                  // href="/Admin_Attendance"
                   className="group bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 transform hover:-translate-y-1 hover:border-red-300"
                 >
                   <h2 className="text-lg font-semibold text-gray-800 group-hover:text-red-600 transition-colors">
