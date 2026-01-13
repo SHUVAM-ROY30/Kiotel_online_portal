@@ -197,7 +197,7 @@ def get_user_email():
             cursor.execute("SELECT * FROM tblusers WHERE id = %s", (user_id,))
             user = cursor.fetchone()
             if user:
-                return jsonify({"fname": user['fname'],"lname": user['lname'], "role": user["role_id"],"email": user['emailid'],"id": user['id'],"link": user['link']})
+                return jsonify({"fname": user['fname'],"lname": user['lname'], "role": user["role_id"],"email": user['emailid'],"id": user['id'],"link": user['link'],"unique_id":user["account_no"]})
             else:
                 return jsonify({"error": "User not found"}), 404
     except pymysql.MySQLError as e:

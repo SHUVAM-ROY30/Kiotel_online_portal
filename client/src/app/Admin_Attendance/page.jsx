@@ -1404,6 +1404,12 @@ const StatusBadge = ({ status }) => {
       border: 'border-orange-200',
       icon: '⏱️'
     },
+    'Late & Early': { // New status for when both conditions are met
+      bg: 'bg-purple-50',
+      text: 'text-purple-700',
+      border: 'border-purple-200',
+      icon: '⚠️⏱️'
+    },
     Absent: {
       bg: 'bg-rose-50',
       text: 'text-rose-700',
@@ -1482,18 +1488,21 @@ function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, gra
   const shiftStartWithGrace = new Date(shiftStartDate.getTime() + graceMinutes * 60000); // Add grace in milliseconds
   if (clockInDate > shiftStartWithGrace) {
     details.late_minutes = Math.floor((clockInDate - shiftStartWithGrace) / 60000); // Convert to minutes
-    details.status = 'Late';
+    details.status = 'Late'; // Set initial status to Late
   } else {
     details.status = 'Present'; // Or 'On-Time' if you prefer
   }
 
   // Calculate early clock-out minutes (if clocked out)
   if (clockOutDate) {
+    // Early clock out: clock_out < shift_end - grace
     const shiftEndWithEarlyGrace = new Date(shiftEndDate.getTime() - earlyGraceMinutes * 60000); // Subtract early grace in milliseconds
     if (clockOutDate < shiftEndWithEarlyGrace) {
       details.early_clock_out_minutes = Math.floor((shiftEndWithEarlyGrace - clockOutDate) / 60000); // Convert to minutes
-      // If status was already 'Late', keep it as 'Late'. Otherwise, set to 'Early Clock Out'.
-      if (details.status === 'Present') {
+      // If status was already 'Late', set to 'Late & Early'. Otherwise, set to 'Early Clock Out'.
+      if (details.status === 'Late') {
+        details.status = 'Late & Early';
+      } else {
         details.status = 'Early Clock Out';
       }
     }
@@ -1574,8 +1583,8 @@ export default function AdminDashboard() {
         'Clock In': row.clock_in ? format(parseISO(row.clock_in), 'h:mm a') : '—', // Format time
         'Clock Out': row.clock_out ? format(parseISO(row.clock_out), 'h:mm a') : '—', // Format time
         'Status': row.status,
-        'Late Minutes': row.status === 'Late' ? row.late_minutes : '—',
-        'Early Clock Out (Min)': row.status === 'Early Clock Out' ? row.early_clock_out_minutes : '—',
+        'Late Minutes': row.late_minutes || '—', // Always show late minutes if calculated
+        'Early Clock Out (Min)': row.early_clock_out_minutes || '—', // Always show early minutes if calculated
         'OT (Min)': row.overtime_minutes || 0,
         'Photo Captured': row.photo_captured ? 'Yes' : 'No'
       }));
@@ -1621,8 +1630,8 @@ export default function AdminDashboard() {
   // Summary cards data - Now uses frontend-calculated status
   const dailySummary = {
     present: dailyData.filter(e => e.status === 'Present').length,
-    late: dailyData.filter(e => e.status === 'Late').length,
-    earlyClockOut: dailyData.filter(e => e.status === 'Early Clock Out').length,
+    late: dailyData.filter(e => e.status === 'Late' || e.status === 'Late & Early').length,
+    earlyClockOut: dailyData.filter(e => e.status === 'Early Clock Out' || e.status === 'Late & Early').length,
     absent: dailyData.filter(e => e.status === 'Absent').length
   };
 
@@ -1805,10 +1814,10 @@ export default function AdminDashboard() {
                             <StatusBadge status={row.status} /> {/* Now uses frontend-calculated status */}
                           </td>
                           <td className="px-6 py-4 text-right font-medium text-amber-700">
-                            {row.status === 'Late' ? row.late_minutes : '—'}
+                            {row.late_minutes || '—'}
                           </td>
                           <td className="px-6 py-4 text-right font-medium text-orange-700"> {/* New column */}
-                            {row.status === 'Early Clock Out' ? row.early_clock_out_minutes : '—'}
+                            {row.early_clock_out_minutes || '—'}
                           </td>
                           <td className="px-6 py-4 text-right font-medium text-gray-900">
                             {row.overtime_minutes || 0}

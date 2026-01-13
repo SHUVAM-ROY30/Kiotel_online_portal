@@ -285,6 +285,7 @@ function Dashboard() {
   const [userFname, setUserFname] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
+  const [userUniqueID, setuserUniqueID] = useState(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -301,6 +302,7 @@ function Dashboard() {
         setUserFname(res.data.fname);
         setUserRole(res.data.role);
         setUserEmail(res.data.email);
+        setuserUniqueID(res.data.unique_id);
       } catch (err) {
         console.error("Failed to fetch user:", err);
         setError("Failed to fetch user details");
@@ -344,7 +346,7 @@ function Dashboard() {
               ? "Loading..."
               : error
               ? "Error loading user"
-              : `Welcome, ${userFname}`}
+              : `Welcome, ${userFname}, ${userUniqueID}`}
           </h1>
 
           <div className="flex items-center space-x-4">
