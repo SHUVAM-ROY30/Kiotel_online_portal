@@ -727,17 +727,25 @@
 
 'use client';
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
 import PhotoCapture from './PhotoCapture';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || '/api';
+const ALLOWED_EMAIL = 'Clockin@kiotel.co';
 
 export default function ClockPage() {
-  const [step, setStep] = useState('id'); // 'id' | 'shift' | 'action'
+  const router = useRouter();
+
+  // Auth state
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Clock-in flow state
+  const [step, setStep] = useState('id');
   const [accountNo, setAccountNo] = useState('');
   const [employee, setEmployee] = useState(null);
-  const [allShifts, setAllShifts] = useState([]); // Store ALL fetched shifts
-  const [showQAShifts, setShowQAShifts] = useState(false); // Toggle for QA shifts
+  const [allShifts, setAllShifts] = useState([]);
   const [selectedShift, setSelectedShift] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -747,10 +755,40 @@ export default function ClockPage() {
   const [photoCaptured, setPhotoCaptured] = useState(false);
   const [photoData, setPhotoData] = useState(null);
   const [photoType, setPhotoType] = useState('clock_in');
-   const [shiftCategory, setShiftCategory] = useState('General');
+  const [shiftCategory, setShiftCategory] = useState('General'); // 'General' | 'QA SPECIAL'
 
-  // Fetch all shifts on mount
+  // 🔐 AUTHORIZATION CHECK — Runs ONCE
   useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          { withCredentials: true }
+        );
+
+        const userEmail = res.data.email;
+
+        if (userEmail !== ALLOWED_EMAIL) {
+          router.push('/sign-in?error=access_denied');
+          return;
+        }
+
+        setIsAuthorized(true);
+      } catch (err) {
+        console.error('Auth check failed:', err);
+        router.push('/sign-in?error=session_expired');
+      } finally {
+        setAuthChecked(true);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  // 📥 FETCH SHIFTS — Only after auth is confirmed
+  useEffect(() => {
+    if (!isAuthorized) return;
+
     const fetchShifts = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/clockin/shifts`);
@@ -758,25 +796,28 @@ export default function ClockPage() {
         if (res.ok && Array.isArray(data)) {
           setAllShifts(data);
         } else {
-          console.error('Failed to fetch shifts');
           setAllShifts([]);
         }
       } catch (err) {
-        console.error('Network error fetching shifts', err);
+        console.error('Fetch shifts error', err);
         setAllShifts([]);
       }
     };
-    fetchShifts();
-  }, []);
 
- // 🔑 Exclusive filter: only one category at a time
+    fetchShifts();
+  }, [isAuthorized]); // 👈 Dependency on isAuthorized
+
+  // 🔑 Filter shifts by category (using category_id)
   const availableShifts = allShifts.filter(shift => {
     if (shiftCategory === 'General') return shift.category_id === 1;
     if (shiftCategory === 'QA SPECIAL') return shift.category_id === 2;
     return false;
   });
 
-  // Step 1: Enter Employee ID
+  // ======================
+  // Remaining functions (unchanged)
+  // ======================
+
   const handleIdSubmit = async (e) => {
     e.preventDefault();
     if (!accountNo.trim()) return;
@@ -803,12 +844,10 @@ export default function ClockPage() {
     }
   };
 
-  // Step 2: Select shift
   const handleShiftSelection = (shift) => {
     setSelectedShift(shift);
   };
 
-  // Step 2.5: Confirm Shift
   const handleConfirmShift = async () => {
     if (!selectedShift || !accountNo) {
       setMessage('Please select a shift and ensure your ID is entered.');
@@ -869,7 +908,6 @@ export default function ClockPage() {
     }
   };
 
-  // Step 3: Handle photo capture
   const handlePhotoCapture = (dataUrl) => {
     setPhotoData(dataUrl);
   };
@@ -878,7 +916,6 @@ export default function ClockPage() {
     setPhotoData(null);
   };
 
-  // Step 4: Submit clock action
   const handleSubmitPhoto = async () => {
     if (!photoData || !selectedShift) return;
     
@@ -944,9 +981,25 @@ export default function ClockPage() {
     setClockInTime(null);
     setClockOutTime(null);
     setPhotoType('clock_in');
-    setShowQAShifts(false); // Reset toggle
-    setShiftCategory('General'); 
+    setShiftCategory('General');
   };
+
+  // 🚫 Loading / Redirect State
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-600">Verifying access...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return null; // Redirect already triggered
+  }
+
+  // ======================
+  // UI RENDERING
+  // ======================
 
   if (step === 'id') {
     return (
@@ -987,8 +1040,7 @@ export default function ClockPage() {
     );
   }
 
-  // Step 2: Select Shift
-   if (step === 'shift') {
+  if (step === 'shift') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6 border border-blue-100">
@@ -1000,7 +1052,7 @@ export default function ClockPage() {
             <p className="text-gray-600 text-sm">ID: {employee?.unique_id || 'N/A'}</p>
           </div>
 
-          {/* 🔘 Exclusive Category Selector */}
+          {/* Category Toggle */}
           <div className="flex justify-center mb-5">
             <div className="inline-flex rounded-md shadow-sm" role="group">
               <button
@@ -1031,7 +1083,7 @@ export default function ClockPage() {
           <div className="mb-6">
             {availableShifts.length === 0 ? (
               <p className="text-gray-500 text-center py-4">
-                No {shiftCategory === 'general' ? 'General' : 'QA Special'} shifts available.
+                No {shiftCategory} shifts available.
               </p>
             ) : (
               <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
@@ -1089,10 +1141,7 @@ export default function ClockPage() {
     );
   }
 
-  // ... (keep step === 'action' unchanged)
-
-
-  // Step 3: Clock Action
+  // Step: action (photo capture)
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6 border border-blue-100">
@@ -1110,8 +1159,8 @@ export default function ClockPage() {
 
         {message && (
           <div className={`text-center mb-5 p-3 rounded-lg ${
-            message.includes('Clocked in') ? 'bg-green-100 text-green-800' :
             message.includes('Clocked out') ? 'bg-blue-100 text-blue-800' :
+            message.includes('Clocked in') ? 'bg-green-100 text-green-800' :
             'bg-blue-100 text-blue-800'
           }`}>
             {message}
