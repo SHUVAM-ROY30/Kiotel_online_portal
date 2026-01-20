@@ -230,9 +230,19 @@ const ScheduleMainView = ({
 
   const displayedEmployees = filteredEmployees;
   const displayedDates = weekDays;
-  const displayedDateStrings = displayedDates.map(d =>
-    `${format(d, "EEE")} (${format(d, "yyyy-MM-dd")})`
-  );
+  // const displayedDateStrings = displayedDates.map(d =>
+  //   `${format(d, "EEE")} (${format(d, "yyyy-MM-dd")})`
+  // );
+
+  const displayedDayStrings = displayedDates.map(date =>
+  format(date, "EEE")
+);
+
+const displayedDateStrings = displayedDates.map(date =>
+  format(date, "yyyy-MM-dd")
+);
+
+
 
   const shiftNames = shiftTypes.map(st => st.name);
   const leaveNames = leaveTypes.map(lt => lt.name);
@@ -247,6 +257,7 @@ const ScheduleMainView = ({
   dataRows.push(["Available Assignments:"]);
   dataRows.push(["", ...allAvailableAssignments]);
   dataRows.push(["Copy the available shifts from above and Paste according to you:"]);
+  dataRows.push(["", ...displayedDayStrings]);
   dataRows.push(["Employee Name", ...displayedDateStrings]);
   dataRows.push([""]);
 
@@ -300,7 +311,7 @@ const ScheduleMainView = ({
     {
       state: "frozen",
       xSplit: 1, // Employee Name
-      ySplit: 5  // Top instruction + header rows
+      ySplit: 6  // Top instruction + header rows
     }
   ];
 
