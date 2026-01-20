@@ -85,245 +85,245 @@ const ScheduleMainView = ({
   const [dragStartCell, setDragStartCell] = useState(null);
   const tableBodyRef = useRef(null);
 
-  // --- UPDATED: Function to Download Currently Displayed Schedule Data with Comprehensive Instructions ---
-  const downloadScheduleData = () => {
-    if (!currentSchedule || !scheduleEntries || !employees || !shiftTypes || !leaveTypes) {
-      console.error("Required data for download is missing.");
-      alert("Cannot download schedule data. Required information is missing.");
-      return;
-    }
+  // // --- UPDATED: Function to Download Currently Displayed Schedule Data with Comprehensive Instructions ---
+  // const downloadScheduleData = () => {
+  //   if (!currentSchedule || !scheduleEntries || !employees || !shiftTypes || !leaveTypes) {
+  //     console.error("Required data for download is missing.");
+  //     alert("Cannot download schedule data. Required information is missing.");
+  //     return;
+  //   }
 
-    // Create maps for quick lookup of shift/leave names
-    const shiftTypeMap = new Map(shiftTypes.map(st => [st.id, st.name]));
-    const leaveTypeMap = new Map(leaveTypes.map(lt => [lt.id, lt.name]));
+  //   // Create maps for quick lookup of shift/leave names
+  //   const shiftTypeMap = new Map(shiftTypes.map(st => [st.id, st.name]));
+  //   const leaveTypeMap = new Map(leaveTypes.map(lt => [lt.id, lt.name]));
 
-    // --- NEW LOGIC: Use currently displayed employees and dates ---
-    // Get the list of employees currently being displayed (filtered and ordered)
-    const displayedEmployees = filteredEmployees; // This is the state variable you use for rendering
+  //   // --- NEW LOGIC: Use currently displayed employees and dates ---
+  //   // Get the list of employees currently being displayed (filtered and ordered)
+  //   const displayedEmployees = filteredEmployees; // This is the state variable you use for rendering
 
-    // Get the list of dates currently being displayed (for the current week/day view)
-    const displayedDates = weekDays; // This is the state variable you use for rendering the header
-    // Convert Date objects to 'YYYY-MM-DD' strings for comparison
-    const displayedDateStrings = displayedDates.map(date => format(date, 'yyyy-MM-dd'));
-    // --- END NEW LOGIC ---
+  //   // Get the list of dates currently being displayed (for the current week/day view)
+  //   const displayedDates = weekDays; // This is the state variable you use for rendering the header
+  //   // Convert Date objects to 'YYYY-MM-DD' strings for comparison
+  //   const displayedDateStrings = displayedDates.map(date => format(date, 'yyyy-MM-dd'));
+  //   // --- END NEW LOGIC ---
 
-    // --- NEW: Prepare Comprehensive List of Available Assignments ---
-    // Combine names from shiftTypes, leaveTypes, and hardcoded status names
-    const shiftNames = shiftTypes.map(st => st.name);
-    const leaveNames = leaveTypes.map(lt => lt.name);
-    const statusNames = ['Paid Leave', 'LOP', 'LLOP', 'Week OFF']; // Add other status names if needed
-    const allAvailableAssignments = [...shiftNames, ...leaveNames];
-    // --- END NEW ---
+  //   // --- NEW: Prepare Comprehensive List of Available Assignments ---
+  //   // Combine names from shiftTypes, leaveTypes, and hardcoded status names
+  //   const shiftNames = shiftTypes.map(st => st.name);
+  //   const leaveNames = leaveTypes.map(lt => lt.name);
+  //   const statusNames = ['Paid Leave', 'LOP', 'LLOP', 'Week OFF']; // Add other status names if needed
+  //   const allAvailableAssignments = [...shiftNames, ...leaveNames];
+  //   // --- END NEW ---
 
-    // Prepare data rows
-    const dataRows = [];
+  //   // Prepare data rows
+  //   const dataRows = [];
 
-    // --- NEW: Add Detailed Instructions Rows ---
-    // Row 1: Available Assignments Header
-    dataRows.push(["Available Assignments:"]);
+  //   // --- NEW: Add Detailed Instructions Rows ---
+  //   // Row 1: Available Assignments Header
+  //   dataRows.push(["Available Assignments:"]);
 
-    // Row 2: List All Available Assignments (filling columns under the header)
-    // Start the row with an empty cell to align with the "Employee Name" column
-    const assignmentsRow = ["", ...allAvailableAssignments];
-    dataRows.push(assignmentsRow);
+  //   // Row 2: List All Available Assignments (filling columns under the header)
+  //   // Start the row with an empty cell to align with the "Employee Name" column
+  //   const assignmentsRow = ["", ...allAvailableAssignments];
+  //   dataRows.push(assignmentsRow);
 
-    // Row 3: Paste Instruction Header
-    dataRows.push(["Copy the available shifts from above and Paste according to you: "]);
+  //   // Row 3: Paste Instruction Header
+  //   dataRows.push(["Copy the available shifts from above and Paste according to you: "]);
 
-    // Row 4: Placeholder row for paste area (matching date columns)
-    // Start the row with an empty cell to align with the "Employee Name" column
-    const pasteHeaderRow = ["Employee Name", ...displayedDateStrings];
-    dataRows.push(pasteHeaderRow);
-    // --- END NEW ---
+  //   // Row 4: Placeholder row for paste area (matching date columns)
+  //   // Start the row with an empty cell to align with the "Employee Name" column
+  //   const pasteHeaderRow = ["Employee Name", ...displayedDateStrings];
+  //   dataRows.push(pasteHeaderRow);
+  //   // --- END NEW ---
 
-    // Iterate through ALL currently displayed employees
-    displayedEmployees.forEach(emp => {
-      const empId = emp.id;
-      const empName = `${emp.first_name} ${emp.last_name}`;
-      const row = [empName];
+  //   // Iterate through ALL currently displayed employees
+  //   displayedEmployees.forEach(emp => {
+  //     const empId = emp.id;
+  //     const empName = `${emp.first_name} ${emp.last_name}`;
+  //     const row = [empName];
 
-      // Iterate through ALL currently displayed dates for this employee
-      displayedDateStrings.forEach(date => {
-        // Find the entry for this employee on this date
-        const entry = scheduleEntries.find(e => e.user_id == empId && e.entry_date === date);
-        let cellValue = ""; // Default empty cell for no assignment
+  //     // Iterate through ALL currently displayed dates for this employee
+  //     displayedDateStrings.forEach(date => {
+  //       // Find the entry for this employee on this date
+  //       const entry = scheduleEntries.find(e => e.user_id == empId && e.entry_date === date);
+  //       let cellValue = ""; // Default empty cell for no assignment
 
-        if (entry) {
-          if (entry.assignment_status === 'ASSIGNED' && entry.shift_type_id) {
-            cellValue = shiftTypeMap.get(entry.shift_type_id) || `Shift ID: ${entry.shift_type_id}`;
-          } else if (entry.assignment_status !== 'UNASSIGNED' && leaveTypes.some(lt => lt.id == entry.assignment_status)) {
-            // Check if assignment_status is a leave type ID
-            const leaveTypeName = leaveTypeMap.get(entry.assignment_status);
-            if (leaveTypeName) {
-              cellValue = leaveTypeName;
-            } else {
-              cellValue = `Leave ID: ${entry.assignment_status}`;
-            }
-          } else if (entry.assignment_status === 'UNASSIGNED') {
-             cellValue = "Unassigned"; // Or keep it empty ""
-          } else {
-              // Handle other statuses like 'PTO_APPROVED', 'PTO_REQUESTED', 'FESTIVE_LEAVE', 'UNAVAILABLE', 'OFF'
-              // Map the internal status code to the display name
-              switch(entry.assignment_status) {
-                  case 'PTO_APPROVED':
-                      cellValue = 'Paid Leave';
-                      break;
-                  case 'PTO_REQUESTED':
-                      cellValue = 'LLOP';
-                      break;
-                  case 'FESTIVE_LEAVE':
-                      cellValue = 'Festive Leave';
-                      break;
-                  case 'UNAVAILABLE':
-                      cellValue = 'Week OFF';
-                      break;
-                  case 'OFF':
-                      cellValue = 'LOP';
-                      break;
-                  default:
-                      // If it's not a shift, not a leave type ID, and not a known status, show the raw status or an ID
-                      cellValue = entry.assignment_status;
-              }
+  //       if (entry) {
+  //         if (entry.assignment_status === 'ASSIGNED' && entry.shift_type_id) {
+  //           cellValue = shiftTypeMap.get(entry.shift_type_id) || `Shift ID: ${entry.shift_type_id}`;
+  //         } else if (entry.assignment_status !== 'UNASSIGNED' && leaveTypes.some(lt => lt.id == entry.assignment_status)) {
+  //           // Check if assignment_status is a leave type ID
+  //           const leaveTypeName = leaveTypeMap.get(entry.assignment_status);
+  //           if (leaveTypeName) {
+  //             cellValue = leaveTypeName;
+  //           } else {
+  //             cellValue = `Leave ID: ${entry.assignment_status}`;
+  //           }
+  //         } else if (entry.assignment_status === 'UNASSIGNED') {
+  //            cellValue = "Unassigned"; // Or keep it empty ""
+  //         } else {
+  //             // Handle other statuses like 'PTO_APPROVED', 'PTO_REQUESTED', 'FESTIVE_LEAVE', 'UNAVAILABLE', 'OFF'
+  //             // Map the internal status code to the display name
+  //             switch(entry.assignment_status) {
+  //                 case 'PTO_APPROVED':
+  //                     cellValue = 'Paid Leave';
+  //                     break;
+  //                 case 'PTO_REQUESTED':
+  //                     cellValue = 'LLOP';
+  //                     break;
+  //                 case 'FESTIVE_LEAVE':
+  //                     cellValue = 'Festive Leave';
+  //                     break;
+  //                 case 'UNAVAILABLE':
+  //                     cellValue = 'Week OFF';
+  //                     break;
+  //                 case 'OFF':
+  //                     cellValue = 'LOP';
+  //                     break;
+  //                 default:
+  //                     // If it's not a shift, not a leave type ID, and not a known status, show the raw status or an ID
+  //                     cellValue = entry.assignment_status;
+  //             }
+  //         }
+  //         // Add other status checks if necessary
+  //       }
+  //       // If no entry was found, cellValue remains ""
+  //       row.push(cellValue);
+  //     });
+  //     dataRows.push(row);
+  //   });
+
+  //   // Create a worksheet and workbook
+  //   const ws = utils.aoa_to_sheet(dataRows);
+  //   const wb = utils.book_new();
+
+  //   // --- FIX: Truncate sheet name to 31 characters ---
+  //   let sheetName = `Schedule_${currentSchedule.name.replace(/\s+/g, '_')}`;
+  //   if (sheetName.length > 31) {
+  //     sheetName = sheetName.substring(0, 28) + '...'; // Keep first 28 chars + '...'
+  //   }
+
+  //   utils.book_append_sheet(wb, ws, sheetName); // Use the truncated name
+
+  //   // --- FIX: Ensure the filename has .xlsx extension ---
+  //   // Generate file name
+  //   const fileName = `Schedule_${currentSchedule.name.replace(/\s+/g, '_')}_${currentSchedule.start_date}_to_${currentSchedule.end_date}.xlsx`;
+
+  //   // Write the file with the correct extension
+  //   writeFile(wb, fileName);
+  // };
+  // // --- END UPDATED ---
+
+
+  const downloadScheduleData = async () => {
+  if (!currentSchedule || !scheduleEntries || !employees || !shiftTypes || !leaveTypes) {
+    console.error("Required data for download is missing.");
+    alert("Cannot download schedule data. Required information is missing.");
+    return;
+  }
+
+  // -----------------------------------------
+  // Lookup maps (UNCHANGED)
+  // -----------------------------------------
+  const shiftTypeMap = new Map(shiftTypes.map(st => [st.id, st.name]));
+  const leaveTypeMap = new Map(leaveTypes.map(lt => [lt.id, lt.name]));
+
+  const displayedEmployees = filteredEmployees;
+  const displayedDates = weekDays;
+  const displayedDateStrings = displayedDates.map(d =>
+    `${format(d, "EEE")} (${format(d, "yyyy-MM-dd")})`
+  );
+
+  const shiftNames = shiftTypes.map(st => st.name);
+  const leaveNames = leaveTypes.map(lt => lt.name);
+  const statusNames = ["Paid Leave", "LOP", "LLOP", "Week OFF"];
+  const allAvailableAssignments = [...shiftNames, ...leaveNames, ...statusNames];
+
+  // -----------------------------------------
+  // Build rows EXACTLY like before
+  // -----------------------------------------
+  const dataRows = [];
+
+  dataRows.push(["Available Assignments:"]);
+  dataRows.push(["", ...allAvailableAssignments]);
+  dataRows.push(["Copy the available shifts from above and Paste according to you:"]);
+  dataRows.push(["Employee Name", ...displayedDateStrings]);
+  dataRows.push([""]);
+
+  displayedEmployees.forEach(emp => {
+    const row = [`${emp.first_name} ${emp.last_name}`];
+
+    displayedDates.forEach(date => {
+      const dateStr = format(date, "yyyy-MM-dd");
+      const entry = scheduleEntries.find(
+        e => e.user_id == emp.id && e.entry_date === dateStr
+      );
+
+      let cellValue = "";
+
+      if (entry) {
+        if (entry.assignment_status === "ASSIGNED" && entry.shift_type_id) {
+          cellValue = shiftTypeMap.get(entry.shift_type_id) || "";
+        } else if (leaveTypes.some(lt => lt.id == entry.assignment_status)) {
+          cellValue = leaveTypeMap.get(entry.assignment_status) || "";
+        } else {
+          switch (entry.assignment_status) {
+            case "PTO_APPROVED": cellValue = "Paid Leave"; break;
+            case "PTO_REQUESTED": cellValue = "LLOP"; break;
+            case "FESTIVE_LEAVE": cellValue = "Festive Leave"; break;
+            case "UNAVAILABLE": cellValue = "Week OFF"; break;
+            case "OFF": cellValue = "LOP"; break;
+            case "UNASSIGNED": cellValue = ""; break;
+            default: cellValue = entry.assignment_status;
           }
-          // Add other status checks if necessary
         }
-        // If no entry was found, cellValue remains ""
-        row.push(cellValue);
-      });
-      dataRows.push(row);
+      }
+
+      row.push(cellValue);
     });
 
-    // Create a worksheet and workbook
-    const ws = utils.aoa_to_sheet(dataRows);
-    const wb = utils.book_new();
+    dataRows.push(row);
+  });
 
-    // --- FIX: Truncate sheet name to 31 characters ---
-    let sheetName = `Schedule_${currentSchedule.name.replace(/\s+/g, '_')}`;
-    if (sheetName.length > 31) {
-      sheetName = sheetName.substring(0, 28) + '...'; // Keep first 28 chars + '...'
+  // -----------------------------------------
+  // ExcelJS Workbook
+  // -----------------------------------------
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Schedule");
+
+  dataRows.forEach(row => worksheet.addRow(row));
+
+  // -----------------------------------------
+  // ✅ FREEZE PANES (THIS WORKS)
+  // -----------------------------------------
+  worksheet.views = [
+    {
+      state: "frozen",
+      xSplit: 1, // Employee Name
+      ySplit: 5  // Top instruction + header rows
     }
+  ];
 
-    utils.book_append_sheet(wb, ws, sheetName); // Use the truncated name
+  // -----------------------------------------
+  // Auto column sizing
+  // -----------------------------------------
+  worksheet.columns.forEach(column => {
+    let maxLength = 12;
+    column.eachCell({ includeEmpty: true }, cell => {
+      maxLength = Math.max(maxLength, cell.value ? cell.value.toString().length : 0);
+    });
+    column.width = maxLength + 2;
+  });
 
-    // --- FIX: Ensure the filename has .xlsx extension ---
-    // Generate file name
-    const fileName = `Schedule_${currentSchedule.name.replace(/\s+/g, '_')}_${currentSchedule.start_date}_to_${currentSchedule.end_date}.xlsx`;
+  // -----------------------------------------
+  // File output
+  // -----------------------------------------
+  const buffer = await workbook.xlsx.writeBuffer();
 
-    // Write the file with the correct extension
-    writeFile(wb, fileName);
-  };
-  // --- END UPDATED ---
+  const fileName = `Schedule_${currentSchedule.name.replace(/\s+/g, "_")}_${currentSchedule.start_date}_to_${currentSchedule.end_date}.xlsx`;
 
-
-//   const downloadScheduleData = async () => {
-//   if (!currentSchedule || !scheduleEntries || !employees || !shiftTypes || !leaveTypes) {
-//     console.error("Required data for download is missing.");
-//     alert("Cannot download schedule data. Required information is missing.");
-//     return;
-//   }
-
-//   // -----------------------------------------
-//   // Lookup maps (UNCHANGED)
-//   // -----------------------------------------
-//   const shiftTypeMap = new Map(shiftTypes.map(st => [st.id, st.name]));
-//   const leaveTypeMap = new Map(leaveTypes.map(lt => [lt.id, lt.name]));
-
-//   const displayedEmployees = filteredEmployees;
-//   const displayedDates = weekDays;
-//   const displayedDateStrings = displayedDates.map(d =>
-//     `${format(d, "EEE")} (${format(d, "yyyy-MM-dd")})`
-//   );
-
-//   const shiftNames = shiftTypes.map(st => st.name);
-//   const leaveNames = leaveTypes.map(lt => lt.name);
-//   const statusNames = ["Paid Leave", "LOP", "LLOP", "Week OFF"];
-//   const allAvailableAssignments = [...shiftNames, ...leaveNames, ...statusNames];
-
-//   // -----------------------------------------
-//   // Build rows EXACTLY like before
-//   // -----------------------------------------
-//   const dataRows = [];
-
-//   dataRows.push(["Available Assignments:"]);
-//   dataRows.push(["", ...allAvailableAssignments]);
-//   dataRows.push(["Copy the available shifts from above and Paste according to you:"]);
-//   dataRows.push(["Employee Name", ...displayedDateStrings]);
-//   dataRows.push([""]);
-
-//   displayedEmployees.forEach(emp => {
-//     const row = [`${emp.first_name} ${emp.last_name}`];
-
-//     displayedDates.forEach(date => {
-//       const dateStr = format(date, "yyyy-MM-dd");
-//       const entry = scheduleEntries.find(
-//         e => e.user_id == emp.id && e.entry_date === dateStr
-//       );
-
-//       let cellValue = "";
-
-//       if (entry) {
-//         if (entry.assignment_status === "ASSIGNED" && entry.shift_type_id) {
-//           cellValue = shiftTypeMap.get(entry.shift_type_id) || "";
-//         } else if (leaveTypes.some(lt => lt.id == entry.assignment_status)) {
-//           cellValue = leaveTypeMap.get(entry.assignment_status) || "";
-//         } else {
-//           switch (entry.assignment_status) {
-//             case "PTO_APPROVED": cellValue = "Paid Leave"; break;
-//             case "PTO_REQUESTED": cellValue = "LLOP"; break;
-//             case "FESTIVE_LEAVE": cellValue = "Festive Leave"; break;
-//             case "UNAVAILABLE": cellValue = "Week OFF"; break;
-//             case "OFF": cellValue = "LOP"; break;
-//             case "UNASSIGNED": cellValue = ""; break;
-//             default: cellValue = entry.assignment_status;
-//           }
-//         }
-//       }
-
-//       row.push(cellValue);
-//     });
-
-//     dataRows.push(row);
-//   });
-
-//   // -----------------------------------------
-//   // ExcelJS Workbook
-//   // -----------------------------------------
-//   const workbook = new ExcelJS.Workbook();
-//   const worksheet = workbook.addWorksheet("Schedule");
-
-//   dataRows.forEach(row => worksheet.addRow(row));
-
-//   // -----------------------------------------
-//   // ✅ FREEZE PANES (THIS WORKS)
-//   // -----------------------------------------
-//   worksheet.views = [
-//     {
-//       state: "frozen",
-//       xSplit: 1, // Employee Name
-//       ySplit: 5  // Top instruction + header rows
-//     }
-//   ];
-
-//   // -----------------------------------------
-//   // Auto column sizing
-//   // -----------------------------------------
-//   worksheet.columns.forEach(column => {
-//     let maxLength = 12;
-//     column.eachCell({ includeEmpty: true }, cell => {
-//       maxLength = Math.max(maxLength, cell.value ? cell.value.toString().length : 0);
-//     });
-//     column.width = maxLength + 2;
-//   });
-
-//   // -----------------------------------------
-//   // File output
-//   // -----------------------------------------
-//   const buffer = await workbook.xlsx.writeBuffer();
-
-//   const fileName = `Schedule_${currentSchedule.name.replace(/\s+/g, "_")}_${currentSchedule.start_date}_to_${currentSchedule.end_date}.xlsx`;
-
-//   saveAs(new Blob([buffer]), fileName);
-// };
+  saveAs(new Blob([buffer]), fileName);
+};
 
 
 
