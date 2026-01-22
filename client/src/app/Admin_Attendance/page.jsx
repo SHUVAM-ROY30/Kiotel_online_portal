@@ -1907,9 +1907,19 @@ function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, gra
   const [shiftStartHour, shiftStartMin, shiftStartSec] = shiftStart.split(':').map(Number);
   const [shiftEndHour, shiftEndMin, shiftEndSec] = shiftEnd.split(':').map(Number);
 
-  // Create shift start time using clock-in date
+  // Determine if overnight shift
+  const isOvernightShift = shiftEndHour < shiftStartHour || 
+                           (shiftEndHour === shiftStartHour && shiftEndMin <= shiftStartMin);
+
+  // Create shift start time
   const shiftStartDate = new Date(clockInDate);
   shiftStartDate.setHours(shiftStartHour, shiftStartMin, shiftStartSec, 0);
+  
+  // For overnight shifts: if clock-in hour is in early morning (0-11) and shift starts in evening (>12),
+  // the shift actually started on the previous day
+  if (isOvernightShift && clockInDate.getHours() < 12 && shiftStartHour >= 12) {
+    shiftStartDate.setDate(shiftStartDate.getDate() - 1);
+  }
 
   // Calculate late minutes (difference between clock-in and shift start)
   const timeDiffStart = clockInDate - shiftStartDate;
@@ -1927,6 +1937,13 @@ function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, gra
     // Create shift end time - use clock-out date as base (backend already handled overnight correctly)
     const shiftEndDate = new Date(clockOutDate);
     shiftEndDate.setHours(shiftEndHour, shiftEndMin, shiftEndSec, 0);
+    
+    // For overnight shifts: if clock-out hour is in early morning (0-11) and shift ends in early morning,
+    // but shift started yesterday, we need to ensure shift end is on the same day as clock out
+    if (isOvernightShift && clockOutDate.getHours() < 12 && shiftEndHour < 12) {
+      // Shift end is already on the correct day (same as clock out)
+      // No adjustment needed
+    }
     
     // Simple time difference
     const timeDiffEnd = clockOutDate - shiftEndDate;
