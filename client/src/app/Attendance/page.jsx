@@ -1064,7 +1064,7 @@ export default function ClockPage() {
                 <div className="flex-1">
                   <div className="mb-6">
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">Select Your Shift</h2>
-                    <p className="text-gray-600">Choose the shift you're working today</p>
+                    <p className="text-gray-600">Choose the shift you are working today</p>
                   </div>
 
                   <div className="flex justify-start mb-6">

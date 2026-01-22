@@ -385,7 +385,7 @@ export default function EmployeeAttendanceModal({ employeeData, onClose }) {
                     No attendance records found
                   </p>
                   <p className="text-gray-400 text-xs sm:text-sm mt-2">
-                    This employee hasn't clocked in yet
+                    This employee has not clocked in yet
                   </p>
                 </div>
               )}
