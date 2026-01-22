@@ -336,6 +336,145 @@ const displayedDateStrings = displayedDates.map(date =>
   saveAs(new Blob([buffer]), fileName);
 };
 
+// const downloadScheduleData = async () => {
+//   if (!currentSchedule || !scheduleEntries || !employees || !shiftTypes || !leaveTypes) {
+//     console.error("Required data for download is missing.");
+//     alert("Cannot download schedule data. Required information is missing.");
+//     return;
+//   }
+
+//   // -----------------------------------------
+//   // Lookup maps (UNCHANGED)
+//   // -----------------------------------------
+//   const shiftTypeMap = new Map(shiftTypes.map(st => [st.id, st.name]));
+//   const leaveTypeMap = new Map(leaveTypes.map(lt => [lt.id, lt.name]));
+
+//   const displayedEmployees = filteredEmployees;
+//   const displayedDates = weekDays;
+
+//   const displayedDayStrings = displayedDates.map(d => format(d, "EEE"));
+//   const displayedDateStrings = displayedDates.map(d => format(d, "yyyy-MM-dd"));
+
+//   const shiftNames = shiftTypes.map(st => st.name);
+//   const leaveNames = leaveTypes.map(lt => lt.name);
+//   const statusNames = ["Paid Leave", "LOP", "LLOP", "Week OFF"];
+//   const allAvailableAssignments = [...shiftNames, ...leaveNames, ...statusNames];
+
+//   // -----------------------------------------
+//   // Build rows (UNCHANGED FEATURES)
+//   // -----------------------------------------
+//   const dataRows = [];
+
+//   dataRows.push(["Available Assignments:"]);
+//   dataRows.push(["", ...allAvailableAssignments]);
+//   dataRows.push(["Copy the available shifts from above and Paste according to you:"]);
+//   dataRows.push(["", ...displayedDayStrings]);
+//   dataRows.push(["Employee Name", ...displayedDateStrings]);
+//   dataRows.push([""]);
+
+//   const HEADER_ROW_COUNT = dataRows.length;
+//   const FIRST_EMPLOYEE_ROW = HEADER_ROW_COUNT + 1;
+
+//   displayedEmployees.forEach(emp => {
+//     const row = [`${emp.first_name} ${emp.last_name}`];
+
+//     displayedDates.forEach(date => {
+//       const dateStr = format(date, "yyyy-MM-dd");
+//       const entry = scheduleEntries.find(
+//         e => e.user_id == emp.id && e.entry_date === dateStr
+//       );
+
+//       let cellValue = "";
+
+//       if (entry) {
+//         if (entry.assignment_status === "ASSIGNED" && entry.shift_type_id) {
+//           cellValue = shiftTypeMap.get(entry.shift_type_id) || "";
+//         } else if (leaveTypes.some(lt => lt.id == entry.assignment_status)) {
+//           cellValue = leaveTypeMap.get(entry.assignment_status) || "";
+//         } else {
+//           switch (entry.assignment_status) {
+//             case "PTO_APPROVED": cellValue = "Paid Leave"; break;
+//             case "PTO_REQUESTED": cellValue = "LLOP"; break;
+//             case "FESTIVE_LEAVE": cellValue = "Festive Leave"; break;
+//             case "UNAVAILABLE": cellValue = "Week OFF"; break;
+//             case "OFF": cellValue = "LOP"; break;
+//             default: cellValue = "";
+//           }
+//         }
+//       }
+
+//       row.push(cellValue);
+//     });
+
+//     dataRows.push(row);
+//   });
+
+//   // -----------------------------------------
+//   // ExcelJS Workbook
+//   // -----------------------------------------
+//   const workbook = new ExcelJS.Workbook();
+//   const worksheet = workbook.addWorksheet("Schedule");
+
+//   dataRows.forEach(row => worksheet.addRow(row));
+
+//   const LAST_EMPLOYEE_ROW = worksheet.rowCount + 10; // safe buffer
+
+//   // -----------------------------------------
+//   // 🔢 LIVE SHIFT COUNT SUMMARY (NEW FEATURE)
+//   // -----------------------------------------
+//   worksheet.addRow([]);
+//   worksheet.addRow(["Shift Count Summary (Auto-updating)"]);
+
+//   displayedDates.forEach((date, index) => {
+//     const colIndex = index + 2; // B onwards
+//     const colLetter = worksheet.getColumn(colIndex).letter;
+
+//     worksheet.addRow([`Date: ${format(date, "yyyy-MM-dd")}`]);
+
+//     allAvailableAssignments.forEach(label => {
+//       worksheet.addRow([
+//         label,
+//         {
+//           formula: `COUNTIF(${colLetter}${FIRST_EMPLOYEE_ROW}:${colLetter}${LAST_EMPLOYEE_ROW},"${label}")`
+//         }
+//       ]);
+//     });
+
+//     worksheet.addRow([]);
+//   });
+
+//   // -----------------------------------------
+//   // FREEZE PANES (UNCHANGED)
+//   // -----------------------------------------
+//   worksheet.views = [
+//     {
+//       state: "frozen",
+//       xSplit: 1,
+//       ySplit: HEADER_ROW_COUNT
+//     }
+//   ];
+
+//   // -----------------------------------------
+//   // Auto column sizing
+//   // -----------------------------------------
+//   worksheet.columns.forEach(column => {
+//     let maxLength = 12;
+//     column.eachCell({ includeEmpty: true }, cell => {
+//       maxLength = Math.max(maxLength, cell.value ? cell.value.toString().length : 0);
+//     });
+//     column.width = maxLength + 2;
+//   });
+
+//   // -----------------------------------------
+//   // File output
+//   // -----------------------------------------
+//   const buffer = await workbook.xlsx.writeBuffer();
+
+//   const fileName = `Schedule_${currentSchedule.name.replace(/\s+/g, "_")}_${currentSchedule.start_date}_to_${currentSchedule.end_date}.xlsx`;
+
+//   saveAs(new Blob([buffer]), fileName);
+// };
+
 
 
   const getDaysOfWeek = (baseDate) => {
@@ -561,6 +700,7 @@ const displayedDateStrings = displayedDates.map(date =>
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
+
               Month View
             </button> */}
             <button
