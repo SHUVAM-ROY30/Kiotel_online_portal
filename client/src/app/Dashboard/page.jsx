@@ -1097,13 +1097,13 @@ function Dashboard() {
 
               {/* Right section - Actions */}
               <div className="flex items-center justify-end gap-2 sm:gap-3">
-                <button
+                {/* <button
                   aria-label="Notifications"
                   className="relative p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-300 group shadow-sm hover:shadow-md"
                 >
                   <FaBell className="text-lg sm:text-xl text-gray-600 group-hover:text-blue-600 transition-colors" />
                   <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 h-2 w-2 sm:h-2.5 sm:w-2.5 bg-blue-600 rounded-full border-2 border-white"></span>
-                </button>
+                </button> */}
 
                 <div className="relative z-50 profile-menu-container">
                   <button
@@ -1208,7 +1208,7 @@ function Dashboard() {
         {/* Quick Stats or Footer */}
         <div className="mt-6 sm:mt-8 text-center">
           <p className="text-xs sm:text-sm text-gray-500 font-medium">
-            Powered by Kiotel • Version 2.0
+            Powered by Kiotel 
           </p>
         </div>
       </div>
