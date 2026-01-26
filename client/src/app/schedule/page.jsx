@@ -1375,10 +1375,15 @@ export default function SchedulePage() {
   const orderedEmployees = useMemo(() => {
     if (!employees.length) return [];
     const activeEmployeeIds = new Set(employees.map(emp => emp.id));
-    if (![1, 5].includes(userRole)) {
-      const employeeIdsInEntries = new Set(scheduleEntries.map(e => Number(e.user_id)));
-      return employees.filter(emp => employeeIdsInEntries.has(emp.id));
-    }
+    // if (![1, 5].includes(userRole)) {
+    //   const employeeIdsInEntries = new Set(scheduleEntries.map(e => Number(e.user_id)));
+    //   return employees.filter(emp => employeeIdsInEntries.has(emp.id));
+    // }
+    // NEW: Only show assigned employees to non-admin/HR users, OR when schedule is LIVE for HR
+    if (!(userRole === 1 || (userRole === 5 && currentSchedule?.status === 'DRAFT'))) {
+    const employeeIdsInEntries = new Set(scheduleEntries.map(e => Number(e.user_id)));
+    return employees.filter(emp => employeeIdsInEntries.has(emp.id));
+  }
     let displayOrder = [];
     if (currentSchedule?.employee_order && Array.isArray(currentSchedule.employee_order)) {
       displayOrder = currentSchedule.employee_order.filter(id => activeEmployeeIds.has(id));
@@ -1423,7 +1428,10 @@ export default function SchedulePage() {
   };
 
   const handleReorder = (oldIndex, newIndex) => {
-    if (![1, 5].includes(userRole) || !currentSchedule) return;
+    // if (![1, 5].includes(userRole) || !currentSchedule) return;
+    if (!currentSchedule) return;
+    if (!(userRole === 1 || (userRole === 5 && currentSchedule.status === 'DRAFT'))) return;
+  
     const currentOrder = filteredEmployees.map(emp => emp.id);
     const newOrder = arrayMove(currentOrder, oldIndex, newIndex);
     const cleanedOrder = newOrder.filter(id => id != null && id !== '');
@@ -1450,7 +1458,8 @@ export default function SchedulePage() {
   };
 
   const moveEmployee = (index, direction) => {
-    if (![1, 5].includes(userRole)) return;
+    // if (![1, 5].includes(userRole)) return;
+    if (!(userRole === 1 || (userRole === 5 && currentSchedule.status === 'DRAFT'))) return;
     const newOrder = [...employeeOrder];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= newOrder.length) return;
@@ -1467,7 +1476,10 @@ export default function SchedulePage() {
   };
 
   const duplicateShiftForWeek = async (employeeId) => {
-    if (![1, 5].includes(userRole) || !currentSchedule) return;
+    // if (![1, 5].includes(userRole) || !currentSchedule) return;
+    if (!currentSchedule) return;
+    if (!(userRole === 1 || (userRole === 5 && currentSchedule.status === 'DRAFT'))) return;
+  
     let sourceEntry = null;
     const weekDays = getDaysOfWeek(isDayView ? selectedDate : selectedWeekStart);
     for (const day of weekDays) {
@@ -1540,7 +1552,9 @@ export default function SchedulePage() {
   const weekDays = useMemo(() => getDaysOfWeek(isDayView ? selectedDate : selectedWeekStart), [isDayView, selectedDate, selectedWeekStart]);
 
   const openEditModal = (employeeId, dateStr, entry) => {
-    if (![1, 5].includes(userRole)) return;
+    // if (![1, 5].includes(userRole)) return;
+    if (!(userRole === 1 || (userRole === 5 && currentSchedule.status === 'DRAFT'))) return;
+  
     let validDateStr = dateStr;
     if (!validDateStr || validDateStr === 'Invalid Date') {
       validDateStr = format(new Date(), 'yyyy-MM-dd');
@@ -1644,7 +1658,8 @@ export default function SchedulePage() {
   // CONTINUE FROM PART 2...
 
   const handleCreateSchedule = async () => {
-    if (![1, 5].includes(userRole)) return;
+    // if (![1, 5].includes(userRole)) return;
+    if (!(userRole === 1 || userRole === 5)) return;
     try {
       await axios.post(`${API}/api/schedules`, {
         name: `Week ${newScheduleDates.start} - ${newScheduleDates.end}`,
@@ -1667,7 +1682,10 @@ export default function SchedulePage() {
 
   const applyTemplateToCell = async (employeeId, dateStr) => {
     if (!selectedTemplate) return;
-    if (![1, 5].includes(userRole) || !currentSchedule) return;
+    // if (![1, 5].includes(userRole) || !currentSchedule) return;
+    if (!currentSchedule) return;
+    if (!(userRole === 1 || (userRole === 5 && currentSchedule.status === 'DRAFT'))) return;
+  
     const employeeUniqueId = employees.find(e => e.id == employeeId)?.unique_id;
     if (!employeeUniqueId) {
       alert('Employee not found.');
@@ -1743,7 +1761,10 @@ export default function SchedulePage() {
       alert("Please select at least one cell to apply the template.");
       return;
     }
-    if (![1, 5].includes(userRole) || !currentSchedule) return;
+    // if (![1, 5].includes(userRole) || !currentSchedule) return;
+    if (!currentSchedule) return;
+    if (!(userRole === 1 || (userRole === 5 && currentSchedule.status === 'DRAFT'))) return;
+  
     const promises = [];
     for (const cellKey of selectedCells) {
       const [employeeId, dateStr] = cellKey.split('|');
@@ -1878,6 +1899,9 @@ export default function SchedulePage() {
 
   const applyTemplateToAllDaysForEmployee = async (employeeId) => {
     if (!selectedTemplate || !currentSchedule) return;
+     // ADD this check right after the above line:
+    if (!(userRole === 1 || (userRole === 5 && currentSchedule.status === 'DRAFT'))) return;
+  
     const employeeUniqueId = employees.find(e => e.id == employeeId)?.unique_id;
     if (!employeeUniqueId) {
       alert('Employee not found.');
@@ -1947,6 +1971,16 @@ export default function SchedulePage() {
 
   const handleStatusChange = async (scheduleId, currentStatus) => {
     const newStatus = currentStatus === 'LIVE' ? 'DRAFT' : 'LIVE';
+    if (currentStatus === 'LIVE' && userRole !== 1) {
+    alert("Only administrators can change a live schedule to draft.");
+    return;
+  }
+  
+  // Only Role 1 and 5 can publish (DRAFT to LIVE)
+  if (newStatus === 'LIVE' && !(userRole === 1 || userRole === 5)) {
+    alert("You don't have permission to publish schedules.");
+    return;
+  }
     if (newStatus === 'LIVE') {
       try {
         const entriesRes = await axios.get(`${API}/api/schedules/${scheduleId}/entries`, {
