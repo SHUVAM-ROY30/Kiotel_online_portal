@@ -336,7 +336,7 @@ const PhotoCapture = ({
                     playsInline
                     muted
                     className={`w-full ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
-                    style={{ aspectRatio: '4/2', objectFit: 'cover' }}
+                    style={{ aspectRatio: '4/4', objectFit: 'cover' }}
                   />
                   
                   {/* Gradient Overlays for depth */}
@@ -391,7 +391,7 @@ const PhotoCapture = ({
               src={capturedPhoto} 
               alt="Captured verification photo" 
               className="w-full"
-              style={{ aspectRatio: '4/2', objectFit: 'cover' }}
+              style={{ aspectRatio: '4/4', objectFit: 'cover' }}
             />
             
             {/* Success Overlay */}

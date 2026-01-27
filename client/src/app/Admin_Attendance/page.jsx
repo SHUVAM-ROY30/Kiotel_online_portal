@@ -3375,10 +3375,28 @@ export default function AdminDashboard() {
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  const formatTime = (isoString) => {
-    if (!isoString) return '—';
-    try { return format(parseISO(isoString), 'h:mm a'); } catch { return '—'; }
-  };
+  // const formatTime = (isoString) => {
+  //   if (!isoString) return '—';
+  //   try { return format(parseISO(isoString), 'h:mm a'); } catch { return '—'; }
+  // };
+
+  const formatTime = (value) => {
+  if (!value) return '—';
+
+  // If backend already sent formatted time (HH:mm)
+  if (typeof value === 'string' && value.length <= 8) {
+    return value;
+  }
+
+  // Legacy ISO / datetime handling (version 1)
+  try {
+    return format(new Date(value), 'h:mm a');
+  } catch {
+    return '—';
+  }
+};
+
+
 
   const dailySummary = {
     present: dailyData.filter(e => e.status === 'Present').length,
@@ -3462,7 +3480,20 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+{/* 
 
+  Hello this is the way you should be having the local area in the way you should be having the css
+  who is the real goat means bucry, there is a doubt between carry and gareeb as well this ist the way 
+  you should be having as well as its the way you should be having the higt on the shadow border as well as
+  they should be having the classname in the flex of the area of the local area network the way you should be
+  having the wayname so that it should be having the lcal storeage, hello on you way to the local area as this is the way 
+  you should be having the seen of the loacal value of the sceen in the the system of the value.
+  So this is what you should be doing the same things in the local area of the way you should be having he same things 
+  as they want to know a way you should be having the same thing as they are to be done in the little area
+  You know where they are as they it should be having the same in which they are in the local network of the 
+  pitched area in the same way you should having in the local area as they know
+
+*/}
             <div className="bg-white/80 backdrop-blur-xl rounded-lg shadow-lg border border-gray-200/50 p-2 sm:p-3 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                 <div className="h-9 w-9 sm:h-10 sm:w-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
