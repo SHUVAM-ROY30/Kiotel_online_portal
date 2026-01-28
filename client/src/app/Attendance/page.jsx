@@ -708,10 +708,27 @@ export default function ClockPage() {
     }
   };
 
-  const formatTime = (date) => {
-    if (!date) return '—';
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  // const formatTime = (date) => {
+  //   if (!date) return '—';
+  //   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // };
+
+    const formatTime = (value) => {
+  if (!value) return '—';
+
+  // If backend already sent formatted time (HH:mm)
+  if (typeof value === 'string' && value.length <= 8) {
+    return value;
+  }
+
+  // Legacy ISO / datetime handling (version 1)
+  try {
+    return format(new Date(value), 'h:mm a');
+  } catch {
+    return '—';
+  }
+};
+
 
   const resetSession = () => {
     setStep('id');

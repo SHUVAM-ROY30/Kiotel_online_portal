@@ -3418,6 +3418,7 @@ export default function AdminDashboard() {
     try {
       const url = `${API_BASE}/clockin/employee/${accountId}/attendance?start_date=${date}&end_date=${date}`;
       const res = await fetch(url);
+      console.log(url)
       const result = await res.json();
       if (result.success) {
         setModalData(result.data);

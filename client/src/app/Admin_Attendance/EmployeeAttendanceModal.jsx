@@ -177,6 +177,21 @@ export default function EmployeeAttendanceModal({ employeeData, onClose }) {
   if (!employeeData) return null;
 
   const { employee, attendance_records } = employeeData;
+    const formatTime = (value) => {
+    if (!value) return '—';
+  
+    // If backend already sent formatted time (HH:mm)
+    if (typeof value === 'string' && value.length <= 8) {
+      return value;
+    }
+  
+    // Legacy ISO / datetime handling (version 1)
+    try {
+      return format(new Date(value), 'h:mm a');
+    } catch {
+      return '—';
+    }
+  };
 
   return (
     <>
@@ -315,7 +330,7 @@ export default function EmployeeAttendanceModal({ employeeData, onClose }) {
                                     : 'bg-gray-100 text-gray-500'
                                 }`}>
                                   {record.clock_in
-                                    ? format(parseISO(record.clock_in), 'h:mm a')
+                                    ? formatTime(record.clock_in)
                                     : '—'}
                                 </span>
                               </td>
@@ -328,7 +343,7 @@ export default function EmployeeAttendanceModal({ employeeData, onClose }) {
                                     : 'bg-gray-100 text-gray-500'
                                 }`}>
                                   {record.clock_out
-                                    ? format(parseISO(record.clock_out), 'h:mm a')
+                                    ? formatTime(record.clock_out)
                                     : '—'}
                                 </span>
                               </td>
