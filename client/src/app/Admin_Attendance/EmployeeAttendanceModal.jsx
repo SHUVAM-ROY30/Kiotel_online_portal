@@ -177,21 +177,46 @@ export default function EmployeeAttendanceModal({ employeeData, onClose }) {
   if (!employeeData) return null;
 
   const { employee, attendance_records } = employeeData;
-    const formatTime = (value) => {
-    if (!value) return '—';
-  
-    // If backend already sent formatted time (HH:mm)
-    if (typeof value === 'string' && value.length <= 8) {
-      return value;
-    }
-  
-    // Legacy ISO / datetime handling (version 1)
+const formatTime = (value, version) => {
+  if (!value) return '—';
+
+  // 🟢 VERSION 2 — NO timezone conversion
+  if (version === 2) {
     try {
-      return format(new Date(value), 'h:mm a');
+      let hours, minutes;
+
+      // Case 1: ISO string (2026-01-28T06:35:13.000Z)
+      if (value.includes('T')) {
+        const timePart = value.split('T')[1].replace('Z', '');
+        [hours, minutes] = timePart.split(':').map(Number);
+      }
+      // Case 2: MySQL datetime (2026-01-28 12:05:13)
+      else if (value.includes(' ')) {
+        const timePart = value.split(' ')[1];
+        [hours, minutes] = timePart.split(':').map(Number);
+      } else {
+        return '—';
+      }
+
+      if (Number.isNaN(hours) || Number.isNaN(minutes)) return '—';
+
+      const hour12 = hours % 12 || 12;
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+
+      return `${hour12}:${String(minutes).padStart(2, '0')} ${ampm}`;
     } catch {
       return '—';
     }
-  };
+  }
+
+  // 🟡 VERSION 1 — legacy behavior (UNCHANGED)
+  try {
+    return format(parseISO(value), 'h:mm a');
+  } catch {
+    return '—';
+  }
+};
+
 
   return (
     <>
@@ -329,9 +354,13 @@ export default function EmployeeAttendanceModal({ employeeData, onClose }) {
                                     ? 'bg-green-100 text-green-800' 
                                     : 'bg-gray-100 text-gray-500'
                                 }`}>
-                                  {record.clock_in
-                                    ? formatTime(record.clock_in)
-                                    : '—'}
+                                  {/* {record.clock_in
+                                    ? format(parseISO(record.clock_in), 'h:mm a')
+                                    : '—'} */}
+                                    {record.clock_in
+  ? formatTime(record.clock_in, record.timezone_logic_version)
+  : '—'}
+
                                 </span>
                               </td>
 
@@ -342,9 +371,13 @@ export default function EmployeeAttendanceModal({ employeeData, onClose }) {
                                     ? 'bg-red-100 text-red-800' 
                                     : 'bg-gray-100 text-gray-500'
                                 }`}>
-                                  {record.clock_out
-                                    ? formatTime(record.clock_out)
-                                    : '—'}
+                                  {/* {record.clock_out
+                                    ? format(parseISO(record.clock_out), 'h:mm a')
+                                    : '—'} */}
+                                    {record.clock_out
+  ? formatTime(record.clock_out, record.timezone_logic_version)
+  : '—'}
+
                                 </span>
                               </td>
 
