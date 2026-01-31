@@ -2109,29 +2109,298 @@ export default function SchedulePage() {
   if (error) return <div className="p-6 text-red-500">{error}</div>;
   if (!uniqueId) return <div className="p-6">Not logged in</div>;
 
-  return (
-    <div className="min-h-screen h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden">
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+//   return (
+//     <div className="min-h-screen h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden">
+//       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+//         {/* Mobile Toggle Button */}
+//         <button
+//           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+//           className="lg:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-lg shadow-lg"
+//         >
+//           {sidebarCollapsed ? '☰' : '✕'}
+//         </button>
+
+//         {/* Sidebar */}
+//         <div className={`
+//           ${sidebarCollapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
+//           fixed lg:relative inset-y-0 left-0 z-40
+//           w-80 lg:w-80 xl:w-96
+//           bg-white shadow-xl
+//           transition-transform duration-300 ease-in-out
+//           lg:transition-none
+//           flex flex-col
+//           overflow-hidden
+//         `}>
+//           <div className="h-full overflow-y-auto p-4">
+//             <ScheduleSidebar
+//               schedules={schedules}
+//               currentSchedule={currentSchedule}
+//               setCurrentSchedule={setCurrentSchedule}
+//               loadScheduleEntries={loadScheduleEntries}
+//               userRole={userRole}
+//               setShowCreateModal={setShowCreateModal}
+//               setSchedules={setSchedules}
+//               shiftTypes={shiftTypes}
+//               leaveTypes={leaveTypes}
+//               selectedTemplate={selectedTemplate}
+//               setSelectedTemplate={setSelectedTemplate}
+//               onPublishRequest={handleStatusChange}
+//             />
+//           </div>
+//         </div>
+
+//         {/* Main Content */}
+//         <div className="flex-1 flex flex-col overflow-hidden p-4 lg:p-6">
+//           <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-xl shadow-lg">
+//             <div className="flex-shrink-0 p-4 border-b">
+//               {currentSchedule && !isMonthView && !isThreeMonthView && (
+//                 <button
+//                   onClick={() => setShowUploadModal(true)}
+//                   className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-md hover:shadow-lg"
+//                 >
+//                   Upload Schedule File
+//                 </button>
+//               )}
+//             </div>
+            
+//             <div className="flex-1 overflow-hidden">
+//               <ScheduleMainView
+//                 currentSchedule={currentSchedule}
+//                 isMonthView={isMonthView}
+//                 setIsMonthView={setIsMonthView}
+//                 isDayView={isDayView}
+//                 setIsDayView={setIsDayView}
+//                 selectedDate={selectedDate}
+//                 setSelectedDate={setSelectedDate}
+//                 selectedWeekStart={selectedWeekStart}
+//                 setSelectedWeekStart={setSelectedWeekStart}
+//                 selectedMonth={selectedMonth}
+//                 setSelectedMonth={setSelectedMonth}
+//                 employeeSearch={employeeSearch}
+//                 setEmployeeSearch={setEmployeeSearch}
+//                 orderedEmployees={orderedEmployees}
+//                 filteredEmployees={filteredEmployees}
+//                 scheduleEntries={scheduleEntries}
+//                 shiftTypes={shiftTypes}
+//                 openEditModal={openEditModal}
+//                 userRole={userRole}
+//                 moveEmployee={moveEmployee}
+//                 duplicateShiftForWeek={duplicateShiftForWeek}
+//                 handleReorder={handleReorder}
+//                 loadScheduleEntries={loadScheduleEntries}
+//                 myPastEntries={myPastEntries}
+//                 uniqueId={uniqueId}
+//                 selectedTemplate={selectedTemplate}
+//                 setSelectedTemplate={setSelectedTemplate}
+//                 selectedCells={selectedCells}
+//                 setSelectedCells={setSelectedCells}
+//                 applySelectedTemplateToCells={applySelectedTemplateToCells}
+//                 employeeRoles={employeeRoles}
+//                 showBroadcastModal={showBroadcastModal}
+//                 setShowBroadcastModal={setShowBroadcastModal}
+//                 multiTemplateSelections={multiTemplateSelections}
+//                 setMultiTemplateSelections={setMultiTemplateSelections}
+//                 saveAllMultiTemplateSelections={saveAllMultiTemplateSelections}
+//                 applyTemplateToAllDaysForEmployee={applyTemplateToAllDaysForEmployee}
+//                 employees={employees}
+//                 leaveTypes={leaveTypes}
+//                 isThreeMonthView={isThreeMonthView}
+//                 setIsThreeMonthView={setIsThreeMonthView}
+//                 allPastEntries={allPastEntries}
+//                 threeMonthLoading={threeMonthLoading}
+//                 threeMonthStart={threeMonthStart}
+//                 setThreeMonthStart={setThreeMonthStart}
+//               />
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Modals */}
+//       <ScheduleUploadModal
+//         isOpen={showUploadModal}
+//         onClose={() => setShowUploadModal(false)}
+//         currentSchedule={currentSchedule}
+//         employees={employees}
+//         shiftTypes={shiftTypes}
+//         leaveTypes={leaveTypes}
+//         setScheduleEntries={setScheduleEntries}
+//         setFilteredEmployees={filteredEmployees}
+//         setEmployeeOrder={orderedEmployees}
+//         uniqueId={uniqueId}
+//         API={API}
+//       />
+
+//       <ScheduleModals
+//         showEditModal={showEditModal}
+//         setShowEditModal={setShowEditModal}
+//         editFormData={editFormData}
+//         setEditFormData={setEditFormData}
+//         editTarget={editTarget}
+//         handleShiftEdit={handleShiftEdit}
+//         handleClearShift={handleClearShift}
+//         currentSchedule={currentSchedule}
+//         shiftTypes={shiftTypes}
+//         employees={employees}
+//         uniqueId={uniqueId}
+//       />
+
+//       {showCreateModal && (
+//         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+//           <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
+//             <h2 className="text-xl font-semibold text-slate-800 mb-4">Create New Schedule</h2>
+//             <label className="block text-sm text-slate-700 mb-1">Start Date</label>
+//             <input
+//               type="date"
+//               value={newScheduleDates.start}
+//               onChange={(e) => setNewScheduleDates({ ...newScheduleDates, start: e.target.value })}
+//               className="w-full border border-slate-300 rounded-lg p-2 mb-4 focus:ring-2 focus:ring-blue-400"
+//             />
+//             <label className="block text-sm text-slate-700 mb-1">End Date</label>
+//             <input
+//               type="date"
+//               value={newScheduleDates.end}
+//               onChange={(e) => setNewScheduleDates({ ...newScheduleDates, end: e.target.value })}
+//               className="w-full border border-slate-300 rounded-lg p-2 mb-4 focus:ring-2 focus:ring-blue-400"
+//             />
+//             <label className="block text-sm text-slate-700 mb-1">Copy Employee Order From</label>
+//             <select
+//               value={sourceScheduleId}
+//               onChange={(e) => setSourceScheduleId(e.target.value)}
+//               className="w-full border border-slate-300 rounded-lg p-2 mb-6 bg-white focus:ring-2 focus:ring-blue-400"
+//             >
+//               <option value="">None (Start Fresh)</option>
+//               {availableSchedules.map(s => (
+//                 <option key={s.id} value={s.id}>
+//                   {s.name} — {s.status}
+//                 </option>
+//               ))}
+//             </select>
+//             <div className="flex justify-end gap-3">
+//               <button
+//                 onClick={() => setShowCreateModal(false)}
+//                 className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300"
+//               >
+//                 Cancel
+//               </button>
+//               <button
+//                 onClick={handleCreateSchedule}
+//                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+//               >
+//                 Create
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       <BroadcastModal
+//         showBroadcastModal={showBroadcastModal}
+//         setShowBroadcastModal={setShowBroadcastModal}
+//         uniqueId={uniqueId}
+//       />
+
+//       {showPublishWarning && (
+//         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+//           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-7 shadow-2xl">
+//             <div className="flex justify-between items-center mb-6">
+//               <h3 className="font-bold text-2xl text-amber-600">⚠️ Publish Warning</h3>
+//               <button onClick={cancelPublish} className="text-slate-500 hover:text-slate-700 text-2xl">&times;</button>
+//             </div>
+//             {excessiveUnavailability.length > 0 && (
+//               <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+//                 <h4 className="font-bold text-red-800 mb-2">⚠️ Excessive Week Offs Detected</h4>
+//                 <p className="text-red-700 mb-3">
+//                   The following employees have <strong>2 or more</strong> Week OFF days:
+//                 </p>
+//                 <ul className="space-y-2 max-h-40 overflow-y-auto">
+//                   {excessiveUnavailability.map((emp, index) => (
+//                     <li key={index} className="py-2 px-4 bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200"
+//                         onClick={() => handleEmployeeClickInModal(emp.employeeId)}>
+//                       <span className="font-medium text-slate-800">{emp.name}</span> (<span className="text-slate-600">{emp.count} days)</span>
+//                     </li>
+//                   ))}
+//                 </ul>
+//               </div>
+//             )}
+//             {unavailableEmployees.length > 0 && (
+//               <div className="mb-6">
+//                 <p className="text-slate-700 mb-3">
+//                   All employees with Week OFF ({format(new Date(targetScheduleDates.start), 'MMM d')} – {format(new Date(targetScheduleDates.end), 'MMM d, yyyy')}):
+//                 </p>
+//                 <ul className="space-y-2 max-h-40 overflow-y-auto">
+//                   {unavailableEmployees.map((emp, index) => (
+//                     <li key={index} className="py-2 px-4 bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200"
+//                         onClick={() => handleEmployeeClickInModal(emp.employeeId)}>
+//                       <span className="font-medium text-slate-800">{emp.employeeName}</span> on <span className="text-slate-600">{format(new Date(emp.date), 'MMM d, yyyy')}</span>
+//                     </li>
+//                   ))}
+//                 </ul>
+//               </div>
+//             )}
+//             {excessiveUnavailability.length === 0 && unavailableEmployees.length > 0 && (
+//               <p className="text-slate-600 mb-4 text-sm">
+//                 No employee has more than 2 Week OFF days.
+//               </p>
+//             )}
+//             <div className="flex justify-end gap-4">
+//               <button onClick={cancelPublish} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-medium">
+//                 Cancel
+//               </button>
+//               <button onClick={confirmPublish} className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white px-5 py-2.5 rounded-xl font-medium">
+//                 Confirm Publish
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+
+return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Mobile overlay when sidebar is open */}
+      {!sidebarCollapsed && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
+
+      <div className="flex flex-col lg:flex-row min-h-screen">
         {/* Mobile Toggle Button */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="lg:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-lg shadow-lg"
+          className="lg:hidden fixed top-4 left-4 z-50 bg-white p-3 rounded-lg shadow-lg hover:bg-slate-50"
+          aria-label={sidebarCollapsed ? 'Open menu' : 'Close menu'}
         >
-          {sidebarCollapsed ? '☰' : '✕'}
+          <svg 
+            className="w-6 h-6 text-slate-700" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            {sidebarCollapsed ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            )}
+          </svg>
         </button>
 
         {/* Sidebar */}
         <div className={`
-          ${sidebarCollapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
-          fixed lg:relative inset-y-0 left-0 z-40
+          ${sidebarCollapsed ? '-translate-x-full' : 'translate-x-0'}
+          fixed lg:relative top-0 left-0 bottom-0 z-40
           w-80 lg:w-80 xl:w-96
           bg-white shadow-xl
           transition-transform duration-300 ease-in-out
-          lg:transition-none
           flex flex-col
-          overflow-hidden
+          lg:translate-x-0
         `}>
-          <div className="h-full overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto overscroll-contain p-4 pt-16 lg:pt-4">
             <ScheduleSidebar
               schedules={schedules}
               currentSchedule={currentSchedule}
@@ -2150,72 +2419,75 @@ export default function SchedulePage() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden p-4 lg:p-6">
-          <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-xl shadow-lg">
-            <div className="flex-shrink-0 p-4 border-b">
-              {currentSchedule && !isMonthView && !isThreeMonthView && (
-                <button
-                  onClick={() => setShowUploadModal(true)}
-                  className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-md hover:shadow-lg"
-                >
-                  Upload Schedule File
-                </button>
-              )}
-            </div>
-            
-            <div className="flex-1 overflow-hidden">
-              <ScheduleMainView
-                currentSchedule={currentSchedule}
-                isMonthView={isMonthView}
-                setIsMonthView={setIsMonthView}
-                isDayView={isDayView}
-                setIsDayView={setIsDayView}
-                selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
-                selectedWeekStart={selectedWeekStart}
-                setSelectedWeekStart={setSelectedWeekStart}
-                selectedMonth={selectedMonth}
-                setSelectedMonth={setSelectedMonth}
-                employeeSearch={employeeSearch}
-                setEmployeeSearch={setEmployeeSearch}
-                orderedEmployees={orderedEmployees}
-                filteredEmployees={filteredEmployees}
-                scheduleEntries={scheduleEntries}
-                shiftTypes={shiftTypes}
-                openEditModal={openEditModal}
-                userRole={userRole}
-                moveEmployee={moveEmployee}
-                duplicateShiftForWeek={duplicateShiftForWeek}
-                handleReorder={handleReorder}
-                loadScheduleEntries={loadScheduleEntries}
-                myPastEntries={myPastEntries}
-                uniqueId={uniqueId}
-                selectedTemplate={selectedTemplate}
-                setSelectedTemplate={setSelectedTemplate}
-                selectedCells={selectedCells}
-                setSelectedCells={setSelectedCells}
-                applySelectedTemplateToCells={applySelectedTemplateToCells}
-                employeeRoles={employeeRoles}
-                showBroadcastModal={showBroadcastModal}
-                setShowBroadcastModal={setShowBroadcastModal}
-                multiTemplateSelections={multiTemplateSelections}
-                setMultiTemplateSelections={setMultiTemplateSelections}
-                saveAllMultiTemplateSelections={saveAllMultiTemplateSelections}
-                applyTemplateToAllDaysForEmployee={applyTemplateToAllDaysForEmployee}
-                employees={employees}
-                leaveTypes={leaveTypes}
-                isThreeMonthView={isThreeMonthView}
-                setIsThreeMonthView={setIsThreeMonthView}
-                allPastEntries={allPastEntries}
-                threeMonthLoading={threeMonthLoading}
-                threeMonthStart={threeMonthStart}
-                setThreeMonthStart={setThreeMonthStart}
-              />
+        <div className="flex-1 flex flex-col min-h-screen lg:min-h-0 pt-16 lg:pt-0">
+          <div className="flex-1 flex flex-col p-4 lg:p-6">
+            <div className="flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
+              {/* Upload Button Section */}
+              <div className="flex-shrink-0 p-4 border-b">
+                {currentSchedule && !isMonthView && !isThreeMonthView && (
+                  <button
+                    onClick={() => setShowUploadModal(true)}
+                    className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-md hover:shadow-lg w-full sm:w-auto"
+                  >
+                    Upload Schedule File
+                  </button>
+                )}
+              </div>
+              
+              {/* Schedule Main View - Scrollable */}
+              <div className="flex-1 overflow-auto">
+                <ScheduleMainView
+                  currentSchedule={currentSchedule}
+                  isMonthView={isMonthView}
+                  setIsMonthView={setIsMonthView}
+                  isDayView={isDayView}
+                  setIsDayView={setIsDayView}
+                  selectedDate={selectedDate}
+                  setSelectedDate={setSelectedDate}
+                  selectedWeekStart={selectedWeekStart}
+                  setSelectedWeekStart={setSelectedWeekStart}
+                  selectedMonth={selectedMonth}
+                  setSelectedMonth={setSelectedMonth}
+                  employeeSearch={employeeSearch}
+                  setEmployeeSearch={setEmployeeSearch}
+                  orderedEmployees={orderedEmployees}
+                  filteredEmployees={filteredEmployees}
+                  scheduleEntries={scheduleEntries}
+                  shiftTypes={shiftTypes}
+                  openEditModal={openEditModal}
+                  userRole={userRole}
+                  moveEmployee={moveEmployee}
+                  duplicateShiftForWeek={duplicateShiftForWeek}
+                  handleReorder={handleReorder}
+                  loadScheduleEntries={loadScheduleEntries}
+                  myPastEntries={myPastEntries}
+                  uniqueId={uniqueId}
+                  selectedTemplate={selectedTemplate}
+                  setSelectedTemplate={setSelectedTemplate}
+                  selectedCells={selectedCells}
+                  setSelectedCells={setSelectedCells}
+                  applySelectedTemplateToCells={applySelectedTemplateToCells}
+                  employeeRoles={employeeRoles}
+                  showBroadcastModal={showBroadcastModal}
+                  setShowBroadcastModal={setShowBroadcastModal}
+                  multiTemplateSelections={multiTemplateSelections}
+                  setMultiTemplateSelections={setMultiTemplateSelections}
+                  saveAllMultiTemplateSelections={saveAllMultiTemplateSelections}
+                  applyTemplateToAllDaysForEmployee={applyTemplateToAllDaysForEmployee}
+                  employees={employees}
+                  leaveTypes={leaveTypes}
+                  isThreeMonthView={isThreeMonthView}
+                  setIsThreeMonthView={setIsThreeMonthView}
+                  allPastEntries={allPastEntries}
+                  threeMonthLoading={threeMonthLoading}
+                  threeMonthStart={threeMonthStart}
+                  setThreeMonthStart={setThreeMonthStart}
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
-
       {/* Modals */}
       <ScheduleUploadModal
         isOpen={showUploadModal}
@@ -2245,47 +2517,60 @@ export default function SchedulePage() {
         uniqueId={uniqueId}
       />
 
+      {/* Create Schedule Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl my-8">
             <h2 className="text-xl font-semibold text-slate-800 mb-4">Create New Schedule</h2>
-            <label className="block text-sm text-slate-700 mb-1">Start Date</label>
-            <input
-              type="date"
-              value={newScheduleDates.start}
-              onChange={(e) => setNewScheduleDates({ ...newScheduleDates, start: e.target.value })}
-              className="w-full border border-slate-300 rounded-lg p-2 mb-4 focus:ring-2 focus:ring-blue-400"
-            />
-            <label className="block text-sm text-slate-700 mb-1">End Date</label>
-            <input
-              type="date"
-              value={newScheduleDates.end}
-              onChange={(e) => setNewScheduleDates({ ...newScheduleDates, end: e.target.value })}
-              className="w-full border border-slate-300 rounded-lg p-2 mb-4 focus:ring-2 focus:ring-blue-400"
-            />
-            <label className="block text-sm text-slate-700 mb-1">Copy Employee Order From</label>
-            <select
-              value={sourceScheduleId}
-              onChange={(e) => setSourceScheduleId(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg p-2 mb-6 bg-white focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="">None (Start Fresh)</option>
-              {availableSchedules.map(s => (
-                <option key={s.id} value={s.id}>
-                  {s.name} — {s.status}
-                </option>
-              ))}
-            </select>
-            <div className="flex justify-end gap-3">
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-slate-700 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={newScheduleDates.start}
+                  onChange={(e) => setNewScheduleDates({ ...newScheduleDates, start: e.target.value })}
+                  className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-slate-700 mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={newScheduleDates.end}
+                  onChange={(e) => setNewScheduleDates({ ...newScheduleDates, end: e.target.value })}
+                  className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-slate-700 mb-1">Copy Employee Order From</label>
+                <select
+                  value={sourceScheduleId}
+                  onChange={(e) => setSourceScheduleId(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg p-2 bg-white focus:ring-2 focus:ring-blue-400"
+                >
+                  <option value="">None (Start Fresh)</option>
+                  {availableSchedules.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} — {s.status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300"
+                className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 order-2 sm:order-1"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateSchedule}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 order-1 sm:order-2"
               >
                 Create
               </button>
@@ -2299,57 +2584,89 @@ export default function SchedulePage() {
         setShowBroadcastModal={setShowBroadcastModal}
         uniqueId={uniqueId}
       />
-
+      {/* Publish Warning Modal */}
       {showPublishWarning && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-7 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-2xl text-amber-600">⚠️ Publish Warning</h3>
-              <button onClick={cancelPublish} className="text-slate-500 hover:text-slate-700 text-2xl">&times;</button>
-            </div>
-            {excessiveUnavailability.length > 0 && (
-              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
-                <h4 className="font-bold text-red-800 mb-2">⚠️ Excessive Week Offs Detected</h4>
-                <p className="text-red-700 mb-3">
-                  The following employees have <strong>2 or more</strong> Week OFF days:
-                </p>
-                <ul className="space-y-2 max-h-40 overflow-y-auto">
-                  {excessiveUnavailability.map((emp, index) => (
-                    <li key={index} className="py-2 px-4 bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200"
-                        onClick={() => handleEmployeeClickInModal(emp.employeeId)}>
-                      <span className="font-medium text-slate-800">{emp.name}</span> (<span className="text-slate-600">{emp.count} days)</span>
-                    </li>
-                  ))}
-                </ul>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl my-8">
+            <div className="p-4 sm:p-7">
+              <div className="flex justify-between items-start mb-6">
+                <h3 className="font-bold text-xl sm:text-2xl text-amber-600">⚠️ Publish Warning</h3>
+                <button 
+                  onClick={cancelPublish} 
+                  className="text-slate-500 hover:text-slate-700 text-2xl leading-none -mt-1"
+                  aria-label="Close"
+                >
+                  &times;
+                </button>
               </div>
-            )}
-            {unavailableEmployees.length > 0 && (
-              <div className="mb-6">
-                <p className="text-slate-700 mb-3">
-                  All employees with Week OFF ({format(new Date(targetScheduleDates.start), 'MMM d')} – {format(new Date(targetScheduleDates.end), 'MMM d, yyyy')}):
-                </p>
-                <ul className="space-y-2 max-h-40 overflow-y-auto">
-                  {unavailableEmployees.map((emp, index) => (
-                    <li key={index} className="py-2 px-4 bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200"
-                        onClick={() => handleEmployeeClickInModal(emp.employeeId)}>
-                      <span className="font-medium text-slate-800">{emp.employeeName}</span> on <span className="text-slate-600">{format(new Date(emp.date), 'MMM d, yyyy')}</span>
-                    </li>
-                  ))}
-                </ul>
+              
+              <div className="max-h-[60vh] overflow-y-auto overscroll-contain">
+                {excessiveUnavailability.length > 0 && (
+                  <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+                    <h4 className="font-bold text-red-800 mb-2 text-sm sm:text-base">
+                      ⚠️ Excessive Week Offs Detected
+                    </h4>
+                    <p className="text-red-700 mb-3 text-sm">
+                      The following employees have <strong>2 or more</strong> Week OFF days:
+                    </p>
+                    <ul className="space-y-2 max-h-40 overflow-y-auto">
+                      {excessiveUnavailability.map((emp, index) => (
+                        <li 
+                          key={index} 
+                          className="py-2 px-4 bg-white rounded-lg cursor-pointer hover:bg-slate-50 transition-colors text-sm"
+                          onClick={() => handleEmployeeClickInModal(emp.employeeId)}
+                        >
+                          <span className="font-medium text-slate-800">{emp.name}</span>
+                          {' '}
+                          <span className="text-slate-600">({emp.count} days)</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {unavailableEmployees.length > 0 && (
+                  <div className="mb-6">
+                    <p className="text-slate-700 mb-3 text-sm sm:text-base">
+                      All employees with Week OFF ({format(new Date(targetScheduleDates.start), 'MMM d')} – {format(new Date(targetScheduleDates.end), 'MMM d, yyyy')}):
+                    </p>
+                    <ul className="space-y-2 max-h-40 overflow-y-auto">
+                      {unavailableEmployees.map((emp, index) => (
+                        <li 
+                          key={index} 
+                          className="py-2 px-4 bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200 transition-colors text-sm"
+                          onClick={() => handleEmployeeClickInModal(emp.employeeId)}
+                        >
+                          <span className="font-medium text-slate-800">{emp.employeeName}</span>
+                          {' on '}
+                          <span className="text-slate-600">{format(new Date(emp.date), 'MMM d, yyyy')}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {excessiveUnavailability.length === 0 && unavailableEmployees.length > 0 && (
+                  <p className="text-slate-600 mb-4 text-sm">
+                    No employee has more than 2 Week OFF days.
+                  </p>
+                )}
               </div>
-            )}
-            {excessiveUnavailability.length === 0 && unavailableEmployees.length > 0 && (
-              <p className="text-slate-600 mb-4 text-sm">
-                No employee has more than 2 Week OFF days.
-              </p>
-            )}
-            <div className="flex justify-end gap-4">
-              <button onClick={cancelPublish} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-medium">
-                Cancel
-              </button>
-              <button onClick={confirmPublish} className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white px-5 py-2.5 rounded-xl font-medium">
-                Confirm Publish
-              </button>
+              
+              <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 pt-4 border-t">
+                <button 
+                  onClick={cancelPublish} 
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-medium transition-colors order-2 sm:order-1"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmPublish} 
+                  className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all order-1 sm:order-2"
+                >
+                  Confirm Publish
+                </button>
+              </div>
             </div>
           </div>
         </div>
