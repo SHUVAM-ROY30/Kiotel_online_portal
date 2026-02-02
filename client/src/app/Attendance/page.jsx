@@ -507,6 +507,10 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import PhotoCapture from './PhotoCapture';
 import { FaUser, FaClock, FaCheckCircle, FaSignInAlt, FaSignOutAlt, FaIdCard, FaCalendarAlt } from 'react-icons/fa';
+// Add this import at the top with other imports
+import { format } from 'date-fns';
+
+
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || '/api';
 const ALLOWED_EMAIL = 'Clockin@kiotel.co';
@@ -604,61 +608,135 @@ export default function ClockPage() {
     setSelectedShift(shift);
   };
 
-  const handleConfirmShift = async () => {
-    if (!selectedShift || !accountNo) {
-      setMessage('Please select a shift and ensure your ID is entered.');
+  // const handleConfirmShift = async () => {
+  //   if (!selectedShift || !accountNo) {
+  //     setMessage('Please select a shift and ensure your ID is entered.');
+  //     return;
+  //   }
+  //   setLoading(true);
+  //   setMessage('');
+  //   try {
+  //     const currentDate = new Date().toISOString().split('T')[0];
+  //     const resStatus = await fetch(
+  //       `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(accountNo)}&date=${currentDate}&shift_id=${selectedShift.id}`
+  //     );
+  //     const dataStatus = await resStatus.json();
+  //     if (!resStatus.ok || !dataStatus.success) {
+  //       setIsClockedIn(false);
+  //       setClockInTime(null);
+  //       setClockOutTime(null);
+  //       setPhotoType('clock_in');
+  //       setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
+  //       setStep('action');
+  //       return;
+  //     }
+  //     const status = dataStatus.data.status;
+  //     const clockIn = dataStatus.data.clock_in;
+  //     const clockOut = dataStatus.data.clock_out;
+  //     if (status === 'clocked_in') {
+  //       setIsClockedIn(true);
+  //       setClockInTime(new Date(clockIn));
+  //       setClockOutTime(null);
+  //       setPhotoType('clock_out');
+  //       setMessage(`Currently clocked in. Ready to clock out.`);
+  //       setStep('action');
+  //     } else if (status === 'clocked_out') {
+  //       setIsClockedIn(false);
+  //       setClockInTime(new Date(clockIn));
+  //       setClockOutTime(new Date(clockOut));
+  //       setPhotoType('clock_in');
+  //       setMessage(`Already clocked out. Ready to clock in again.`);
+  //       setStep('action');
+  //     } else {
+  //       setIsClockedIn(false);
+  //       setClockInTime(null);
+  //       setClockOutTime(null);
+  //       setPhotoType('clock_in');
+  //       setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
+  //       setStep('action');
+  //     }
+  //   } catch (err) {
+  //     setMessage('Failed to check attendance status. Please try again.');
+  //     console.error(err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+const handleConfirmShift = async () => {
+  if (!selectedShift || !accountNo) {
+    setMessage('Please select a shift and ensure your ID is entered.');
+    return;
+  }
+  setLoading(true);
+  setMessage('');
+  try {
+    const currentDate = new Date().toISOString().split('T')[0];
+    const resStatus = await fetch(
+      `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(accountNo)}&date=${currentDate}&shift_id=${selectedShift.id}`
+    );
+    const dataStatus = await resStatus.json();
+    
+    // Helper function to extract time from datetime string
+    const extractTime = (datetime) => {
+      if (!datetime) return null;
+      // If it's already a time string (HH:mm or HH:mm:ss), return as-is
+      if (typeof datetime === 'string' && datetime.length <= 8 && !datetime.includes('T')) {
+        return datetime;
+      }
+      // If it's an ISO datetime, extract just the time portion
+      if (typeof datetime === 'string' && datetime.includes('T')) {
+        const timePart = datetime.split('T')[1];
+        if (timePart) {
+          return timePart.split('.')[0]; // Remove milliseconds if present
+        }
+      }
+      return datetime;
+    };
+    
+    if (!resStatus.ok || !dataStatus.success) {
+      setIsClockedIn(false);
+      setClockInTime(null);
+      setClockOutTime(null);
+      setPhotoType('clock_in');
+      setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
+      setStep('action');
       return;
     }
-    setLoading(true);
-    setMessage('');
-    try {
-      const currentDate = new Date().toISOString().split('T')[0];
-      const resStatus = await fetch(
-        `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(accountNo)}&date=${currentDate}&shift_id=${selectedShift.id}`
-      );
-      const dataStatus = await resStatus.json();
-      if (!resStatus.ok || !dataStatus.success) {
-        setIsClockedIn(false);
-        setClockInTime(null);
-        setClockOutTime(null);
-        setPhotoType('clock_in');
-        setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
-        setStep('action');
-        return;
-      }
-      const status = dataStatus.data.status;
-      const clockIn = dataStatus.data.clock_in;
-      const clockOut = dataStatus.data.clock_out;
-      if (status === 'clocked_in') {
-        setIsClockedIn(true);
-        setClockInTime(new Date(clockIn));
-        setClockOutTime(null);
-        setPhotoType('clock_out');
-        setMessage(`Currently clocked in. Ready to clock out.`);
-        setStep('action');
-      } else if (status === 'clocked_out') {
-        setIsClockedIn(false);
-        setClockInTime(new Date(clockIn));
-        setClockOutTime(new Date(clockOut));
-        setPhotoType('clock_in');
-        setMessage(`Already clocked out. Ready to clock in again.`);
-        setStep('action');
-      } else {
-        setIsClockedIn(false);
-        setClockInTime(null);
-        setClockOutTime(null);
-        setPhotoType('clock_in');
-        setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
-        setStep('action');
-      }
-    } catch (err) {
-      setMessage('Failed to check attendance status. Please try again.');
-      console.error(err);
-    } finally {
-      setLoading(false);
+    
+    const status = dataStatus.data.status;
+    const clockIn = dataStatus.data.clock_in;
+    const clockOut = dataStatus.data.clock_out;
+    
+    if (status === 'clocked_in') {
+      setIsClockedIn(true);
+      setClockInTime(extractTime(clockIn));
+      setClockOutTime(null);
+      setPhotoType('clock_out');
+      setMessage(`Currently clocked in. Ready to clock out.`);
+      setStep('action');
+    } else if (status === 'clocked_out') {
+      setIsClockedIn(false);
+      setClockInTime(extractTime(clockIn));
+      setClockOutTime(extractTime(clockOut));
+      setPhotoType('clock_in');
+      setMessage(`Already clocked out. Ready to clock in again.`);
+      setStep('action');
+    } else {
+      setIsClockedIn(false);
+      setClockInTime(null);
+      setClockOutTime(null);
+      setPhotoType('clock_in');
+      setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
+      setStep('action');
     }
-  };
-
+  } catch (err) {
+    setMessage('Failed to check attendance status. Please try again.');
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
   const handlePhotoCapture = (dataUrl) => {
     setPhotoData(dataUrl);
   };
@@ -667,68 +745,169 @@ export default function ClockPage() {
     setPhotoData(null);
   };
 
-  const handleSubmitPhoto = async () => {
-    if (!photoData || !selectedShift) return;
-    setLoading(true);
-    setMessage('');
-    try {
-      const response = await fetch(photoData);
-      const blob = await response.blob();
-      const formData = new FormData();
-      formData.append('photo', blob, 'photo.jpg');
-      formData.append('account_no', accountNo);
-      formData.append('photo_type', photoType);
-      formData.append('selected_shift_id', selectedShift.id);
-      const res = await fetch(`${API_BASE_URL}/clockin/attendance/clock`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setMessage(data.message || 'Action failed');
-        return;
-      }
-      setPhotoCaptured(true);
-      if (data.data.clock_out) {
-        setIsClockedIn(false);
-        setClockOutTime(new Date(data.data.clock_out));
-        setMessage('✅ Clocked out successfully!');
-        setPhotoType('clock_in');
-      } else {
-        setIsClockedIn(true);
-        setClockInTime(new Date(data.data.clock_in));
-        setMessage('✅ Clocked in successfully!');
-        setPhotoType('clock_out');
-      }
-    } catch (err) {
-      setMessage('Failed to process. Please try again.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const handleSubmitPhoto = async () => {
+  //   if (!photoData || !selectedShift) return;
+  //   setLoading(true);
+  //   setMessage('');
+  //   try {
+  //     const response = await fetch(photoData);
+  //     const blob = await response.blob();
+  //     const formData = new FormData();
+  //     formData.append('photo', blob, 'photo.jpg');
+  //     formData.append('account_no', accountNo);
+  //     formData.append('photo_type', photoType);
+  //     formData.append('selected_shift_id', selectedShift.id);
+  //     const res = await fetch(`${API_BASE_URL}/clockin/attendance/clock`, {
+  //       method: 'POST',
+  //       body: formData,
+  //     });
+  //     const data = await res.json();
+  //     if (!res.ok || !data.success) {
+  //       setMessage(data.message || 'Action failed');
+  //       return;
+  //     }
+  //     setPhotoCaptured(true);
+  //     if (data.data.clock_out) {
+  //       setIsClockedIn(false);
+  //       setClockOutTime(new Date(data.data.clock_out));
+  //       setMessage('✅ Clocked out successfully!');
+  //       setPhotoType('clock_in');
+  //     } else {
+  //       setIsClockedIn(true);
+  //       setClockInTime(new Date(data.data.clock_in));
+  //       setMessage('✅ Clocked in successfully!');
+  //       setPhotoType('clock_out');
+  //     }
+  //   } catch (err) {
+  //     setMessage('Failed to process. Please try again.');
+  //     console.error(err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   // const formatTime = (date) => {
   //   if (!date) return '—';
   //   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   // };
 
-    const formatTime = (value) => {
-  if (!value) return '—';
+//     const formatTime = (value) => {
+//   if (!value) return '—';
 
-  // If backend already sent formatted time (HH:mm)
-  if (typeof value === 'string' && value.length <= 8) {
-    return value;
-  }
+//   // If backend already sent formatted time (HH:mm)
+//   if (typeof value === 'string' && value.length <= 8) {
+//     return value;
+//   }
 
-  // Legacy ISO / datetime handling (version 1)
+//   // Legacy ISO / datetime handling (version 1)
+//   try {
+//     return format(new Date(value), 'h:mm a');
+//   } catch {
+//     return '—';
+//   }
+// };
+
+
+const handleSubmitPhoto = async () => {
+  if (!photoData || !selectedShift) return;
+  setLoading(true);
+  setMessage('');
   try {
-    return format(new Date(value), 'h:mm a');
-  } catch {
-    return '—';
+    const response = await fetch(photoData);
+    const blob = await response.blob();
+    const formData = new FormData();
+    formData.append('photo', blob, 'photo.jpg');
+    formData.append('account_no', accountNo);
+    formData.append('photo_type', photoType);
+    formData.append('selected_shift_id', selectedShift.id);
+    
+    const res = await fetch(`${API_BASE_URL}/clockin/attendance/clock`, {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await res.json();
+    
+    if (!res.ok || !data.success) {
+      setMessage(data.message || 'Action failed');
+      return;
+    }
+    
+    // Helper function to extract time from datetime string
+    const extractTime = (datetime) => {
+      if (!datetime) return null;
+      // If it's already a time string (HH:mm or HH:mm:ss), return as-is
+      if (typeof datetime === 'string' && datetime.length <= 8 && !datetime.includes('T')) {
+        return datetime;
+      }
+      // If it's an ISO datetime, extract just the time portion
+      if (typeof datetime === 'string' && datetime.includes('T')) {
+        const timePart = datetime.split('T')[1];
+        if (timePart) {
+          return timePart.split('.')[0]; // Remove milliseconds if present
+        }
+      }
+      return datetime;
+    };
+    
+    // Set photo as captured AFTER we update the times
+    if (data.data.clock_out) {
+      // Clocked out
+      const newClockOutTime = extractTime(data.data.clock_out);
+      const newClockInTime = data.data.clock_in ? extractTime(data.data.clock_in) : clockInTime;
+      
+      setClockOutTime(newClockOutTime);
+      setClockInTime(newClockInTime);
+      setIsClockedIn(false);
+      setMessage('✅ Clocked out successfully!');
+      setPhotoType('clock_in');
+      
+      // Small delay to ensure state is updated before setting photoCaptured
+      setTimeout(() => {
+        setPhotoCaptured(true);
+      }, 100);
+    } else {
+      // Clocked in
+      const newClockInTime = extractTime(data.data.clock_in);
+      
+      setClockInTime(newClockInTime);
+      setClockOutTime(null);
+      setIsClockedIn(true);
+      setMessage('✅ Clocked in successfully!');
+      setPhotoType('clock_out');
+      
+      // Small delay to ensure state is updated before setting photoCaptured
+      setTimeout(() => {
+        setPhotoCaptured(true);
+      }, 100);
+    }
+  } catch (err) {
+    setMessage('Failed to process. Please try again.');
+    console.error(err);
+  } finally {
+    setLoading(false);
   }
 };
 
+// Replace the formatTime function with this:
+// Replace the formatTime function with this simple version:
+const formatTime = (value) => {
+  if (!value) return '—';
+
+  // If it's already a time string (HH:mm:ss or HH:mm)
+  if (typeof value === 'string' && value.length <= 8 && !value.includes('T') && !value.includes('Z')) {
+    const parts = value.split(':');
+    if (parts.length >= 2) {
+      let hours = parseInt(parts[0]);
+      const minutes = parts[1];
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12; // Convert 0 to 12 for midnight, 13-23 to 1-11
+      return `${hours}:${minutes} ${ampm}`;
+    }
+    return value;
+  }
+
+  return '—';
+};
 
   const resetSession = () => {
     setStep('id');

@@ -3150,15 +3150,206 @@ const TableSkeleton = () => (
 );
 
 // Helper function to calculate attendance details - simple time difference calculation
+// function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, graceMinutes = 0, earlyGraceMinutes = 15) {
+//   const details = { status: 'Absent', late_minutes: 0, early_clock_out_minutes: 0, overtime_minutes: 0 };
+
+//   // If no clock-in, return absent status
+//   if (!clockIn) return details;
+
+//   // Parse the actual datetime from backend (already has correct dates)
+//   const clockInDate = new Date(clockIn);
+//   const clockOutDate = clockOut ? new Date(clockOut) : null;
+  
+//   // Validate and parse shift times
+//   let parsedShiftStart = null;
+//   let parsedShiftEnd = null;
+
+//   if (shiftStart && typeof shiftStart === 'string') {
+//     const parts = shiftStart.split(':').map(Number);
+//     if (parts.length >= 2) {
+//       parsedShiftStart = {
+//         hour: parts[0],
+//         minute: parts[1],
+//         second: parts[2] || 0
+//       };
+//     }
+//   }
+
+//   if (shiftEnd && typeof shiftEnd === 'string') {
+//     const parts = shiftEnd.split(':').map(Number);
+//     if (parts.length >= 2) {
+//       parsedShiftEnd = {
+//         hour: parts[0],
+//         minute: parts[1],
+//         second: parts[2] || 0
+//       };
+//     }
+//   }
+
+//   // If we couldn't parse valid shift times, return a default "Present" status with zero minutes
+//   if (!parsedShiftStart || !parsedShiftEnd) {
+//     details.status = 'Present';
+//     return details;
+//   }
+
+//   // Use the parsed values
+//   const shiftStartHour = parsedShiftStart.hour;
+//   const shiftStartMin = parsedShiftStart.minute;
+//   const shiftStartSec = parsedShiftStart.second;
+
+//   const shiftEndHour = parsedShiftEnd.hour;
+//   const shiftEndMin = parsedShiftEnd.minute;
+//   const shiftEndSec = parsedShiftEnd.second;
+
+//   // Determine if overnight shift
+//   const isOvernightShift = shiftEndHour < shiftStartHour || 
+//                            (shiftEndHour === shiftStartHour && shiftEndMin <= shiftStartMin);
+
+//   // Create shift start time
+//   const shiftStartDate = new Date(clockInDate);
+//   shiftStartDate.setHours(shiftStartHour, shiftStartMin, shiftStartSec, 0);
+  
+//   // For overnight shifts: if clock-in hour is in early morning (0-11) and shift starts in evening (>12),
+//   // the shift actually started on the previous day
+//   if (isOvernightShift && clockInDate.getHours() < 12 && shiftStartHour >= 12) {
+//     shiftStartDate.setDate(shiftStartDate.getDate() - 1);
+//   }
+
+//   // Calculate late minutes (difference between clock-in and shift start)
+//   const timeDiffStart = clockInDate - shiftStartDate;
+//   const minutesDiffStart = Math.floor(timeDiffStart / 60000);
+  
+//   if (minutesDiffStart > graceMinutes) {
+//     details.late_minutes = minutesDiffStart - graceMinutes;
+//     details.status = 'Late';
+//   } else {
+//     details.status = 'Present';
+//   }
+
+//   // Calculate early/overtime if clocked out
+//   if (clockOutDate) {
+//     // Create shift end time - use clock-out date as base (backend already handled overnight correctly)
+//     const shiftEndDate = new Date(clockOutDate);
+//     shiftEndDate.setHours(shiftEndHour, shiftEndMin, shiftEndSec, 0);
+    
+//     // For overnight shifts: if clock-out hour is in early morning (0-11) and shift ends in early morning,
+//     // but shift started yesterday, we need to ensure shift end is on the same day as clock out
+//     if (isOvernightShift && clockOutDate.getHours() < 12 && shiftEndHour < 12) {
+//       // Shift end is already on the correct day (same as clock out)
+//       // No adjustment needed
+//     }
+    
+//     // Simple time difference
+//     const timeDiffEnd = clockOutDate - shiftEndDate;
+//     const minutesDiffEnd = Math.floor(timeDiffEnd / 60000);
+    
+//     // If negative (clocked out before shift end), it's early
+//     if (minutesDiffEnd < -earlyGraceMinutes) {
+//       details.early_clock_out_minutes = Math.abs(minutesDiffEnd + earlyGraceMinutes);
+//       details.status = details.status === 'Late' ? 'Late & Early' : 'Early Clock Out';
+//       details.overtime_minutes = 0;
+//     } 
+//     // If positive (clocked out after shift end), it's overtime
+//     else if (minutesDiffEnd > 0) {
+//       details.overtime_minutes = minutesDiffEnd;
+//       details.early_clock_out_minutes = 0;
+//     } else {
+//       // Within grace period
+//       details.overtime_minutes = 0;
+//       details.early_clock_out_minutes = 0;
+//     }
+//   }
+
+//   return details;
+// }
+
+// Helper function to calculate attendance details - handles both version 1 (ISO) and version 2 (formatted times)
 function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, graceMinutes = 0, earlyGraceMinutes = 15) {
   const details = { status: 'Absent', late_minutes: 0, early_clock_out_minutes: 0, overtime_minutes: 0 };
 
   // If no clock-in, return absent status
   if (!clockIn) return details;
 
-  // Parse the actual datetime from backend (already has correct dates)
-  const clockInDate = new Date(clockIn);
-  const clockOutDate = clockOut ? new Date(clockOut) : null;
+  // Detect if we're using version 2 (formatted times like "09:30" or "09:30 AM") or version 1 (ISO datetime)
+  const isVersion2 = typeof clockIn === 'string' && clockIn.length <= 20 && !clockIn.includes('T') && !clockIn.includes('Z');
+  
+  let clockInDate, clockOutDate;
+  
+  if (isVersion2) {
+    // Version 2: Times are already formatted as "HH:mm", "HH:mm:ss", or "h:mm AM/PM"
+    // We need to create Date objects for today with these times
+    const today = new Date();
+    today.setSeconds(0);
+    today.setMilliseconds(0);
+    
+    // Helper to parse time string
+    const parseTimeString = (timeStr) => {
+      if (!timeStr) return null;
+      
+      // Remove any extra spaces
+      timeStr = timeStr.trim();
+      
+      // Check if it has AM/PM
+      const hasAMPM = /AM|PM/i.test(timeStr);
+      
+      if (hasAMPM) {
+        // Parse "h:mm AM/PM" format
+        const isPM = /PM/i.test(timeStr);
+        const timeOnly = timeStr.replace(/AM|PM/i, '').trim();
+        const parts = timeOnly.split(':').map(p => parseInt(p));
+        
+        if (parts.length >= 2) {
+          let hours = parts[0];
+          const minutes = parts[1];
+          
+          // Convert to 24-hour format
+          if (isPM && hours !== 12) hours += 12;
+          if (!isPM && hours === 12) hours = 0;
+          
+          return { hour: hours, minute: minutes, second: parts[2] || 0 };
+        }
+      } else {
+        // Parse "HH:mm" or "HH:mm:ss" format (24-hour)
+        const parts = timeStr.split(':').map(p => parseInt(p));
+        if (parts.length >= 2) {
+          return { hour: parts[0], minute: parts[1], second: parts[2] || 0 };
+        }
+      }
+      
+      return null;
+    };
+    
+    // Parse clock-in time
+    const clockInParsed = parseTimeString(clockIn);
+    if (clockInParsed) {
+      clockInDate = new Date(today);
+      clockInDate.setHours(clockInParsed.hour, clockInParsed.minute, clockInParsed.second, 0);
+    }
+    
+    // Parse clock-out time if exists
+    if (clockOut) {
+      const clockOutParsed = parseTimeString(clockOut);
+      if (clockOutParsed) {
+        clockOutDate = new Date(today);
+        clockOutDate.setHours(clockOutParsed.hour, clockOutParsed.minute, clockOutParsed.second, 0);
+        
+        // Handle overnight: if clock-out time is earlier than clock-in time, it's next day
+        if (clockOutDate < clockInDate) {
+          clockOutDate.setDate(clockOutDate.getDate() + 1);
+        }
+      }
+    }
+  } else {
+    // Version 1: ISO datetime strings
+    clockInDate = new Date(clockIn);
+    clockOutDate = clockOut ? new Date(clockOut) : null;
+  }
+  
+  // Validate we have valid dates
+  if (!clockInDate || isNaN(clockInDate.getTime())) {
+    details.status = 'Present';
+    return details;
+  }
   
   // Validate and parse shift times
   let parsedShiftStart = null;
@@ -3166,7 +3357,7 @@ function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, gra
 
   if (shiftStart && typeof shiftStart === 'string') {
     const parts = shiftStart.split(':').map(Number);
-    if (parts.length >= 2) {
+    if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
       parsedShiftStart = {
         hour: parts[0],
         minute: parts[1],
@@ -3177,7 +3368,7 @@ function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, gra
 
   if (shiftEnd && typeof shiftEnd === 'string') {
     const parts = shiftEnd.split(':').map(Number);
-    if (parts.length >= 2) {
+    if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
       parsedShiftEnd = {
         hour: parts[0],
         minute: parts[1],
@@ -3201,15 +3392,15 @@ function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, gra
   const shiftEndMin = parsedShiftEnd.minute;
   const shiftEndSec = parsedShiftEnd.second;
 
-  // Determine if overnight shift
+  // Determine if overnight shift (shift end is before shift start)
   const isOvernightShift = shiftEndHour < shiftStartHour || 
-                           (shiftEndHour === shiftStartHour && shiftEndMin <= shiftStartMin);
+                           (shiftEndHour === shiftStartHour && shiftEndMin < shiftStartMin);
 
-  // Create shift start time
+  // Create shift start time based on clock-in date
   const shiftStartDate = new Date(clockInDate);
   shiftStartDate.setHours(shiftStartHour, shiftStartMin, shiftStartSec, 0);
   
-  // For overnight shifts: if clock-in hour is in early morning (0-11) and shift starts in evening (>12),
+  // For overnight shifts: if clock-in is in early morning (before noon) and shift starts in evening,
   // the shift actually started on the previous day
   if (isOvernightShift && clockInDate.getHours() < 12 && shiftStartHour >= 12) {
     shiftStartDate.setDate(shiftStartDate.getDate() - 1);
@@ -3228,18 +3419,16 @@ function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, gra
 
   // Calculate early/overtime if clocked out
   if (clockOutDate) {
-    // Create shift end time - use clock-out date as base (backend already handled overnight correctly)
-    const shiftEndDate = new Date(clockOutDate);
+    // Create shift end time - start with same day as clock-in
+    const shiftEndDate = new Date(clockInDate);
     shiftEndDate.setHours(shiftEndHour, shiftEndMin, shiftEndSec, 0);
     
-    // For overnight shifts: if clock-out hour is in early morning (0-11) and shift ends in early morning,
-    // but shift started yesterday, we need to ensure shift end is on the same day as clock out
-    if (isOvernightShift && clockOutDate.getHours() < 12 && shiftEndHour < 12) {
-      // Shift end is already on the correct day (same as clock out)
-      // No adjustment needed
+    // For overnight shifts, shift end is next day
+    if (isOvernightShift) {
+      shiftEndDate.setDate(shiftEndDate.getDate() + 1);
     }
     
-    // Simple time difference
+    // Calculate time difference
     const timeDiffEnd = clockOutDate - shiftEndDate;
     const minutesDiffEnd = Math.floor(timeDiffEnd / 60000);
     
