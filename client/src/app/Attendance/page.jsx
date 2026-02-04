@@ -1,506 +1,3 @@
-
-
-
-// 'use client';
-// import { useState, useEffect } from 'react';
-// import { useRouter } from 'next/navigation';
-// import axios from 'axios';
-// import PhotoCapture from './PhotoCapture';
-
-// const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || '/api';
-// const ALLOWED_EMAIL = 'Clockin@kiotel.co';
-
-// export default function ClockPage() {
-//   const router = useRouter();
-
-//   // Auth state
-//   const [isAuthorized, setIsAuthorized] = useState(false);
-//   const [authChecked, setAuthChecked] = useState(false);
-
-//   // Clock-in flow state
-//   const [step, setStep] = useState('id');
-//   const [accountNo, setAccountNo] = useState('');
-//   const [employee, setEmployee] = useState(null);
-//   const [allShifts, setAllShifts] = useState([]);
-//   const [selectedShift, setSelectedShift] = useState(null);
-//   const [loading, setLoading] = useState(false);
-//   const [message, setMessage] = useState('');
-//   const [isClockedIn, setIsClockedIn] = useState(false);
-//   const [clockInTime, setClockInTime] = useState(null);
-//   const [clockOutTime, setClockOutTime] = useState(null);
-//   const [photoCaptured, setPhotoCaptured] = useState(false);
-//   const [photoData, setPhotoData] = useState(null);
-//   const [photoType, setPhotoType] = useState('clock_in');
-//   const [shiftCategory, setShiftCategory] = useState('General'); // 'General' | 'QA SPECIAL'
-
-//   // 🔐 AUTHORIZATION CHECK — Runs ONCE
-//   useEffect(() => {
-//     const checkAuth = async () => {
-//       try {
-//         const res = await axios.get(
-//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
-//           { withCredentials: true }
-//         );
-
-//         const userEmail = res.data.email;
-
-//         if (userEmail !== ALLOWED_EMAIL) {
-//           router.push('/sign-in?error=access_denied');
-//           return;
-//         }
-
-//         setIsAuthorized(true);
-//       } catch (err) {
-//         console.error('Auth check failed:', err);
-//         router.push('/sign-in?error=session_expired');
-//       } finally {
-//         setAuthChecked(true);
-//       }
-//     };
-
-//     checkAuth();
-//   }, [router]);
-
-//   // 📥 FETCH SHIFTS — Only after auth is confirmed
-//   useEffect(() => {
-//     if (!isAuthorized) return;
-
-//     const fetchShifts = async () => {
-//       try {
-//         const res = await fetch(`${API_BASE_URL}/clockin/shifts`);
-//         const data = await res.json();
-//         if (res.ok && Array.isArray(data)) {
-//           setAllShifts(data);
-//         } else {
-//           setAllShifts([]);
-//         }
-//       } catch (err) {
-//         console.error('Fetch shifts error', err);
-//         setAllShifts([]);
-//       }
-//     };
-
-//     fetchShifts();
-//   }, [isAuthorized]); // 👈 Dependency on isAuthorized
-
-//   // 🔑 Filter shifts by category (using category_id)
-//   const availableShifts = allShifts.filter(shift => {
-//     if (shiftCategory === 'General') return shift.category_id === 1;
-//     if (shiftCategory === 'QA SPECIAL') return shift.category_id === 2;
-//     return false;
-//   });
-
-//   // ======================
-//   // Remaining functions (unchanged)
-//   // ======================
-
-//   const handleIdSubmit = async (e) => {
-//     e.preventDefault();
-//     if (!accountNo.trim()) return;
-    
-//     setLoading(true);
-//     setMessage('');
-    
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/clockin/employee/by-unique-id?account_no=${encodeURIComponent(accountNo)}`);
-//       const data = await res.json();
-      
-//       if (!res.ok || !data.success) {
-//         setMessage(data.message || 'Employee not found');
-//         return;
-//       }
-      
-//       setEmployee(data.data);
-//       setStep('shift');
-//     } catch (err) {
-//       setMessage('Network error. Please try again.');
-//       console.error(err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const handleShiftSelection = (shift) => {
-//     setSelectedShift(shift);
-//   };
-
-//   const handleConfirmShift = async () => {
-//     if (!selectedShift || !accountNo) {
-//       setMessage('Please select a shift and ensure your ID is entered.');
-//       return;
-//     }
-
-//     setLoading(true);
-//     setMessage('');
-
-//     try {
-//       const currentDate = new Date().toISOString().split('T')[0];
-//       const resStatus = await fetch(
-//         `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(accountNo)}&date=${currentDate}&shift_id=${selectedShift.id}`
-//       );
-//       const dataStatus = await resStatus.json();
-
-//       if (!resStatus.ok || !dataStatus.success) {
-//         setIsClockedIn(false);
-//         setClockInTime(null);
-//         setClockOutTime(null);
-//         setPhotoType('clock_in');
-//         setMessage(`Ready to clock in for ${selectedShift.shift_name} (${selectedShift.start_time} - ${selectedShift.end_time}). Status check failed, assuming not clocked in.`);
-//         setStep('action');
-//         return;
-//       }
-
-//       const status = dataStatus.data.status;
-//       const clockIn = dataStatus.data.clock_in;
-//       const clockOut = dataStatus.data.clock_out;
-
-//       if (status === 'clocked_in') {
-//         setIsClockedIn(true);
-//         setClockInTime(new Date(clockIn));
-//         setClockOutTime(null);
-//         setPhotoType('clock_out');
-//         setMessage(`You are currently clocked in for ${selectedShift.shift_name}. Ready to clock out.`);
-//         setStep('action');
-//       } else if (status === 'clocked_out') {
-//         setIsClockedIn(false);
-//         setClockInTime(new Date(clockIn));
-//         setClockOutTime(new Date(clockOut));
-//         setPhotoType('clock_in');
-//         setMessage(`You have already clocked out for ${selectedShift.shift_name}. Ready to clock in again.`);
-//         setStep('action');
-//       } else {
-//         setIsClockedIn(false);
-//         setClockInTime(null);
-//         setClockOutTime(null);
-//         setPhotoType('clock_in');
-//         setMessage(`Ready to clock in for ${selectedShift.shift_name} (${selectedShift.start_time} - ${selectedShift.end_time}).`);
-//         setStep('action');
-//       }
-//     } catch (err) {
-//       setMessage('Failed to check attendance status. Please try again.');
-//       console.error(err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const handlePhotoCapture = (dataUrl) => {
-//     setPhotoData(dataUrl);
-//   };
-
-//   const handlePhotoRetake = () => {
-//     setPhotoData(null);
-//   };
-
-//   const handleSubmitPhoto = async () => {
-//     if (!photoData || !selectedShift) return;
-    
-//     setLoading(true);
-//     setMessage('');
-    
-//     try {
-//       const response = await fetch(photoData);
-//       const blob = await response.blob();
-      
-//       const formData = new FormData();
-//       formData.append('photo', blob, 'photo.jpg');
-//       formData.append('account_no', accountNo);
-//       formData.append('photo_type', photoType);
-//       formData.append('selected_shift_id', selectedShift.id);
-      
-//       const res = await fetch(`${API_BASE_URL}/clockin/attendance/clock`, {
-//         method: 'POST',
-//         body: formData,
-//       });
-      
-//       const data = await res.json();
-      
-//       if (!res.ok || !data.success) {
-//         setMessage(data.message || 'Action failed');
-//         return;
-//       }
-      
-//       setPhotoCaptured(true);
-//       if (data.data.clock_out) {
-//         setIsClockedIn(false);
-//         setClockOutTime(new Date(data.data.clock_out));
-//         setMessage('✅ Clocked out successfully!');
-//         setPhotoType('clock_in');
-//       } else {
-//         setIsClockedIn(true);
-//         setClockInTime(new Date(data.data.clock_in));
-//         setMessage('✅ Clocked in successfully!');
-//         setPhotoType('clock_out');
-//       }
-//     } catch (err) {
-//       setMessage('Failed to process. Please try again.');
-//       console.error(err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const formatTime = (date) => {
-//     if (!date) return '—';
-//     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-//   };
-
-//   const resetSession = () => {
-//     setStep('id');
-//     setAccountNo('');
-//     setEmployee(null);
-//     setSelectedShift(null);
-//     setMessage('');
-//     setPhotoCaptured(false);
-//     setPhotoData(null);
-//     setIsClockedIn(false);
-//     setClockInTime(null);
-//     setClockOutTime(null);
-//     setPhotoType('clock_in');
-//     setShiftCategory('General');
-//   };
-
-//   // 🚫 Loading / Redirect State
-//   if (!authChecked) {
-//     return (
-//       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-//         <p className="text-gray-600">Verifying access...</p>
-//       </div>
-//     );
-//   }
-
-//   if (!isAuthorized) {
-//     return null; // Redirect already triggered
-//   }
-
-//   // ======================
-//   // UI RENDERING
-//   // ======================
-
-//   if (step === 'id') {
-//     return (
-//       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
-//         <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6 border border-blue-100">
-//           <div className="text-center mb-6">
-//             <h1 className="text-2xl font-bold text-gray-800">Clock In / Clock Out</h1>
-//             <p className="text-gray-600 mt-2">Enter your Employee ID to continue</p>
-//           </div>
-//           <form onSubmit={handleIdSubmit}>
-//             <div className="mb-4">
-//               <label htmlFor="account_no" className="block text-sm font-medium text-gray-700 mb-1">
-//                 Employee ID
-//               </label>
-//               <input
-//                 id="account_no"
-//                 type="text"
-//                 value={accountNo}
-//                 onChange={(e) => setAccountNo(e.target.value)}
-//                 placeholder="e.g. EMP123"
-//                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-//                 required
-//               />
-//             </div>
-//             {message && (
-//               <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm font-medium">{message}</div>
-//             )}
-//             <button
-//               type="submit"
-//               disabled={loading}
-//               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-70 flex items-center justify-center gap-2"
-//             >
-//               {loading ? 'Loading...' : 'Continue'}
-//             </button>
-//           </form>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   if (step === 'shift') {
-//     return (
-//       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
-//         <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6 border border-blue-100">
-//           <div className="text-center mb-6">
-//             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-//               <span className="text-blue-700 font-bold">{employee?.name?.charAt(0) || '?'}</span>
-//             </div>
-//             <h2 className="text-xl font-semibold text-gray-800">{employee?.name || 'Employee'}</h2>
-//             <p className="text-gray-600 text-sm">ID: {employee?.unique_id || 'N/A'}</p>
-//           </div>
-
-//           {/* Category Toggle */}
-//           <div className="flex justify-center mb-5">
-//             <div className="inline-flex rounded-md shadow-sm" role="group">
-//               <button
-//                 type="button"
-//                 onClick={() => setShiftCategory('General')}
-//                 className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
-//                   shiftCategory === 'General'
-//                     ? 'bg-blue-600 text-white'
-//                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-//                 }`}
-//               >
-//                 General Shifts
-//               </button>
-//               <button
-//                 type="button"
-//                 onClick={() => setShiftCategory('QA SPECIAL')}
-//                 className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
-//                   shiftCategory === 'QA SPECIAL'
-//                     ? 'bg-blue-600 text-white'
-//                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-//                 }`}
-//               >
-//                 QA Special
-//               </button>
-//             </div>
-//           </div>
-
-//           <div className="mb-6">
-//             {availableShifts.length === 0 ? (
-//               <p className="text-gray-500 text-center py-4">
-//                 No {shiftCategory} shifts available.
-//               </p>
-//             ) : (
-//               <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-//                 {availableShifts.map((shift) => (
-//                   <div
-//                     key={shift.id}
-//                     onClick={() => handleShiftSelection(shift)}
-//                     className={`p-4 border rounded-lg cursor-pointer transition-all ${
-//                       selectedShift?.id === shift.id
-//                         ? 'border-blue-500 bg-blue-50'
-//                         : 'border-gray-200 hover:bg-gray-50'
-//                     }`}
-//                   >
-//                     <div className="flex justify-between items-center">
-//                       <div>
-//                         <h4 className="font-medium text-gray-800">{shift.shift_name}</h4>
-//                         <p className="text-sm text-gray-600">{shift.start_time} - {shift.end_time}</p>
-//                       </div>
-//                       {selectedShift?.id === shift.id && (
-//                         <span className="text-blue-600 font-bold">✓</span>
-//                       )}
-//                     </div>
-//                   </div>
-//                 ))}
-//               </div>
-//             )}
-//           </div>
-
-//           {message && (
-//             <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">{message}</div>
-//           )}
-
-//           <div className="flex gap-3">
-//             <button
-//               type="button"
-//               onClick={resetSession}
-//               className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
-//             >
-//               Change ID
-//             </button>
-//             <button
-//               onClick={handleConfirmShift}
-//               disabled={!selectedShift || loading}
-//               className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition ${
-//                 selectedShift && !loading
-//                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
-//                   : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-//               }`}
-//             >
-//               {loading ? 'Checking...' : 'Confirm Shift & Continue'}
-//             </button>
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   // Step: action (photo capture)
-//   return (
-//     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
-//       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6 border border-blue-100">
-//         <div className="text-center mb-6">
-//           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-//             <span className="text-blue-700 font-bold">{employee?.name?.charAt(0) || '?'}</span>
-//           </div>
-//           <h2 className="text-xl font-semibold text-gray-800">{employee?.name || 'Employee'}</h2>
-//           <p className="text-gray-600 text-sm">ID: {employee?.unique_id || 'N/A'}</p>
-//           <p className="text-gray-700 mt-1">
-//             <span className="font-medium">{selectedShift?.shift_name || 'No Shift Selected'}</span> •{' '}
-//             {selectedShift?.start_time || 'N/A'} — {selectedShift?.end_time || 'N/A'}
-//           </p>
-//         </div>
-
-//         {message && (
-//           <div className={`text-center mb-5 p-3 rounded-lg ${
-//             message.includes('Clocked out') ? 'bg-blue-100 text-blue-800' :
-//             message.includes('Clocked in') ? 'bg-green-100 text-green-800' :
-//             'bg-blue-100 text-blue-800'
-//           }`}>
-//             {message}
-//           </div>
-//         )}
-
-//         <div className="mb-6">
-//           {photoCaptured ? (
-//             <div className="text-center">
-//               <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-//                 <span className="text-green-600 text-2xl">✓</span>
-//               </div>
-//               <p className="text-gray-700 font-medium">
-//                 {isClockedIn ? 'Ready for Clock-out' : 'Session Complete'}
-//               </p>
-//             </div>
-//           ) : (
-//             <PhotoCapture
-//               onCapture={handlePhotoCapture}
-//               onRetake={handlePhotoRetake}
-//               isCaptured={photoCaptured}
-//               isLoading={loading}
-//               photoType={photoType}
-//             />
-//           )}
-//         </div>
-
-//         {(clockInTime || clockOutTime) && (
-//           <div className="bg-gray-50 rounded-lg p-4 mb-6">
-//             <div className="flex justify-between text-sm">
-//               <span className="text-gray-600">Clock In:</span>
-//               <span className="font-medium">{formatTime(clockInTime)}</span>
-//             </div>
-//             <div className="flex justify-between text-sm mt-1">
-//               <span className="text-gray-600">Clock Out:</span>
-//               <span className="font-medium">{formatTime(clockOutTime)}</span>
-//             </div>
-//           </div>
-//         )}
-
-//         <div className="flex gap-3">
-//           <button
-//             type="button"
-//             onClick={resetSession}
-//             className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
-//           >
-//             Change ID
-//           </button>
-//           {!photoCaptured && photoData && (
-//             <button
-//               onClick={handleSubmitPhoto}
-//               disabled={loading}
-//               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-70"
-//             >
-//               {loading ? 'Processing...' : 'Submit Photo'}
-//             </button>
-//           )}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -608,60 +105,7 @@ export default function ClockPage() {
     setSelectedShift(shift);
   };
 
-  // const handleConfirmShift = async () => {
-  //   if (!selectedShift || !accountNo) {
-  //     setMessage('Please select a shift and ensure your ID is entered.');
-  //     return;
-  //   }
-  //   setLoading(true);
-  //   setMessage('');
-  //   try {
-  //     const currentDate = new Date().toISOString().split('T')[0];
-  //     const resStatus = await fetch(
-  //       `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(accountNo)}&date=${currentDate}&shift_id=${selectedShift.id}`
-  //     );
-  //     const dataStatus = await resStatus.json();
-  //     if (!resStatus.ok || !dataStatus.success) {
-  //       setIsClockedIn(false);
-  //       setClockInTime(null);
-  //       setClockOutTime(null);
-  //       setPhotoType('clock_in');
-  //       setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
-  //       setStep('action');
-  //       return;
-  //     }
-  //     const status = dataStatus.data.status;
-  //     const clockIn = dataStatus.data.clock_in;
-  //     const clockOut = dataStatus.data.clock_out;
-  //     if (status === 'clocked_in') {
-  //       setIsClockedIn(true);
-  //       setClockInTime(new Date(clockIn));
-  //       setClockOutTime(null);
-  //       setPhotoType('clock_out');
-  //       setMessage(`Currently clocked in. Ready to clock out.`);
-  //       setStep('action');
-  //     } else if (status === 'clocked_out') {
-  //       setIsClockedIn(false);
-  //       setClockInTime(new Date(clockIn));
-  //       setClockOutTime(new Date(clockOut));
-  //       setPhotoType('clock_in');
-  //       setMessage(`Already clocked out. Ready to clock in again.`);
-  //       setStep('action');
-  //     } else {
-  //       setIsClockedIn(false);
-  //       setClockInTime(null);
-  //       setClockOutTime(null);
-  //       setPhotoType('clock_in');
-  //       setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
-  //       setStep('action');
-  //     }
-  //   } catch (err) {
-  //     setMessage('Failed to check attendance status. Please try again.');
-  //     console.error(err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+
 
 const handleConfirmShift = async () => {
   if (!selectedShift || !accountNo) {
@@ -744,70 +188,6 @@ const handleConfirmShift = async () => {
   const handlePhotoRetake = () => {
     setPhotoData(null);
   };
-
-  // const handleSubmitPhoto = async () => {
-  //   if (!photoData || !selectedShift) return;
-  //   setLoading(true);
-  //   setMessage('');
-  //   try {
-  //     const response = await fetch(photoData);
-  //     const blob = await response.blob();
-  //     const formData = new FormData();
-  //     formData.append('photo', blob, 'photo.jpg');
-  //     formData.append('account_no', accountNo);
-  //     formData.append('photo_type', photoType);
-  //     formData.append('selected_shift_id', selectedShift.id);
-  //     const res = await fetch(`${API_BASE_URL}/clockin/attendance/clock`, {
-  //       method: 'POST',
-  //       body: formData,
-  //     });
-  //     const data = await res.json();
-  //     if (!res.ok || !data.success) {
-  //       setMessage(data.message || 'Action failed');
-  //       return;
-  //     }
-  //     setPhotoCaptured(true);
-  //     if (data.data.clock_out) {
-  //       setIsClockedIn(false);
-  //       setClockOutTime(new Date(data.data.clock_out));
-  //       setMessage('✅ Clocked out successfully!');
-  //       setPhotoType('clock_in');
-  //     } else {
-  //       setIsClockedIn(true);
-  //       setClockInTime(new Date(data.data.clock_in));
-  //       setMessage('✅ Clocked in successfully!');
-  //       setPhotoType('clock_out');
-  //     }
-  //   } catch (err) {
-  //     setMessage('Failed to process. Please try again.');
-  //     console.error(err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // const formatTime = (date) => {
-  //   if (!date) return '—';
-  //   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  // };
-
-//     const formatTime = (value) => {
-//   if (!value) return '—';
-
-//   // If backend already sent formatted time (HH:mm)
-//   if (typeof value === 'string' && value.length <= 8) {
-//     return value;
-//   }
-
-//   // Legacy ISO / datetime handling (version 1)
-//   try {
-//     return format(new Date(value), 'h:mm a');
-//   } catch {
-//     return '—';
-//   }
-// };
-
-
 const handleSubmitPhoto = async () => {
   if (!photoData || !selectedShift) return;
   setLoading(true);
@@ -967,7 +347,7 @@ const formatTime = (value) => {
                   <FaIdCard className="text-blue-600" />
                   Employee ID
                 </label>
-                <input
+                {/* <input
                   id="account_no"
                   type="text"
                   value={accountNo}
@@ -975,7 +355,47 @@ const formatTime = (value) => {
                   placeholder="e.g. EMP123"
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
                   required
-                />
+                /> */}
+                <input
+  type="text"
+  value={accountNo}
+  onChange={(e) => setAccountNo(e.target.value)}
+  placeholder="Enter Employee ID"
+
+  /* 🔒 Strong autofill suppression */
+  autoComplete="off"
+  autoCorrect="off"
+  autoCapitalize="off"
+  spellCheck={false}
+  inputMode="text"
+  enterKeyHint="done"
+
+  /* 🔒 Break Chrome heuristics */
+  name="field_empl_attendance_x9f2"
+  id="field_empl_attendance_x9f2"
+  aria-autocomplete="none"
+  data-form-type="other"
+
+  /* 🔒 Clipboard control */
+  onPaste={(e) => e.preventDefault()}
+  onCopy={(e) => e.preventDefault()}
+  onCut={(e) => e.preventDefault()}
+
+  /* 🔒 Shortcut blocking */
+  onKeyDown={(e) => {
+    if (e.ctrlKey || e.metaKey) {
+      const blocked = ['v', 'c', 'x'];
+      if (blocked.includes(e.key.toLowerCase())) {
+        e.preventDefault();
+      }
+    }
+  }}
+
+  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl
+             focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+             outline-none transition text-lg"
+/>
+
               </div>
 
               {message && (
@@ -1046,7 +466,7 @@ const formatTime = (value) => {
                         <FaIdCard className="text-blue-600" />
                         Employee ID
                       </label>
-                      <input
+                      {/* <input
                         id="account_no_desktop"
                         type="text"
                         value={accountNo}
@@ -1054,7 +474,47 @@ const formatTime = (value) => {
                         placeholder="e.g. EMP123"
                         className="w-full px-4 py-4 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
                         required
-                      />
+                      /> */}
+                      <input
+  type="text"
+  value={accountNo}
+  onChange={(e) => setAccountNo(e.target.value)}
+  placeholder="Enter Employee ID"
+
+  /* 🔒 Strong autofill suppression */
+  autoComplete="off"
+  autoCorrect="off"
+  autoCapitalize="off"
+  spellCheck={false}
+  inputMode="text"
+  enterKeyHint="done"
+
+  /* 🔒 Break Chrome heuristics */
+  name="field_empl_attendance_x9f2"
+  id="field_empl_attendance_x9f2"
+  aria-autocomplete="none"
+  data-form-type="other"
+
+  /* 🔒 Clipboard control */
+  onPaste={(e) => e.preventDefault()}
+  onCopy={(e) => e.preventDefault()}
+  onCut={(e) => e.preventDefault()}
+
+  /* 🔒 Shortcut blocking */
+  onKeyDown={(e) => {
+    if (e.ctrlKey || e.metaKey) {
+      const blocked = ['v', 'c', 'x'];
+      if (blocked.includes(e.key.toLowerCase())) {
+        e.preventDefault();
+      }
+    }
+  }}
+
+  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl
+             focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+             outline-none transition text-lg"
+/>
+
                     </div>
 
                     {message && (
