@@ -201,10 +201,17 @@ const handleSubmitPhoto = async () => {
     formData.append('photo_type', photoType);
     formData.append('selected_shift_id', selectedShift.id);
     
-    const res = await fetch(`${API_BASE_URL}/clockin/attendance/clock`, {
-      method: 'POST',
-      body: formData,
-    });
+    // const res = await fetch(`${API_BASE_URL}/clockin/attendance/clock`, {
+    //   method: 'POST',
+    //   body: formData,
+    // });
+    const res = await fetch(`${API_BASE_URL}/clockin/attendance/clock?account_no=${encodeURIComponent(accountNo)}&photo_type=${photoType}`,
+  {
+    method: 'POST',
+    body: formData,
+  }
+);
+
     const data = await res.json();
     
     if (!res.ok || !data.success) {
