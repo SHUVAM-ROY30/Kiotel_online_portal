@@ -1372,30 +1372,71 @@ export default function SchedulePage() {
 
   // CONTINUE FROM PART 1...
 
+  // const orderedEmployees = useMemo(() => {
+  //   if (!employees.length) return [];
+  //   const activeEmployeeIds = new Set(employees.map(emp => emp.id));
+  //   // if (![1, 5].includes(userRole)) {
+  //   //   const employeeIdsInEntries = new Set(scheduleEntries.map(e => Number(e.user_id)));
+  //   //   return employees.filter(emp => employeeIdsInEntries.has(emp.id));
+  //   // }
+  //   // NEW: Only show assigned employees to non-admin/HR users, OR when schedule is LIVE for HR
+  //   if (!(userRole === 1 || (userRole === 5 && currentSchedule?.status === 'DRAFT'))) {
+  //   const employeeIdsInEntries = new Set(scheduleEntries.map(e => Number(e.user_id)));
+  //   return employees.filter(emp => employeeIdsInEntries.has(emp.id));
+  // }
+  //   let displayOrder = [];
+  //   if (currentSchedule?.employee_order && Array.isArray(currentSchedule.employee_order)) {
+  //     displayOrder = currentSchedule.employee_order.filter(id => activeEmployeeIds.has(id));
+  //   }
+  //   const orderSet = new Set(displayOrder);
+  //   const missingEmployees = employees
+  //     .map(emp => emp.id)
+  //     .filter(id => !orderSet.has(id));
+  //   const finalOrder = [...displayOrder, ...missingEmployees];
+  //   const empMap = new Map(employees.map(emp => [emp.id, emp]));
+  //   return finalOrder.map(id => empMap.get(id)).filter(Boolean);
+  // }, [employees, scheduleEntries, currentSchedule, userRole]);
+
   const orderedEmployees = useMemo(() => {
-    if (!employees.length) return [];
-    const activeEmployeeIds = new Set(employees.map(emp => emp.id));
-    // if (![1, 5].includes(userRole)) {
-    //   const employeeIdsInEntries = new Set(scheduleEntries.map(e => Number(e.user_id)));
-    //   return employees.filter(emp => employeeIdsInEntries.has(emp.id));
-    // }
-    // NEW: Only show assigned employees to non-admin/HR users, OR when schedule is LIVE for HR
-    if (!(userRole === 1 || (userRole === 5 && currentSchedule?.status === 'DRAFT'))) {
+  if (!employees.length) return [];
+  const activeEmployeeIds = new Set(employees.map(emp => emp.id));
+  
+  // For non-admin/HR users, OR when schedule is LIVE for HR, show only assigned employees
+  const shouldFilterByEntries = !(userRole === 1 || (userRole === 5 && currentSchedule?.status === 'DRAFT'));
+  
+  let employeesToDisplay = employees;
+  
+  if (shouldFilterByEntries) {
     const employeeIdsInEntries = new Set(scheduleEntries.map(e => Number(e.user_id)));
-    return employees.filter(emp => employeeIdsInEntries.has(emp.id));
+    employeesToDisplay = employees.filter(emp => employeeIdsInEntries.has(emp.id));
   }
-    let displayOrder = [];
-    if (currentSchedule?.employee_order && Array.isArray(currentSchedule.employee_order)) {
-      displayOrder = currentSchedule.employee_order.filter(id => activeEmployeeIds.has(id));
-    }
-    const orderSet = new Set(displayOrder);
-    const missingEmployees = employees
-      .map(emp => emp.id)
-      .filter(id => !orderSet.has(id));
-    const finalOrder = [...displayOrder, ...missingEmployees];
-    const empMap = new Map(employees.map(emp => [emp.id, emp]));
-    return finalOrder.map(id => empMap.get(id)).filter(Boolean);
-  }, [employees, scheduleEntries, currentSchedule, userRole]);
+  
+  // Build display order from currentSchedule.employee_order
+  let displayOrder = [];
+  if (currentSchedule?.employee_order && Array.isArray(currentSchedule.employee_order)) {
+    displayOrder = currentSchedule.employee_order.filter(id => activeEmployeeIds.has(id));
+  }
+  
+  // If we're filtering by entries, only keep IDs that are in entries
+  if (shouldFilterByEntries) {
+    const employeeIdsInEntries = new Set(scheduleEntries.map(e => Number(e.user_id)));
+    displayOrder = displayOrder.filter(id => employeeIdsInEntries.has(id));
+  }
+  
+  // Find employees not in the order (either new or missing from employee_order)
+  const orderSet = new Set(displayOrder);
+  const missingEmployees = employeesToDisplay
+    .map(emp => emp.id)
+    .filter(id => !orderSet.has(id));
+  
+  // Combine ordered employees with missing ones
+  const finalOrder = [...displayOrder, ...missingEmployees];
+  
+  // Map IDs back to employee objects
+  const empMap = new Map(employees.map(emp => [emp.id, emp]));
+  return finalOrder.map(id => empMap.get(id)).filter(Boolean);
+}, [employees, scheduleEntries, currentSchedule, userRole]);
+
 
   const filteredEmployees = useMemo(() => {
     if (!employeeSearch) return orderedEmployees;
