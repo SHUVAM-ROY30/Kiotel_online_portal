@@ -1,199 +1,3 @@
-
-
-
-
-// 'use client';
-
-// import { useState, useRef, useEffect } from 'react';
-
-// const PhotoCapture = ({ 
-//   onCapture, 
-//   onRetake, 
-//   isCaptured, 
-//   isLoading,
-//   photoType // 'clock_in' or 'clock_out'
-// }) => {
-//   const videoRef = useRef(null);
-//   const canvasRef = useRef(null);
-//   const [stream, setStream] = useState(null);
-//   const [capturedPhoto, setCapturedPhoto] = useState(null);
-//   const [facingMode, setFacingMode] = useState('user'); // 'user' (front) or 'environment' (back)
-//   const [cameraError, setCameraError] = useState('');
-
-//   // Clean up stream on unmount or when switching cameras
-//   useEffect(() => {
-//     return () => {
-//       if (stream) {
-//         stream.getTracks().forEach(track => track.stop());
-//       }
-//     };
-//   }, []);
-
-//   // Start or restart camera when facingMode or isCaptured changes
-//   useEffect(() => {
-//     if (!isCaptured) {
-//       startCamera();
-//     }
-//   }, [isCaptured, facingMode]);
-
-//   const startCamera = async () => {
-//     if (stream) {
-//       stream.getTracks().forEach(track => track.stop());
-//     }
-
-//     try {
-//       setCameraError('');
-//       const constraints = {
-//         video: {
-//           facingMode: facingMode,
-//           width: { ideal: 1280 },
-//           height: { ideal: 720 }
-//         }
-//       };
-
-//       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-//       setStream(mediaStream);
-//       if (videoRef.current) {
-//         videoRef.current.srcObject = mediaStream;
-//       }
-//     } catch (err) {
-//       console.error('Camera access error:', err);
-//       let errorMsg = 'Unable to access camera.';
-//       if (err.name === 'NotAllowedError') {
-//         errorMsg = 'Camera access denied. Please allow camera permissions.';
-//       } else if (err.name === 'NotFoundError') {
-//         errorMsg = 'No camera found on this device.';
-//       }
-//       setCameraError(errorMsg);
-//     }
-//   };
-
-//   const capturePhoto = () => {
-//     if (!videoRef.current || !canvasRef.current) return;
-    
-//     const video = videoRef.current;
-//     const canvas = canvasRef.current;
-    
-//     canvas.width = video.videoWidth;
-//     canvas.height = video.videoHeight;
-    
-//     const ctx = canvas.getContext('2d');
-//     // Flip image horizontally if using front camera (mirror effect)
-//     if (facingMode === 'user') {
-//       ctx.translate(canvas.width, 0);
-//       ctx.scale(-1, 1);
-//     }
-//     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-//     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-//     setCapturedPhoto(dataUrl);
-//     onCapture(dataUrl);
-//   };
-
-//   const retakePhoto = () => {
-//     setCapturedPhoto(null);
-//     onRetake();
-//     // Camera will restart via useEffect
-//   };
-
-//   const toggleCamera = () => {
-//     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
-//   };
-
-//   const actionLabel = photoType === 'clock_in' ? 'Clock-in' : 'Clock-out';
-
-//   if (isCaptured) return null;
-
-//   return (
-//     <div className="w-full max-w-md">
-//       {/* Camera View */}
-//       {!capturedPhoto ? (
-//         <div className="relative bg-black rounded-xl overflow-hidden shadow-lg">
-//           {cameraError ? (
-//             <div className="w-full h-64 flex items-center justify-center bg-gray-900 text-red-400 text-center p-4">
-//               <p>{cameraError}</p>
-//             </div>
-//           ) : (
-//             <>
-//               <video
-//                 ref={videoRef}
-//                 autoPlay
-//                 playsInline
-//                 muted
-//                 className={`w-full ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
-//                 style={{ aspectRatio: '4/3' }}
-//               />
-              
-//               {/* Overlay frame */}
-//               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-//                 <div className="w-4/5 h-4/5 border-2 border-blue-400 border-dashed rounded-lg opacity-60"></div>
-//               </div>
-
-             
-//             </>
-//           )}
-//         </div>
-//       ) : (
-//         // Preview captured photo
-//         <div className="relative rounded-xl overflow-hidden shadow-lg">
-//           <img 
-//             src={capturedPhoto} 
-//             alt="Captured" 
-//             className="w-full"
-//             style={{ aspectRatio: '4/3' }}
-//           />
-//           <button
-//             onClick={retakePhoto}
-//             disabled={isLoading}
-//             className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-full font-medium shadow-lg transition disabled:opacity-50"
-//           >
-//             Retake Photo
-//           </button>
-//         </div>
-//       )}
-
-//       {/* Action Buttons */}
-//       <div className="mt-5 flex flex-col gap-3">
-//         {!capturedPhoto && !cameraError && (
-//           <button
-//             onClick={capturePhoto}
-//             disabled={isLoading}
-//             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-60 flex items-center justify-center gap-2"
-//           >
-//             {isLoading ? (
-//               <>
-//                 <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-//                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-//                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-//                 </svg>
-//                 Processing...
-//               </>
-//             ) : (
-//               `Capture ${actionLabel} Photo`
-//             )}
-//           </button>
-//         )}
-
-//         {cameraError && (
-//           <button
-//             onClick={startCamera}
-//             className="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 rounded-xl transition"
-//           >
-//             Retry Camera
-//           </button>
-//         )}
-//       </div>
-
-//       {/* Hidden canvas for capturing */}
-//       <canvas ref={canvasRef} className="hidden" />
-//     </div>
-//   );
-// };
-
-// export default PhotoCapture;
-
-
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -212,53 +16,117 @@ const PhotoCapture = ({
   const [facingMode, setFacingMode] = useState('user'); // 'user' (front) or 'environment' (back)
   const [cameraError, setCameraError] = useState('');
 
-  // Clean up stream on unmount or when switching cameras
-  useEffect(() => {
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, []);
-
-  // Start or restart camera when facingMode or isCaptured changes
-  useEffect(() => {
-    if (!isCaptured) {
-      startCamera();
-    }
-  }, [isCaptured, facingMode]);
-
-  const startCamera = async () => {
+  // // Clean up stream on unmount or when switching cameras
+  // useEffect(() => {
+  //   return () => {
+  //     if (stream) {
+  //       stream.getTracks().forEach(track => track.stop());
+  //     }
+  //   };
+  // }, []);
+useEffect(() => {
+  return () => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
     }
+  };
+}, [stream]);
 
-    try {
-      setCameraError('');
-      const constraints = {
-        video: {
-          facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+  // // Start or restart camera when facingMode or isCaptured changes
+  // useEffect(() => {
+  //   if (!isCaptured) {
+  //     startCamera();
+  //   }
+  // }, [isCaptured, facingMode]);
+
+
+  useEffect(() => {
+  if (!isCaptured && !capturedPhoto) {
+    startCamera();
+  }
+}, [isCaptured, capturedPhoto, facingMode]);
+
+  // const startCamera = async () => {
+  //   if (stream) {
+  //     stream.getTracks().forEach(track => track.stop());
+  //   }
+
+  //   try {
+  //     setCameraError('');
+  //     const constraints = {
+  //       video: {
+  //         facingMode: facingMode,
+  //         width: { ideal: 1280 },
+  //         height: { ideal: 720 }
+  //       }
+  //     };
+
+  //     const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+  //     setStream(mediaStream);
+  //     if (videoRef.current) {
+  //       videoRef.current.srcObject = mediaStream;
+  //     }
+  //   } catch (err) {
+  //     console.error('Camera access error:', err);
+  //     let errorMsg = 'Unable to access camera.';
+  //     if (err.name === 'NotAllowedError') {
+  //       errorMsg = 'Camera access denied. Please allow camera permissions.';
+  //     } else if (err.name === 'NotFoundError') {
+  //       errorMsg = 'No camera found on this device.';
+  //     }
+  //     setCameraError(errorMsg);
+  //   }
+  // };
+
+const startCamera = async () => {
+  try {
+    setCameraError('');
+
+    // Stop existing stream safely
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+
+    const mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode,
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    });
+
+    setStream(mediaStream);
+
+    // IMPORTANT: defer video binding
+    requestAnimationFrame(() => {
+      if (!videoRef.current) return;
+
+      videoRef.current.srcObject = mediaStream;
+
+      // Wait until metadata is ready
+      videoRef.current.onloadedmetadata = () => {
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // AbortError is EXPECTED here sometimes — ignore
+          });
         }
       };
+    });
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-    } catch (err) {
-      console.error('Camera access error:', err);
-      let errorMsg = 'Unable to access camera.';
-      if (err.name === 'NotAllowedError') {
-        errorMsg = 'Camera access denied. Please allow camera permissions.';
-      } else if (err.name === 'NotFoundError') {
-        errorMsg = 'No camera found on this device.';
-      }
-      setCameraError(errorMsg);
-    }
-  };
+  } catch (err) {
+    console.error('Camera access error:', err);
+    setCameraError(
+      err.name === 'NotAllowedError'
+        ? 'Camera access denied. Please allow camera permissions.'
+        : err.name === 'NotFoundError'
+        ? 'No camera found on this device.'
+        : 'Unable to access camera.'
+    );
+  }
+};
+
 
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -282,11 +150,19 @@ const PhotoCapture = ({
     onCapture(dataUrl);
   };
 
-  const retakePhoto = () => {
-    setCapturedPhoto(null);
-    onRetake();
-    // Camera will restart via useEffect
-  };
+  // const retakePhoto = () => {
+  //   setCapturedPhoto(null);
+  //   onRetake();
+  //   // Camera will restart via useEffect
+  // };
+const retakePhoto = async () => {
+  setCapturedPhoto(null);
+  onRetake();
+
+  // Force camera restart
+  await startCamera();
+};
+
 
   const toggleCamera = () => {
     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
@@ -302,14 +178,9 @@ const PhotoCapture = ({
       {/* Header Section */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
-          {/* <div className={`w-2 h-8 rounded-full bg-gradient-to-b ${actionColor}`}></div> */}
-          {/* <h2 className="text-2xl font-bold text-gray-800">
-            {actionLabel} Verification
-          </h2> */}
+          
         </div>
-        {/* <p className="text-sm text-gray-500 ml-5">
-          Position your face within the frame for attendance verification
-        </p> */}
+        
       </div>
 
       {/* Camera View Container */}
@@ -345,12 +216,7 @@ const PhotoCapture = ({
                   {/* Face Frame Guide */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-8">
                     <div className="relative w-full max-w-xs aspect-[3/4]">
-                      {/* Corner Brackets */}
-                      {/* <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-blue-400 rounded-tl-2xl shadow-lg shadow-blue-500/50"></div>
-                      <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-blue-900 rounded-tr-2xl shadow-lg shadow-blue-500/50"></div>
-                      <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-blue-400 rounded-bl-2xl shadow-lg shadow-blue-500/50"></div>
-                      <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-blue-400 rounded-br-2xl shadow-lg shadow-blue-500/50"></div> */}
-                      
+                    
                       {/* Center guide text */}
                       <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 bg-blue-500/90 backdrop-blur-sm px-4 py-2 rounded-full">
                         {/* <p className="text-white text-xs font-medium whitespace-nowrap">
@@ -369,16 +235,7 @@ const PhotoCapture = ({
                       </p>
                     </div>
                     
-                    {/* Flip Camera Button */}
-                    {/* <button
-                      onClick={toggleCamera}
-                      className="bg-white/90 backdrop-blur-md hover:bg-white p-2.5 rounded-full transition-all shadow-lg hover:shadow-xl border border-gray-200"
-                      aria-label="Switch camera"
-                    >
-                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    </button> */}
+                   
                   </div>
                 </div>
               </>
