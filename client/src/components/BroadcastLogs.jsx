@@ -147,9 +147,9 @@ export default function BroadcastLogs({ onBack }) {
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date & Time
-                  </th>
+                  </th> */}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Subject
                   </th>
@@ -209,9 +209,9 @@ export default function BroadcastLogs({ onBack }) {
                 ) : (
                   logs.map((log) => (
                     <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      {/* <td className="px-6 py-4 whitespace-nowrap">
                         <p className="text-sm text-gray-900">{formatDate(log.created_at)}</p>
-                      </td>
+                      </td> */}
                       <td className="px-6 py-4">
                         <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
                           {log.subject}
@@ -335,10 +335,10 @@ export default function BroadcastLogs({ onBack }) {
                       <p className="text-sm text-gray-900 mt-1">{selectedLog.broadcast.created_by}</p>
                     </div>
                   </div>
-                  <div>
+                  {/* <div>
                     <p className="text-xs text-gray-500">Sent At</p>
                     <p className="text-sm text-gray-900 mt-1">{formatDate(selectedLog.broadcast.created_at)}</p>
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
