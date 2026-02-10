@@ -240,13 +240,13 @@ export default function Sidebar({ setActiveComponent }) {
       />
 
       {/* Shift Management Section */}
-      <SidebarSection
+      {/* <SidebarSection
         title="Shift Management"
         items={shiftManagementItems}
         activeTab={activeTab}
         setActiveComponent={setActiveComponent}
         setActiveTab={setActiveTab}
-      />
+      /> */}
 
       {/* Broadcast Message Section */}
       <SidebarSection
