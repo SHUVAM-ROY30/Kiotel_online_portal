@@ -452,7 +452,7 @@ export default function BroadcastMessage() {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/employee/employees`);
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/employee/employees2`);
         const employeeData = res.data.data || [];
         const formatted = employeeData.map(emp => ({
           ...emp,
