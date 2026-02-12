@@ -1551,7 +1551,7 @@ export default function LeaveRequestsList() {
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-gray-900">Filter by Leave Request Dates</h3>
               <p className="text-xs text-gray-500 mt-1">
-                Shows all requests where the employee's leave falls within or overlaps the selected date range.
+                Shows all requests where the employee leave falls within or overlaps the selected date range.
               </p>
             </div>
 
