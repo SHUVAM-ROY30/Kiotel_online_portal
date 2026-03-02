@@ -1397,46 +1397,72 @@ export default function SchedulePage() {
   //   return finalOrder.map(id => empMap.get(id)).filter(Boolean);
   // }, [employees, scheduleEntries, currentSchedule, userRole]);
 
-  const orderedEmployees = useMemo(() => {
+//   const orderedEmployees = useMemo(() => {
+//   if (!employees.length) return [];
+//   const activeEmployeeIds = new Set(employees.map(emp => emp.id));
+  
+//   // For non-admin/HR users, OR when schedule is LIVE for HR, show only assigned employees
+//   const shouldFilterByEntries = !(userRole === 1 || (userRole === 5 && currentSchedule?.status === 'DRAFT'));
+  
+//   let employeesToDisplay = employees;
+  
+//   if (shouldFilterByEntries) {
+//     const employeeIdsInEntries = new Set(scheduleEntries.map(e => Number(e.user_id)));
+//     employeesToDisplay = employees.filter(emp => employeeIdsInEntries.has(emp.id));
+//   }
+  
+//   // Build display order from currentSchedule.employee_order
+//   let displayOrder = [];
+//   if (currentSchedule?.employee_order && Array.isArray(currentSchedule.employee_order)) {
+//     displayOrder = currentSchedule.employee_order.filter(id => activeEmployeeIds.has(id));
+//   }
+  
+//   // If we're filtering by entries, only keep IDs that are in entries
+//   if (shouldFilterByEntries) {
+//     const employeeIdsInEntries = new Set(scheduleEntries.map(e => Number(e.user_id)));
+//     displayOrder = displayOrder.filter(id => employeeIdsInEntries.has(id));
+//   }
+  
+//   // Find employees not in the order (either new or missing from employee_order)
+//   const orderSet = new Set(displayOrder);
+//   const missingEmployees = employeesToDisplay
+//     .map(emp => emp.id)
+//     .filter(id => !orderSet.has(id));
+  
+//   // Combine ordered employees with missing ones
+//   const finalOrder = [...displayOrder, ...missingEmployees];
+  
+//   // Map IDs back to employee objects
+//   const empMap = new Map(employees.map(emp => [emp.id, emp]));
+//   return finalOrder.map(id => empMap.get(id)).filter(Boolean);
+// }, [employees, scheduleEntries, currentSchedule, userRole]);
+
+const orderedEmployees = useMemo(() => {
   if (!employees.length) return [];
   const activeEmployeeIds = new Set(employees.map(emp => emp.id));
-  
-  // For non-admin/HR users, OR when schedule is LIVE for HR, show only assigned employees
-  const shouldFilterByEntries = !(userRole === 1 || (userRole === 5 && currentSchedule?.status === 'DRAFT'));
-  
+
+  // Always show all employees, regardless of whether they have schedule entries
   let employeesToDisplay = employees;
-  
-  if (shouldFilterByEntries) {
-    const employeeIdsInEntries = new Set(scheduleEntries.map(e => Number(e.user_id)));
-    employeesToDisplay = employees.filter(emp => employeeIdsInEntries.has(emp.id));
-  }
-  
+
   // Build display order from currentSchedule.employee_order
   let displayOrder = [];
   if (currentSchedule?.employee_order && Array.isArray(currentSchedule.employee_order)) {
     displayOrder = currentSchedule.employee_order.filter(id => activeEmployeeIds.has(id));
   }
-  
-  // If we're filtering by entries, only keep IDs that are in entries
-  if (shouldFilterByEntries) {
-    const employeeIdsInEntries = new Set(scheduleEntries.map(e => Number(e.user_id)));
-    displayOrder = displayOrder.filter(id => employeeIdsInEntries.has(id));
-  }
-  
-  // Find employees not in the order (either new or missing from employee_order)
+
+  // Find employees not in the order
   const orderSet = new Set(displayOrder);
   const missingEmployees = employeesToDisplay
     .map(emp => emp.id)
     .filter(id => !orderSet.has(id));
-  
+
   // Combine ordered employees with missing ones
   const finalOrder = [...displayOrder, ...missingEmployees];
-  
+
   // Map IDs back to employee objects
   const empMap = new Map(employees.map(emp => [emp.id, emp]));
   return finalOrder.map(id => empMap.get(id)).filter(Boolean);
 }, [employees, scheduleEntries, currentSchedule, userRole]);
-
 
   const filteredEmployees = useMemo(() => {
     if (!employeeSearch) return orderedEmployees;
@@ -2213,17 +2239,8 @@ return (
         <div className="flex-1 flex flex-col min-h-screen lg:min-h-0 pt-16 lg:pt-0">
           <div className="flex-1 flex flex-col p-4 lg:p-6">
             <div className="flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
-              {/* Upload Button Section */}
-              {/* <div className="flex-shrink-0 p-4 border-b">
-                {currentSchedule && !isMonthView && !isThreeMonthView && (
-                  <button
-                    onClick={() => setShowUploadModal(true)}
-                    className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-md hover:shadow-lg w-full sm:w-auto"
-                  >
-                    Upload Schedule File
-                  </button>
-                )}
-              </div> */}
+              
+            
 {/* Upload Button Section */}
 <div className="flex-shrink-0 p-4 border-b">
   {currentSchedule && !isMonthView && !isThreeMonthView && (
