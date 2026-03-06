@@ -185,8 +185,8 @@ export default function PropertyLinksPage() {
       <div className="info-box">
         <h4>How Links Work</h4>
         <p>
-          These links are displayed in the customer's portal for easy access.
-          If a link is empty, it won't be shown to the customer.
+          These links are displayed in the customers portal for easy access.
+          If a link is empty, it wont be shown to the customer.
           Links open in a new tab when clicked.
         </p>
       </div>
