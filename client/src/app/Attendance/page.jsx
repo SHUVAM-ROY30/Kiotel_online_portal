@@ -1396,6 +1396,7 @@ export default function ClockPage() {
         `${API_BASE_URL}/clockin/employee/by-unique-id?account_no=${encodeURIComponent(accountNo)}`,
       );
       const data = await res.json();
+
       if (!res.ok || !data.success) {
         setMessage(data.message || "Employee not found");
         return;
@@ -1428,23 +1429,70 @@ export default function ClockPage() {
       );
       const dataStatus = await resStatus.json();
 
-      const extractTime = (datetime) => {
-        if (!datetime) return null;
-        if (
-          typeof datetime === "string" &&
-          datetime.length <= 8 &&
-          !datetime.includes("T")
-        ) {
-          return datetime;
+      // const extractTime = (datetime) => {
+      //   if (!datetime) return null;
+      //   if (
+      //     typeof datetime === "string" &&
+      //     datetime.length <= 8 &&
+      //     !datetime.includes("T")
+      //   ) {
+      //     return datetime;
+      //   }
+      //   if (typeof datetime === "string" && datetime.includes("T")) {
+      //     const timePart = datetime.split("T")[1];
+      //     if (timePart) {
+      //       return timePart.split(".")[0];
+      //     }
+      //   }
+      //   return datetime;
+      // };
+
+  const extractTime = (datetime) => {
+    if (!datetime) return null;
+
+    // If it's a Date object, convert to IST time string
+    if (datetime instanceof Date || typeof datetime === 'object') {
+      try {
+        const d = new Date(datetime);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleTimeString('en-US', {
+            timeZone: 'Asia/Kolkata',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+          });
         }
-        if (typeof datetime === "string" && datetime.includes("T")) {
-          const timePart = datetime.split("T")[1];
-          if (timePart) {
-            return timePart.split(".")[0];
-          }
-        }
-        return datetime;
-      };
+      } catch (e) {
+        return null;
+      }
+    }
+
+    const str = String(datetime).trim();
+
+    // Already a short time "18:00:00" or "06:30"
+    if (str.length <= 8 && !str.includes('T') && !str.includes('-')) {
+      return str;
+    }
+
+    // ISO: "2026-03-07T18:00:00.000Z" or "2026-03-07T18:00:00"
+    if (str.includes('T')) {
+      const timePart = str.split('T')[1];
+      if (timePart) {
+        return timePart.split('.')[0].split('Z')[0];
+      }
+    }
+
+    // Space-separated: "2026-03-07 18:00:00"
+    if (str.includes(' ') && str.includes('-')) {
+      const parts = str.split(' ');
+      if (parts.length >= 2) {
+        return parts[1].split('.')[0];
+      }
+    }
+
+    return str;
+  };
 
       if (!resStatus.ok || !dataStatus.success) {
         setIsClockedIn(false);
@@ -1519,30 +1567,59 @@ export default function ClockPage() {
         },
       );
 
-      const data = await res.json();
 
+      const data = await res.json();
       if (!res.ok || !data.success) {
         setMessage(data.message || "Action failed");
         return;
       }
 
-      const extractTime = (datetime) => {
-        if (!datetime) return null;
-        if (
-          typeof datetime === "string" &&
-          datetime.length <= 8 &&
-          !datetime.includes("T")
-        ) {
-          return datetime;
+  const extractTime = (datetime) => {
+    if (!datetime) return null;
+
+    // If it's a Date object, convert to IST time string
+    if (datetime instanceof Date || typeof datetime === 'object') {
+      try {
+        const d = new Date(datetime);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleTimeString('en-US', {
+            timeZone: 'Asia/Kolkata',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+          });
         }
-        if (typeof datetime === "string" && datetime.includes("T")) {
-          const timePart = datetime.split("T")[1];
-          if (timePart) {
-            return timePart.split(".")[0];
-          }
-        }
-        return datetime;
-      };
+      } catch (e) {
+        return null;
+      }
+    }
+
+    const str = String(datetime).trim();
+
+    // Already a short time "18:00:00" or "06:30"
+    if (str.length <= 8 && !str.includes('T') && !str.includes('-')) {
+      return str;
+    }
+
+    // ISO: "2026-03-07T18:00:00.000Z" or "2026-03-07T18:00:00"
+    if (str.includes('T')) {
+      const timePart = str.split('T')[1];
+      if (timePart) {
+        return timePart.split('.')[0].split('Z')[0];
+      }
+    }
+
+    // Space-separated: "2026-03-07 18:00:00"
+    if (str.includes(' ') && str.includes('-')) {
+      const parts = str.split(' ');
+      if (parts.length >= 2) {
+        return parts[1].split('.')[0];
+      }
+    }
+
+    return str;
+  };
 
       if (data.data.clock_out) {
         const newClockOutTime = extractTime(data.data.clock_out);
@@ -1580,28 +1657,86 @@ export default function ClockPage() {
     }
   };
 
+  // const formatTime = (value) => {
+  //   if (!value) return "—";
+
+  //   if (
+  //     typeof value === "string" &&
+  //     value.length <= 8 &&
+  //     !value.includes("T") &&
+  //     !value.includes("Z")
+  //   ) {
+  //     const parts = value.split(":");
+  //     if (parts.length >= 2) {
+  //       let hours = parseInt(parts[0]);
+  //       const minutes = parts[1];
+  //       const ampm = hours >= 12 ? "PM" : "AM";
+  //       hours = hours % 12 || 12;
+  //       return `${hours}:${minutes} ${ampm}`;
+  //     }
+  //     return value;
+  //   }
+
+  //   return "—";
+  // };
+
+
   const formatTime = (value) => {
     if (!value) return "—";
 
-    if (
-      typeof value === "string" &&
-      value.length <= 8 &&
-      !value.includes("T") &&
-      !value.includes("Z")
-    ) {
-      const parts = value.split(":");
-      if (parts.length >= 2) {
-        let hours = parseInt(parts[0]);
-        const minutes = parts[1];
-        const ampm = hours >= 12 ? "PM" : "AM";
+    // Step 1: Extract the time portion from any format
+    let timeStr = null;
+
+    if (typeof value === 'string') {
+      const str = value.trim();
+
+      // "2026-03-07 18:00:00" → extract "18:00:00"
+      if (str.includes(' ') && str.includes('-')) {
+        const parts = str.split(' ');
+        if (parts.length >= 2) timeStr = parts[1].split('.')[0];
+      }
+      // "2026-03-07T18:00:00" → extract "18:00:00"
+      else if (str.includes('T')) {
+        const timePart = str.split('T')[1];
+        if (timePart) timeStr = timePart.split('.')[0].split('Z')[0];
+      }
+      // "18:00:00" or "18:00" → use directly
+      else if (str.includes(':')) {
+        timeStr = str;
+      }
+    }
+
+    // If value is a Date object
+    if (!timeStr && value instanceof Date) {
+      try {
+        return value.toLocaleTimeString('en-US', {
+          timeZone: 'Asia/Kolkata',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        });
+      } catch (e) {
+        return "—";
+      }
+    }
+
+    if (!timeStr) return "—";
+
+    // Step 2: Parse "HH:mm:ss" or "HH:mm" → "h:mm AM/PM"
+    const parts = timeStr.split(':');
+    if (parts.length >= 2) {
+      let hours = parseInt(parts[0], 10);
+      const minutes = parts[1];
+      if (!isNaN(hours)) {
+        const ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12 || 12;
         return `${hours}:${minutes} ${ampm}`;
       }
-      return value;
     }
 
     return "—";
   };
+
 
   const resetSession = () => {
     // For direct shift users, only reset to shift selection, not ID entry
