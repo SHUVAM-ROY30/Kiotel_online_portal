@@ -1423,10 +1423,14 @@ export default function ClockPage() {
     setLoading(true);
     setMessage("");
     try {
-      const currentDate = new Date().toISOString().split("T")[0];
-      const resStatus = await fetch(
-        `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(accountNo)}&date=${currentDate}&shift_id=${selectedShift.id}`,
-      );
+      // const currentDate = new Date().toISOString().split("T")[0];
+      // const resStatus = await fetch(
+      //   `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(accountNo)}&date=${currentDate}&shift_id=${selectedShift.id}`,
+      // );
+          // AFTER:
+    const resStatus = await fetch(
+      `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(accountNo)}&shift_id=${selectedShift.id}`
+    );
       const dataStatus = await resStatus.json();
 
       // const extractTime = (datetime) => {
