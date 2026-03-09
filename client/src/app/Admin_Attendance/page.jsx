@@ -3082,6 +3082,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { format, parseISO, parse } from 'date-fns';
 import * as XLSX from 'xlsx';
 import EmployeeAttendanceModal from './EmployeeAttendanceModal';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { FaCalendarAlt, FaFileExport, FaCheckCircle, FaExclamationTriangle, FaClock, FaTimesCircle, FaBriefcase, FaChartLine } from 'react-icons/fa';
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
@@ -3521,47 +3523,800 @@ export default function AdminDashboard() {
   useEffect(() => { fetchDaily(); }, [fetchDaily]);
   useEffect(() => { fetchMonthly(); }, [fetchMonthly]);
 
-  const handleExport = (type) => {
+  // const handleExport = (type) => {
+  //   if (type === 'daily') {
+  //     const wsData = dailyData.map(row => ({
+  //       'Employee ID': row.unique_id,
+  //       'First Name': row.name.split(' ')[0] || '',
+  //       'Last Name': row.name.split(' ').slice(1).join(' ') || '',
+  //       'Attendance Date': row.attendance_date,
+  //       'Shift Name': row.shift_name,
+  //       'Shift Start': row.shift_start,
+  //       'Shift End': row.shift_end,
+  //       'Clock In': row.clock_in ? format(parseISO(row.clock_in), 'h:mm a') : '—',
+  //       'Clock Out': row.clock_out ? format(parseISO(row.clock_out), 'h:mm a') : '—',
+  //       'Status': row.status,
+  //       'Late Minutes': row.late_minutes || '—',
+  //       'Early Clock Out (Min)': row.early_clock_out_minutes || '—',
+  //       'OT (Min)': row.overtime_minutes || 0,
+  //       'Photo Captured': row.photo_captured ? 'Yes' : 'No'
+  //     }));
+  //     const ws = XLSX.utils.json_to_sheet(wsData);
+  //     const wb = XLSX.utils.book_new();
+  //     XLSX.utils.book_append_sheet(wb, ws, "Daily Report");
+  //     XLSX.writeFile(wb, `daily_attendance_${date}.xlsx`);
+  //   } else if (type === 'monthly') {
+  //     const wsData = monthlyData.map(row => ({
+  //       'Employee ID': row.unique_id,
+  //       'Name': row.name,
+  //       'Total Working Days': row.total_working_days || 0,
+  //       'Present': row.present || 0,
+  //       'Late': row.late || 0,
+  //       'Early Clock Out': row.early_clock_out || 0,
+  //       'Absent': row.absent || 0,
+  //       'Total OT Minutes': row.total_ot_minutes || 0,
+  //       'Total OT Hours': Math.floor((row.total_ot_minutes || 0) / 60)
+  //     }));
+  //     const ws = XLSX.utils.json_to_sheet(wsData);
+  //     const wb = XLSX.utils.book_new();
+  //     XLSX.utils.book_append_sheet(wb, ws, "Monthly Report");
+  //     XLSX.writeFile(wb, `monthly_attendance_${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}.xlsx`);
+  //   }
+  // };
+
+
+
+  // Async function to fetch and build detailed monthly sheet
+
+    const handleExport = async (type) => {
     if (type === 'daily') {
-      const wsData = dailyData.map(row => ({
-        'Employee ID': row.unique_id,
-        'First Name': row.name.split(' ')[0] || '',
-        'Last Name': row.name.split(' ').slice(1).join(' ') || '',
-        'Attendance Date': row.attendance_date,
-        'Shift Name': row.shift_name,
-        'Shift Start': row.shift_start,
-        'Shift End': row.shift_end,
-        'Clock In': row.clock_in ? format(parseISO(row.clock_in), 'h:mm a') : '—',
-        'Clock Out': row.clock_out ? format(parseISO(row.clock_out), 'h:mm a') : '—',
-        'Status': row.status,
-        'Late Minutes': row.late_minutes || '—',
-        'Early Clock Out (Min)': row.early_clock_out_minutes || '—',
-        'OT (Min)': row.overtime_minutes || 0,
-        'Photo Captured': row.photo_captured ? 'Yes' : 'No'
-      }));
-      const ws = XLSX.utils.json_to_sheet(wsData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Daily Report");
-      XLSX.writeFile(wb, `daily_attendance_${date}.xlsx`);
+      await exportDailyStyled();
     } else if (type === 'monthly') {
-      const wsData = monthlyData.map(row => ({
-        'Employee ID': row.unique_id,
-        'Name': row.name,
-        'Total Working Days': row.total_working_days || 0,
-        'Present': row.present || 0,
-        'Late': row.late || 0,
-        'Early Clock Out': row.early_clock_out || 0,
-        'Absent': row.absent || 0,
-        'Total OT Minutes': row.total_ot_minutes || 0,
-        'Total OT Hours': Math.floor((row.total_ot_minutes || 0) / 60)
-      }));
-      const ws = XLSX.utils.json_to_sheet(wsData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Monthly Report");
-      XLSX.writeFile(wb, `monthly_attendance_${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}.xlsx`);
+      await exportMonthlyStyled();
     }
   };
 
+  // ═══════════════════════════════════════════════════════════
+  // COLOR PALETTE
+  // ═══════════════════════════════════════════════════════════
+  const COLORS = {
+    primary: 'FF2563EB',      // Blue
+    primaryDark: 'FF1D4ED8',  // Darker Blue
+    primaryLight: 'FFDBEAFE', // Light Blue
+    white: 'FFFFFFFF',
+    black: 'FF111827',
+    gray50: 'FFF9FAFB',
+    gray100: 'FFF3F4F6',
+    gray200: 'FFE5E7EB',
+    gray500: 'FF6B7280',
+    gray700: 'FF374151',
+    gray900: 'FF111827',
+    green: 'FF16A34A',
+    greenLight: 'FFF0FDF4',
+    greenBorder: 'FFBBF7D0',
+    red: 'FFDC2626',
+    redLight: 'FFFEF2F2',
+    redBorder: 'FFFECACA',
+    orange: 'FFEA580C',
+    orangeLight: 'FFFFF7ED',
+    orangeBorder: 'FFFED7AA',
+    amber: 'FFD97706',
+    amberLight: 'FFFFFBEB',
+    purple: 'FF7C3AED',
+    sundayBg: 'FFFFF1F2',
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // STYLE HELPERS
+  // ═══════════════════════════════════════════════════════════
+  const thinBorder = (color = COLORS.gray200) => ({
+    top: { style: 'thin', color: { argb: color } },
+    bottom: { style: 'thin', color: { argb: color } },
+    left: { style: 'thin', color: { argb: color } },
+    right: { style: 'thin', color: { argb: color } },
+  });
+
+  const solidFill = (color) => ({
+    type: 'pattern', pattern: 'solid', fgColor: { argb: color },
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // DAILY EXPORT — Styled
+  // ═══════════════════════════════════════════════════════════
+  const exportDailyStyled = async () => {
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'KIOTEL Attendance System';
+    const ws = wb.addWorksheet('Daily Report');
+    const formattedDate = format(parseISO(date), 'EEEE, MMMM d, yyyy');
+
+    // Title
+    ws.mergeCells('A1:M1');
+    const t1 = ws.getCell('A1');
+    t1.value = 'KIOTEL — Daily Attendance Report';
+    t1.font = { size: 18, bold: true, color: { argb: COLORS.primary } };
+    t1.alignment = { horizontal: 'center', vertical: 'middle' };
+    t1.fill = solidFill(COLORS.primaryLight);
+    ws.getRow(1).height = 36;
+
+    ws.mergeCells('A2:M2');
+    const t2 = ws.getCell('A2');
+    t2.value = formattedDate;
+    t2.font = { size: 12, bold: true, color: { argb: COLORS.gray700 } };
+    t2.alignment = { horizontal: 'center', vertical: 'middle' };
+    t2.fill = solidFill(COLORS.primaryLight);
+    ws.getRow(2).height = 24;
+
+    ws.addRow([]);
+
+    // Summary cards row
+    const summaryRow = ws.addRow([
+      `✅ Present: ${dailySummary.present}`, '', '',
+      `⚠️ Late: ${dailySummary.late}`, '', '',
+      `🕐 Early Out: ${dailySummary.earlyClockOut}`, '', '',
+      `❌ Absent: ${dailySummary.absent}`, '', '', '',
+    ]);
+    ws.mergeCells(summaryRow.number, 1, summaryRow.number, 3);
+    ws.mergeCells(summaryRow.number, 4, summaryRow.number, 6);
+    ws.mergeCells(summaryRow.number, 7, summaryRow.number, 9);
+    ws.mergeCells(summaryRow.number, 10, summaryRow.number, 13);
+
+    [1, 4, 7, 10].forEach((col) => {
+      const cell = summaryRow.getCell(col);
+      cell.font = { bold: true, size: 11 };
+      cell.alignment = { horizontal: 'center' };
+    });
+    summaryRow.getCell(1).fill = solidFill(COLORS.greenLight);
+    summaryRow.getCell(4).fill = solidFill(COLORS.amberLight);
+    summaryRow.getCell(7).fill = solidFill(COLORS.orangeLight);
+    summaryRow.getCell(10).fill = solidFill(COLORS.redLight);
+    ws.getRow(summaryRow.number).height = 28;
+
+    ws.addRow([]);
+
+    // Headers
+    const headers = [
+      'Employee ID', 'Name', 'Shift', 'Shift Start', 'Shift End',
+      'Clock In', 'Clock Out', 'Status',
+      'Late (min)', 'Early Out (min)', 'OT (min)', 'Working Hours', 'Photo'
+    ];
+    const headerRow = ws.addRow(headers);
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: COLORS.white }, size: 10 };
+      cell.fill = solidFill(COLORS.primary);
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      cell.border = thinBorder(COLORS.primaryDark);
+    });
+    ws.getRow(headerRow.number).height = 30;
+
+    // Data rows
+    dailyData.forEach((row, index) => {
+      let workingHours = '—';
+      if (row.clock_in && row.clock_out) {
+        try {
+          const inD = new Date(row.clock_in);
+          const outD = new Date(row.clock_out);
+          if (!isNaN(inD.getTime()) && !isNaN(outD.getTime())) {
+            const diffMin = Math.floor((outD - inD) / 60000);
+            if (diffMin >= 0) workingHours = `${Math.floor(diffMin / 60)}h ${diffMin % 60}m`;
+          }
+        } catch (e) { /* ignore */ }
+      }
+
+      const dataRow = ws.addRow([
+        row.unique_id, row.name, row.shift_name || 'N/A',
+        row.shift_start || '—', row.shift_end || '—',
+        formatTime(row.clock_in), formatTime(row.clock_out),
+        row.status || '—',
+        row.late_minutes || '', row.early_clock_out_minutes || '',
+        row.overtime_minutes || '', workingHours,
+        row.photo_captured ? 'Yes' : 'No',
+      ]);
+
+      const bgColor = index % 2 === 0 ? COLORS.white : COLORS.gray50;
+      dataRow.eachCell((cell) => {
+        cell.fill = solidFill(bgColor);
+        cell.border = thinBorder(COLORS.gray200);
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.font = { size: 10 };
+      });
+
+      // Name left-aligned and bold
+      dataRow.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
+      dataRow.getCell(2).font = { size: 10, bold: true };
+
+      // Color-code metrics
+      if (row.late_minutes > 0) {
+        dataRow.getCell(9).font = { bold: true, color: { argb: COLORS.red }, size: 10 };
+        dataRow.getCell(9).fill = solidFill(COLORS.redLight);
+      }
+      if (row.early_clock_out_minutes > 0) {
+        dataRow.getCell(10).font = { bold: true, color: { argb: COLORS.orange }, size: 10 };
+        dataRow.getCell(10).fill = solidFill(COLORS.orangeLight);
+      }
+      if (row.overtime_minutes > 0) {
+        dataRow.getCell(11).font = { bold: true, color: { argb: COLORS.green }, size: 10 };
+        dataRow.getCell(11).fill = solidFill(COLORS.greenLight);
+      }
+
+      // Status styling
+      const statusCell = dataRow.getCell(8);
+      if (row.status === 'Present') {
+        statusCell.font = { bold: true, color: { argb: COLORS.green }, size: 10 };
+      } else if (row.status === 'Late' || row.status === 'Late & Early') {
+        statusCell.font = { bold: true, color: { argb: COLORS.red }, size: 10 };
+      } else if (row.status === 'Early Clock Out') {
+        statusCell.font = { bold: true, color: { argb: COLORS.orange }, size: 10 };
+      } else if (row.status === 'Absent') {
+        statusCell.font = { bold: true, color: { argb: COLORS.red }, size: 10 };
+      }
+    });
+
+    // Column widths
+    ws.getColumn(1).width = 14;
+    ws.getColumn(2).width = 24;
+    ws.getColumn(3).width = 20;
+    ws.getColumn(4).width = 12;
+    ws.getColumn(5).width = 12;
+    ws.getColumn(6).width = 12;
+    ws.getColumn(7).width = 12;
+    ws.getColumn(8).width = 16;
+    ws.getColumn(9).width = 12;
+    ws.getColumn(10).width = 14;
+    ws.getColumn(11).width = 12;
+    ws.getColumn(12).width = 14;
+    ws.getColumn(13).width = 8;
+
+    // Save
+    const buffer = await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `Attendance_Daily_${date}.xlsx`);
+  };
+
+
+  // ═══════════════════════════════════════════════════════════
+  // MONTHLY EXPORT — Employee rows × Date columns (Styled)
+  // ═══════════════════════════════════════════════════════════
+  const exportMonthlyStyled = async () => {
+    try {
+      const res = await fetch(
+        `${API_BASE}/clockin/admin/monthly-detailed?year=${monthlyYear}&month=${monthlyMonth}`
+      );
+      const result = await res.json();
+
+      if (!result.success) {
+        alert('Failed to fetch detailed report');
+        return;
+      }
+
+      const { employees, dates, month_name, total_days } = result.data;
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'KIOTEL Attendance System';
+
+      // ─── SHEET 1: Monthly Overview Grid ───
+      const ws = wb.addWorksheet('Monthly Overview', {
+        views: [{ state: 'frozen', xSplit: 2, ySplit: 5 }] // Freeze Name + ID columns and header rows
+      });
+
+      const totalCols = 2 + dates.length + 5; // Name, ID, dates..., TotalLate, TotalEarly, TotalOT, TotalHours, DaysPresent
+
+      // ─── Title rows ───
+      ws.mergeCells(1, 1, 1, totalCols);
+      const t1 = ws.getCell('A1');
+      t1.value = 'KIOTEL — Monthly Attendance Report';
+      t1.font = { size: 20, bold: true, color: { argb: COLORS.white } };
+      t1.fill = solidFill(COLORS.primary);
+      t1.alignment = { horizontal: 'center', vertical: 'middle' };
+      ws.getRow(1).height = 40;
+
+      ws.mergeCells(2, 1, 2, totalCols);
+      const t2 = ws.getCell('A2');
+      t2.value = `${month_name} ${monthlyYear}`;
+      t2.font = { size: 13, bold: true, color: { argb: COLORS.white } };
+      t2.fill = solidFill(COLORS.primaryDark);
+      t2.alignment = { horizontal: 'center', vertical: 'middle' };
+      ws.getRow(2).height = 28;
+
+      // Row 3: blank
+      ws.addRow([]);
+
+      // ─── Row 4: Sub-label row (what each sub-row means) ───
+      const labelRow = ws.addRow([]);
+      labelRow.getCell(1).value = 'Sub-rows →';
+      labelRow.getCell(1).font = { size: 9, italic: true, color: { argb: COLORS.gray500 } };
+      labelRow.getCell(2).value = '① In  ② Out  ③ L/E/OT  ④ Shift';
+      labelRow.getCell(2).font = { size: 9, italic: true, color: { argb: COLORS.gray500 } };
+      ws.mergeCells(4, 2, 4, 5);
+
+      // ─── Row 5: Main Header ───
+      const headerRow = ws.addRow([]);
+      headerRow.getCell(1).value = 'Employee';
+      headerRow.getCell(2).value = 'ID';
+
+      dates.forEach((d, i) => {
+        const dateObj = new Date(d + 'T00:00:00');
+        const dayNum = dateObj.getDate();
+        const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+        headerRow.getCell(3 + i).value = `${dayNum}\n${dayName}`;
+      });
+
+      const totalsStartCol = 3 + dates.length;
+      headerRow.getCell(totalsStartCol).value = 'Total\nLate';
+      headerRow.getCell(totalsStartCol + 1).value = 'Total\nEarly';
+      headerRow.getCell(totalsStartCol + 2).value = 'Total\nOT';
+      headerRow.getCell(totalsStartCol + 3).value = 'Total\nHours';
+      headerRow.getCell(totalsStartCol + 4).value = 'Days\nPresent';
+
+      // Style header
+      ws.getRow(5).height = 36;
+      for (let c = 1; c <= totalCols; c++) {
+        const cell = headerRow.getCell(c);
+        cell.font = { bold: true, color: { argb: COLORS.white }, size: 9 };
+        cell.fill = solidFill(COLORS.primary);
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        cell.border = thinBorder(COLORS.primaryDark);
+      }
+
+      // Color Sunday headers differently
+      dates.forEach((d, i) => {
+        const dateObj = new Date(d + 'T00:00:00');
+        if (dateObj.getDay() === 0) {
+          headerRow.getCell(3 + i).fill = solidFill(COLORS.red);
+        }
+      });
+
+      // ─── Employee Data Rows ───
+      const SUB_ROWS = 4; // In, Out, Metrics, Shift
+
+      employees.forEach((emp, empIndex) => {
+        const startRow = ws.rowCount + 1;
+        const isEvenEmployee = empIndex % 2 === 0;
+        const baseBg = isEvenEmployee ? COLORS.white : COLORS.gray50;
+
+        // Row 1: Clock In (with Name, ID, and Totals)
+        const inRowData = [emp.name, emp.employee_id];
+        // Row 2: Clock Out
+        const outRowData = ['', ''];
+        // Row 3: Metrics (L:x E:x O:x)
+        const metricsRowData = ['', ''];
+        // Row 4: Shift name
+        const shiftRowData = ['', ''];
+
+        dates.forEach(d => {
+          const dayRecords = emp.dates[d];
+          if (dayRecords && dayRecords.length > 0) {
+            const rec = dayRecords[0];
+            inRowData.push(rec.clock_in || '');
+            outRowData.push(rec.clock_out || '');
+
+            const parts = [];
+            if (rec.late_min > 0) parts.push(`L:${rec.late_min}`);
+            if (rec.early_min > 0) parts.push(`E:${rec.early_min}`);
+            if (rec.ot_min > 0) parts.push(`O:${rec.ot_min}`);
+            metricsRowData.push(parts.join(' '));
+
+            shiftRowData.push(rec.shift_name || '');
+          } else {
+            inRowData.push('');
+            outRowData.push('');
+            metricsRowData.push('');
+            shiftRowData.push('');
+          }
+        });
+
+        // Totals
+        inRowData.push(
+          emp.totals.total_late_min || '',
+          emp.totals.total_early_min || '',
+          emp.totals.total_ot_min || '',
+          emp.totals.total_working_min > 0
+            ? `${Math.floor(emp.totals.total_working_min / 60)}h ${emp.totals.total_working_min % 60}m`
+            : '—',
+          emp.totals.present
+        );
+        for (let i = 0; i < 5; i++) {
+          outRowData.push('');
+          metricsRowData.push('');
+          shiftRowData.push('');
+        }
+
+        const rowIn = ws.addRow(inRowData);
+        const rowOut = ws.addRow(outRowData);
+        const rowMetrics = ws.addRow(metricsRowData);
+        const rowShift = ws.addRow(shiftRowData);
+
+        // Merge Name cell across 4 sub-rows
+        ws.mergeCells(startRow, 1, startRow + 3, 1);
+        // Merge ID cell across 4 sub-rows
+        ws.mergeCells(startRow, 2, startRow + 3, 2);
+
+        // Style Name cell
+        const nameCell = ws.getCell(startRow, 1);
+        nameCell.font = { bold: true, size: 10, color: { argb: COLORS.gray900 } };
+        nameCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+        nameCell.fill = solidFill(COLORS.primaryLight);
+        nameCell.border = thinBorder(COLORS.gray200);
+
+        // Style ID cell
+        const idCell = ws.getCell(startRow, 2);
+        idCell.font = { size: 9, color: { argb: COLORS.gray500 } };
+        idCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        idCell.fill = solidFill(COLORS.primaryLight);
+        idCell.border = thinBorder(COLORS.gray200);
+
+        // Style all data cells
+        [rowIn, rowOut, rowMetrics, rowShift].forEach((row, subIdx) => {
+          row.height = subIdx === 3 ? 16 : 18;
+
+          for (let c = 3; c <= totalCols; c++) {
+            const cell = row.getCell(c);
+            const dateIdx = c - 3;
+            const isDateCol = dateIdx < dates.length;
+            const isSunday = isDateCol && new Date(dates[dateIdx] + 'T00:00:00').getDay() === 0;
+
+            let bg = baseBg;
+            if (isSunday) bg = COLORS.sundayBg;
+
+            cell.fill = solidFill(bg);
+            cell.border = thinBorder(COLORS.gray200);
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+            if (subIdx === 0) {
+              // Clock In — green text
+              cell.font = { size: 9, color: { argb: cell.value ? COLORS.green : COLORS.gray200 } };
+            } else if (subIdx === 1) {
+              // Clock Out — red text
+              cell.font = { size: 9, color: { argb: cell.value ? COLORS.red : COLORS.gray200 } };
+            } else if (subIdx === 2) {
+              // Metrics — color based on content
+              const val = String(cell.value || '');
+              if (val.includes('L:') && val.includes('E:')) {
+                cell.font = { size: 8, bold: true, color: { argb: COLORS.purple } };
+              } else if (val.includes('L:')) {
+                cell.font = { size: 8, bold: true, color: { argb: COLORS.red } };
+              } else if (val.includes('E:')) {
+                cell.font = { size: 8, bold: true, color: { argb: COLORS.orange } };
+              } else if (val.includes('O:')) {
+                cell.font = { size: 8, bold: true, color: { argb: COLORS.green } };
+              } else {
+                cell.font = { size: 8, color: { argb: COLORS.gray200 } };
+              }
+            } else {
+              // Shift name — small gray
+              cell.font = { size: 7, italic: true, color: { argb: COLORS.gray500 } };
+            }
+          }
+        });
+
+        // Style Totals columns on the In row
+        const totColStart = totalsStartCol;
+        // Total Late
+        if (emp.totals.total_late_min > 0) {
+          const c = rowIn.getCell(totColStart);
+          c.font = { bold: true, size: 10, color: { argb: COLORS.red } };
+          c.fill = solidFill(COLORS.redLight);
+        }
+        // Total Early
+        if (emp.totals.total_early_min > 0) {
+          const c = rowIn.getCell(totColStart + 1);
+          c.font = { bold: true, size: 10, color: { argb: COLORS.orange } };
+          c.fill = solidFill(COLORS.orangeLight);
+        }
+        // Total OT
+        if (emp.totals.total_ot_min > 0) {
+          const c = rowIn.getCell(totColStart + 2);
+          c.font = { bold: true, size: 10, color: { argb: COLORS.green } };
+          c.fill = solidFill(COLORS.greenLight);
+        }
+        // Total Hours
+        rowIn.getCell(totColStart + 3).font = { bold: true, size: 10, color: { argb: COLORS.primary } };
+        // Days Present
+        const presentCell = rowIn.getCell(totColStart + 4);
+        presentCell.font = { bold: true, size: 11, color: { argb: COLORS.primary } };
+        presentCell.fill = solidFill(COLORS.primaryLight);
+
+        // Add thin separator row after each employee
+        const sepRow = ws.addRow([]);
+        sepRow.height = 4;
+        for (let c = 1; c <= totalCols; c++) {
+          sepRow.getCell(c).fill = solidFill(COLORS.gray200);
+        }
+      });
+
+      // ─── Column widths ───
+      ws.getColumn(1).width = 22; // Name
+      ws.getColumn(2).width = 14; // ID
+      dates.forEach((_, i) => { ws.getColumn(3 + i).width = 12; });
+      ws.getColumn(totalsStartCol).width = 12;
+      ws.getColumn(totalsStartCol + 1).width = 12;
+      ws.getColumn(totalsStartCol + 2).width = 10;
+      ws.getColumn(totalsStartCol + 3).width = 13;
+      ws.getColumn(totalsStartCol + 4).width = 11;
+
+      // const totalsStartCol = 3 + dates.length;
+
+
+      // ─── SHEET 2: Detailed List ───
+      const ws2 = wb.addWorksheet('Detailed Report');
+
+      ws2.mergeCells('A1:L1');
+      const dt1 = ws2.getCell('A1');
+      dt1.value = 'KIOTEL — Detailed Attendance Report';
+      dt1.font = { size: 18, bold: true, color: { argb: COLORS.white } };
+      dt1.fill = solidFill(COLORS.primary);
+      dt1.alignment = { horizontal: 'center', vertical: 'middle' };
+      ws2.getRow(1).height = 36;
+
+      ws2.mergeCells('A2:L2');
+      const dt2 = ws2.getCell('A2');
+      dt2.value = `${month_name} ${monthlyYear}`;
+      dt2.font = { size: 12, bold: true, color: { argb: COLORS.white } };
+      dt2.fill = solidFill(COLORS.primaryDark);
+      dt2.alignment = { horizontal: 'center', vertical: 'middle' };
+      ws2.getRow(2).height = 26;
+
+      ws2.addRow([]);
+
+      const dHeaders = ['Employee', 'ID', 'Date', 'Day', 'Shift', 'Clock In', 'Clock Out', 'Hours', 'Late (min)', 'Early (min)', 'OT (min)', 'Status'];
+      const dHeaderRow = ws2.addRow(dHeaders);
+      dHeaderRow.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: COLORS.white }, size: 10 };
+        cell.fill = solidFill(COLORS.primary);
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        cell.border = thinBorder(COLORS.primaryDark);
+      });
+      ws2.getRow(dHeaderRow.number).height = 28;
+
+      let rowIdx = 0;
+      employees.forEach((emp) => {
+        let isFirst = true;
+
+        dates.forEach(d => {
+          const dayRecords = emp.dates[d];
+          if (dayRecords && dayRecords.length > 0) {
+            dayRecords.forEach(rec => {
+              const dateObj = new Date(d + 'T00:00:00');
+              const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+              const isSunday = dateObj.getDay() === 0;
+
+              const row = ws2.addRow([
+                isFirst ? emp.name : '',
+                isFirst ? emp.employee_id : '',
+                rec.attendance_date, dayName, rec.shift_name,
+                rec.clock_in || '—', rec.clock_out || '—',
+                rec.working_hours || '—',
+                rec.late_min || '', rec.early_min || '', rec.ot_min || '',
+                rec.status === 'completed' ? 'Done' : 'Active',
+              ]);
+
+              const bg = isSunday ? COLORS.sundayBg : (rowIdx % 2 === 0 ? COLORS.white : COLORS.gray50);
+              row.eachCell((cell) => {
+                cell.fill = solidFill(bg);
+                cell.border = thinBorder(COLORS.gray200);
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.font = { size: 10 };
+              });
+
+              if (isFirst) {
+                row.getCell(1).font = { bold: true, size: 10 };
+                row.getCell(1).alignment = { horizontal: 'left' };
+              }
+
+              if (rec.late_min > 0) row.getCell(9).font = { bold: true, color: { argb: COLORS.red }, size: 10 };
+              if (rec.early_min > 0) row.getCell(10).font = { bold: true, color: { argb: COLORS.orange }, size: 10 };
+              if (rec.ot_min > 0) row.getCell(11).font = { bold: true, color: { argb: COLORS.green }, size: 10 };
+
+              isFirst = false;
+              rowIdx++;
+            });
+          }
+        });
+
+        // Employee total row
+        const totalHrs = Math.floor(emp.totals.total_working_min / 60);
+        const totalMins = emp.totals.total_working_min % 60;
+        const totalRow = ws2.addRow([
+          `TOTAL: ${emp.name}`, emp.employee_id, '', '', `${emp.totals.present} days`,
+          '', '', `${totalHrs}h ${totalMins}m`,
+          emp.totals.total_late_min || '', emp.totals.total_early_min || '', emp.totals.total_ot_min || '', '',
+        ]);
+        totalRow.eachCell((cell) => {
+          cell.font = { bold: true, size: 10 };
+          cell.fill = solidFill(COLORS.primaryLight);
+          cell.border = thinBorder(COLORS.gray200);
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+        totalRow.getCell(1).alignment = { horizontal: 'left' };
+
+        ws2.addRow([]); // separator
+        rowIdx = 0;
+      });
+
+      // Column widths
+      [22, 14, 12, 8, 20, 12, 12, 13, 11, 11, 11, 10].forEach((w, i) => {
+        ws2.getColumn(i + 1).width = w;
+      });
+
+      // Save
+      const buffer = await wb.xlsx.writeBuffer();
+      saveAs(
+        new Blob([buffer]),
+        `Attendance_Monthly_${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}.xlsx`
+      );
+
+    } catch (err) {
+      console.error('Monthly export failed:', err);
+      alert('Failed to export. Please try again.');
+    }
+  };
+
+  const exportMonthlyDetailed = async (wb, year, month, monthName, monthlyEmployees, detailRows) => {
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    // Fetch daily data for each day
+    const allDailyData = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      try {
+        const res = await fetch(`${API_BASE}/clockin/admin/daily?date=${dateStr}`);
+        const result = await res.json();
+        if (result.success && result.data) {
+          // Process each record with frontend calculations
+          result.data.forEach(employee => {
+            const shiftStart = employee.shift_start || '09:00:00';
+            const shiftEnd = employee.shift_end || '18:00:00';
+            const { status, late_minutes, early_clock_out_minutes, overtime_minutes } =
+              calculateAttendanceDetails(employee.clock_in, employee.clock_out, shiftStart, shiftEnd, 0, 15);
+
+            allDailyData.push({
+              date: dateStr,
+              ...employee,
+              status,
+              late_minutes,
+              early_clock_out_minutes,
+              overtime_minutes,
+            });
+          });
+        }
+      } catch (err) {
+        console.error(`Failed to fetch data for ${dateStr}:`, err);
+      }
+    }
+
+    // Sort by date, then by employee name
+    allDailyData.sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+    // Build rows
+    let currentDate = '';
+
+    allDailyData.forEach(row => {
+      const dateObj = new Date(row.date + 'T00:00:00');
+      const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+      const isSunday = dateObj.getDay() === 0;
+
+      // Add a separator row for each new date
+      if (row.date !== currentDate) {
+        if (currentDate !== '') {
+          detailRows.push([]); // blank row between dates
+        }
+        currentDate = row.date;
+      }
+
+      // Calculate working hours
+      let workingHours = '—';
+      if (row.clock_in && row.clock_out) {
+        const inDate = new Date(row.clock_in);
+        const outDate = new Date(row.clock_out);
+        if (!isNaN(inDate.getTime()) && !isNaN(outDate.getTime())) {
+          const diffMin = Math.floor((outDate - inDate) / 60000);
+          if (diffMin >= 0) {
+            workingHours = `${Math.floor(diffMin / 60)}h ${diffMin % 60}m`;
+          }
+        }
+      }
+
+      detailRows.push([
+        row.date,
+        dayName + (isSunday ? ' ★' : ''),
+        row.unique_id,
+        row.name,
+        row.shift_name || 'N/A',
+        row.shift_start || '—',
+        row.shift_end || '—',
+        formatTime(row.clock_in),
+        formatTime(row.clock_out),
+        row.status || '—',
+        row.late_minutes || '',
+        row.early_clock_out_minutes || '',
+        row.overtime_minutes || '',
+        workingHours,
+      ]);
+    });
+
+    // Per-employee summary at the bottom
+    detailRows.push([]);
+    detailRows.push([]);
+    detailRows.push(['PER-EMPLOYEE SUMMARY']);
+    detailRows.push([
+      'Employee ID', 'Name', '', '', '',
+      '', '', '', '',
+      'Late Days', 'Total Late (min)', 'Total Early (min)', 'Total OT (min)',
+      'Total OT (hrs)'
+    ]);
+
+    // Group by employee
+    const employeeMap = {};
+    allDailyData.forEach(row => {
+      if (!employeeMap[row.unique_id]) {
+        employeeMap[row.unique_id] = {
+          name: row.name,
+          unique_id: row.unique_id,
+          lateDays: 0,
+          totalLate: 0,
+          totalEarly: 0,
+          totalOT: 0,
+          presentDays: 0,
+        };
+      }
+      const emp = employeeMap[row.unique_id];
+      if (row.status && row.status !== 'Absent') emp.presentDays++;
+      if (row.late_minutes > 0) {
+        emp.lateDays++;
+        emp.totalLate += row.late_minutes;
+      }
+      if (row.early_clock_out_minutes > 0) emp.totalEarly += row.early_clock_out_minutes;
+      if (row.overtime_minutes > 0) emp.totalOT += row.overtime_minutes;
+    });
+
+    Object.values(employeeMap)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .forEach(emp => {
+        detailRows.push([
+          emp.unique_id,
+          emp.name,
+          '', '', '', '', '', '', '',
+          emp.lateDays,
+          emp.totalLate,
+          emp.totalEarly,
+          emp.totalOT,
+          Math.floor(emp.totalOT / 60),
+        ]);
+      });
+
+    // Legend
+    detailRows.push([]);
+    detailRows.push(['Legend:']);
+    detailRows.push(['', 'Late (min)', '= Clock In exceeded Shift Start (0 min grace)']);
+    detailRows.push(['', 'Early Out (min)', '= Clock Out was before Shift End (15 min grace)']);
+    detailRows.push(['', 'OT (min)', '= Clock Out exceeded Shift End']);
+    detailRows.push(['', '★', '= Sunday']);
+
+    const detailWs = XLSX.utils.aoa_to_sheet(detailRows);
+    detailWs['!cols'] = [
+      { wch: 12 }, // Date
+      { wch: 10 }, // Day
+      { wch: 14 }, // Employee ID
+      { wch: 22 }, // Name
+      { wch: 20 }, // Shift
+      { wch: 12 }, // Shift Start
+      { wch: 12 }, // Shift End
+      { wch: 12 }, // Clock In
+      { wch: 12 }, // Clock Out
+      { wch: 14 }, // Status
+      { wch: 12 }, // Late
+      { wch: 14 }, // Early Out
+      { wch: 12 }, // OT
+      { wch: 14 }, // Working Hours
+    ];
+    detailWs['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 13 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 13 } },
+    ];
+
+    XLSX.utils.book_append_sheet(wb, detailWs, 'Day-by-Day Details');
+  };
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   // const formatTime = (isoString) => {
@@ -3670,21 +4425,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-{/* 
-
-  Hello this is the way you should be having the local area in the way you should be having the css
-  who is the real goat means bucry, there is a doubt between carry and gareeb as well this ist the way 
-  you should be having as well as its the way you should be having the higt on the shadow border as well as
-  they should be having the classname in the flex of the area of the local area network the way you should be
-  having the wayname so that it should be having the lcal storeage, hello on you way to the local area as this is the way 
-  you should be having the seen of the loacal value of the sceen in the the system of the value.
-  So this is what you should be doing the same things in the local area of the way you should be having he same things 
-  as they want to know a way you should be having the same thing as they are to be done in the little area
-  You know where they are as they it should be having the same in which they are in the local network of the 
-  pitched area in the same way you should having in the local area as they know
-
-*/}
-            <div className="bg-white/80 backdrop-blur-xl rounded-lg shadow-lg border border-gray-200/50 p-2 sm:p-3 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
+        <div className="bg-white/80 backdrop-blur-xl rounded-lg shadow-lg border border-gray-200/50 p-2 sm:p-3 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                 <div className="h-9 w-9 sm:h-10 sm:w-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
                   <FaExclamationTriangle className="text-white text-base sm:text-lg" />
