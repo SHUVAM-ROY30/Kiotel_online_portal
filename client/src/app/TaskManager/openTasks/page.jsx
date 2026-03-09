@@ -2009,3 +2009,1312 @@ export default function OpenedTickets() {
     </div>
   );
 }
+
+
+// "use client";
+// import { useEffect, useState, useRef, useCallback } from "react";
+// import axios from "axios";
+// import { useRouter } from "next/navigation";
+// import Link from "next/link";
+// import { motion, AnimatePresence } from "framer-motion";
+// import { toast, ToastContainer } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
+// import { format, formatDistanceToNow } from "date-fns";
+// import {
+//   FaGripLinesVertical,
+//   FaTasks,
+//   FaFilter,
+//   FaCog,
+//   FaTag,
+//   FaUser,
+//   FaExclamationCircle,
+//   FaSearch,
+//   FaTimes,
+//   FaPlus,
+//   FaCheck,
+//   FaChevronDown,
+//   FaEdit,
+//   FaSave,
+//   FaTimesCircle,
+//   FaFileExcel,
+//   FaCheckSquare,
+//   FaSquare,
+//   FaShare,
+//   FaSort,
+// } from "react-icons/fa";
+
+// import TagsModal from "./TagsModal";
+
+// // --- Animation Variants ---
+// const pageVariants = {
+//   hidden: { opacity: 0, y: 12 },
+//   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+// };
+// const dropdownVariants = {
+//   hidden: { opacity: 0, y: -6, scale: 0.97 },
+//   visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.15, ease: "easeOut" } },
+//   exit: { opacity: 0, y: -6, scale: 0.97, transition: { duration: 0.1 } },
+// };
+// const modalOverlayVariants = {
+//   hidden: { opacity: 0 },
+//   visible: { opacity: 1, transition: { duration: 0.2 } },
+//   exit: { opacity: 0, transition: { duration: 0.15 } },
+// };
+// const modalContentVariants = {
+//   hidden: { opacity: 0, scale: 0.95, y: 10 },
+//   visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
+//   exit: { opacity: 0, scale: 0.95, y: 10, transition: { duration: 0.15 } },
+// };
+// const rowVariants = {
+//   hidden: { opacity: 0 },
+//   visible: (i) => ({ opacity: 1, transition: { delay: i * 0.02, duration: 0.25 } }),
+// };
+
+// export default function OpenedTickets() {
+//   const router = useRouter();
+//   const [openedTickets, setOpenedTickets] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+//   const [allAssignedUsers, setAllAssignedUsers] = useState({});
+//   const [taskStates, setTaskStates] = useState([]);
+//   const [priorities, setPriorities] = useState([]);
+//   const [tags, setTags] = useState([]);
+//   const [ticketState, setTicketState] = useState({});
+//   const [ticketPriority, setTicketPriority] = useState({});
+//   const [ticketDueDate, setTicketDueDate] = useState({});
+//   const [ticketCreatedAt, setTicketCreatedAt] = useState({});
+
+//   const [selectedStates, setSelectedStates] = useState(new Set());
+//   const [selectedPriorities, setSelectedPriorities] = useState(new Set());
+//   const [selectedTags, setSelectedTags] = useState(new Set());
+
+//   const [assignedUserSearch, setAssignedUserSearch] = useState("");
+//   const [userRole, setUserRole] = useState(null);
+//   const [user, setUser] = useState(null);
+//   const [viewMode, setViewMode] = useState("table");
+//   const [kanbanSettings, setKanbanSettings] = useState({ columns: [], columnOrder: [] });
+//   const [showKanbanSettings, setShowKanbanSettings] = useState(false);
+//   const [draggedTicket, setDraggedTicket] = useState(null);
+
+//   const [columnWidths, setColumnWidths] = useState({
+//     tags: 150, title: 250, createdBy: 180, assignedUsers: 200,
+//     dueDate: 120, upSince: 150, state: 120, priority: 120,
+//   });
+//   const [isResizing, setIsResizing] = useState(false);
+//   const [currentResizingColumn, setCurrentResizingColumn] = useState(null);
+//   const resizingStartX = useRef(0);
+//   const resizingStartWidth = useRef(0);
+//   const tableRef = useRef(null);
+
+//   const priorityOrder = { urgent: 4, important: 3, medium: 2, low: 1, "not set": 0 };
+
+//   const [openStatusDropdown, setOpenStatusDropdown] = useState(false);
+//   const [openPriorityDropdown, setOpenPriorityDropdown] = useState(false);
+//   const [openTagDropdown, setOpenTagDropdown] = useState(false);
+//   const [openSortDropdown, setOpenSortDropdown] = useState(false);
+//   const [tagSearch, setTagSearch] = useState("");
+
+//   const [editingPriority, setEditingPriority] = useState(null);
+//   const [editingState, setEditingState] = useState(null);
+//   const [editingDueDate, setEditingDueDate] = useState(null);
+
+//   const [searchQuery, setSearchQuery] = useState("");
+//   const [selectedTaskIds, setSelectedTaskIds] = useState(new Set());
+
+//   const [showShareModal, setShowShareModal] = useState(false);
+//   const [selectedTaskForShare, setSelectedTaskForShare] = useState(null);
+//   const [shareEmail, setShareEmail] = useState("");
+//   const [shareMessage, setShareMessage] = useState("");
+
+//   const [showTagsModal, setShowTagsModal] = useState(false);
+//   const [sortOption, setSortOption] = useState("priority");
+//   const [filtersExpanded, setFiltersExpanded] = useState(true);
+
+//   const allowedEmails = ["shuvam.r@kiotel.co", "raj@kiotel.co"];
+//   const isAllowedUser = user && allowedEmails.includes(user.email);
+
+//   // --- Consolidated user fetch (bug fix: removed duplicate API call) ---
+//   useEffect(() => {
+//     const fetchUserDetails = async () => {
+//       try {
+//         const response = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+//           { withCredentials: true }
+//         );
+//         setUser(response.data);
+//         setUserRole(response.data.role);
+//       } catch (err) {
+//         console.error("Error fetching user details:", err);
+//       }
+//     };
+//     fetchUserDetails();
+//   }, []);
+
+//   // Fetch tasks
+//   useEffect(() => {
+//     const fetchTasks = async () => {
+//       setLoading(true);
+//       try {
+//         const response = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/opened_tasks`,
+//           { withCredentials: true }
+//         );
+//         const tasks = response.data;
+//         setOpenedTickets(tasks);
+//         const statesTemp = {}, prioritiesTemp = {}, dueDateTemp = {}, createdAtTemp = {}, assignedMap = {};
+//         tasks.forEach((task) => {
+//           const id = task.task_id;
+//           statesTemp[id] = task.status_name;
+//           prioritiesTemp[id] = task.priority_name;
+//           dueDateTemp[id] = task.due_date;
+//           createdAtTemp[id] = task.created_at;
+//           assignedMap[id] = task.assigned_users?.length > 0 ? task.assigned_users : [];
+//         });
+//         setTicketState(statesTemp);
+//         setTicketPriority(prioritiesTemp);
+//         setTicketDueDate(dueDateTemp);
+//         setTicketCreatedAt(createdAtTemp);
+//         setAllAssignedUsers(assignedMap);
+//       } catch (err) {
+//         console.error("Error fetching tasks:", err);
+//         setError("Failed to load tasks");
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+//     fetchTasks();
+//   }, []);
+
+//   useEffect(() => {
+//     const fetchTaskStates = async () => {
+//       try {
+//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/taskstate`);
+//         setTaskStates(response.data);
+//       } catch (err) { console.error("Error fetching task states:", err); }
+//     };
+//     fetchTaskStates();
+//   }, []);
+
+//   useEffect(() => {
+//     const fetchPriorities = async () => {
+//       try {
+//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/priority`);
+//         setPriorities(response.data);
+//       } catch (err) { console.error("Error fetching priorities:", err); }
+//     };
+//     fetchPriorities();
+//   }, []);
+
+//   useEffect(() => {
+//     const fetchTags = async () => {
+//       try {
+//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tags`);
+//         setTags(response.data.map((tag) => ({ value: tag.id, label: tag.tag })));
+//       } catch (err) { console.error("Error fetching tags:", err); }
+//     };
+//     fetchTags();
+//   }, []);
+
+//   // Default filters
+//   useEffect(() => {
+//     if (taskStates.length > 0) {
+//       const s = new Set();
+//       taskStates.forEach((st) => { if (st.status_name.toLowerCase() !== "completed") s.add(st.Id.toString()); });
+//       setSelectedStates(s);
+//     }
+//   }, [taskStates]);
+
+//   useEffect(() => {
+//     if (priorities.length > 0) setSelectedPriorities(new Set(priorities.map((p) => p.Id.toString())));
+//   }, [priorities]);
+
+//   useEffect(() => {
+//     if (tags.length > 0) setSelectedTags(new Set(tags.map((t) => t.value.toString())));
+//   }, [tags]);
+
+//   // Kanban settings
+//   useEffect(() => {
+//     const fetchKanbanSettings = async () => {
+//       try {
+//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/kanban-settings`, { withCredentials: true });
+//         if (response.data?.settings) {
+//           setKanbanSettings(JSON.parse(response.data.settings));
+//         } else {
+//           const cols = taskStates.map((s) => ({ id: s.Id.toString(), title: s.status_name, visible: true }));
+//           setKanbanSettings({ columns: cols, columnOrder: cols.map((c) => c.id) });
+//         }
+//       } catch (err) {
+//         const cols = taskStates.map((s) => ({ id: s.Id.toString(), title: s.status_name, visible: true }));
+//         setKanbanSettings({ columns: cols, columnOrder: cols.map((c) => c.id) });
+//       }
+//     };
+//     if (taskStates.length > 0) fetchKanbanSettings();
+//   }, [taskStates]);
+
+//   const saveKanbanSettings = async () => {
+//     try {
+//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/save-kanban-settings`, { settings: JSON.stringify(kanbanSettings) }, { withCredentials: true });
+//       toast.success("Kanban settings saved!");
+//       setShowKanbanSettings(false);
+//     } catch (err) { toast.error("Failed to save Kanban settings"); }
+//   };
+
+//   const toggleColumnVisibility = (columnId) => {
+//     setKanbanSettings((prev) => ({
+//       ...prev, columns: prev.columns.map((col) => (col.id === columnId ? { ...col, visible: !col.visible } : col)),
+//     }));
+//   };
+
+//   const moveColumn = (columnId, direction) => {
+//     setKanbanSettings((prev) => {
+//       const newOrder = [...prev.columnOrder];
+//       const idx = newOrder.indexOf(columnId);
+//       if (direction === "left" && idx > 0) [newOrder[idx], newOrder[idx - 1]] = [newOrder[idx - 1], newOrder[idx]];
+//       else if (direction === "right" && idx < newOrder.length - 1) [newOrder[idx], newOrder[idx + 1]] = [newOrder[idx + 1], newOrder[idx]];
+//       return { ...prev, columnOrder: newOrder };
+//     });
+//   };
+
+//   // --- Column resizing (bug fix: useCallback) ---
+//   const startResizing = (column, e) => {
+//     e.preventDefault();
+//     e.stopPropagation();
+//     setIsResizing(true);
+//     setCurrentResizingColumn(column);
+//     resizingStartX.current = e.clientX;
+//     resizingStartWidth.current = columnWidths[column];
+//   };
+
+//   const handleMouseMove = useCallback((e) => {
+//     if (!isResizing || !currentResizingColumn) return;
+//     const delta = e.clientX - resizingStartX.current;
+//     setColumnWidths((prev) => ({ ...prev, [currentResizingColumn]: Math.max(80, resizingStartWidth.current + delta) }));
+//   }, [isResizing, currentResizingColumn]);
+
+//   const stopResizing = useCallback(() => {
+//     setIsResizing(false);
+//     setCurrentResizingColumn(null);
+//   }, []);
+
+//   useEffect(() => {
+//     if (isResizing) {
+//       document.addEventListener("mousemove", handleMouseMove);
+//       document.addEventListener("mouseup", stopResizing);
+//     }
+//     return () => {
+//       document.removeEventListener("mousemove", handleMouseMove);
+//       document.removeEventListener("mouseup", stopResizing);
+//     };
+//   }, [isResizing, handleMouseMove, stopResizing]);
+
+//   // --- Filtering ---
+//   const filteredTickets = openedTickets.filter((ticket) => {
+//     const taskId = ticket.task_id;
+//     const currentState = ticketState[taskId];
+//     const currentPriority = ticketPriority[taskId];
+//     const assignedUsers = allAssignedUsers[taskId] || [];
+//     const currentStateObj = taskStates.find((s) => s.status_name === currentState);
+//     const currentStateId = currentStateObj ? currentStateObj.Id.toString() : null;
+//     const currentPriorityObj = priorities.find((p) => p.priority_name === currentPriority);
+//     const currentPriorityId = currentPriorityObj ? currentPriorityObj.Id.toString() : null;
+//     const matchesState = selectedStates.size === 0 || (currentStateId && selectedStates.has(currentStateId));
+//     const matchesPriority = selectedPriorities.size === 0 || (currentPriorityId && selectedPriorities.has(currentPriorityId));
+//     const matchesUser = !assignedUserSearch || assignedUsers.some((u) => `${u.fname || ""} ${u.lname || ""}`.trim().toLowerCase().includes(assignedUserSearch.trim().toLowerCase()));
+//     const taskTagString = ticket.task_tags;
+//     const taskTagsArray = typeof taskTagString === "string" ? taskTagString.split(",").map((t) => t.trim()).filter(Boolean) : [];
+//     const tagNameToId = Object.fromEntries(tags.map((t) => [t.label, t.value.toString()]));
+//     const ticketTagIds = taskTagsArray.map((name) => tagNameToId[name]).filter(Boolean);
+//     const matchesTag = selectedTags.size === 0 || ticketTagIds.some((tid) => selectedTags.has(tid));
+//     const matchesSearch = !searchQuery ||
+//       ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+//       ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+//       assignedUsers.some((u) => `${u.fname || ""} ${u.lname || ""}`.toLowerCase().includes(searchQuery.toLowerCase()));
+//     return matchesState && matchesPriority && matchesUser && matchesTag && matchesSearch;
+//   });
+
+//   // --- Sorting ---
+//   const sortedFilteredTickets = [...filteredTickets].sort((a, b) => {
+//     if (sortOption === "priority") {
+//       const pA = ticketPriority[a.task_id]?.toLowerCase() || "not set";
+//       const pB = ticketPriority[b.task_id]?.toLowerCase() || "not set";
+//       return priorityOrder[pB] - priorityOrder[pA];
+//     }
+//     if (sortOption === "longest_created") {
+//       return new Date(ticketCreatedAt[a.task_id]) - new Date(ticketCreatedAt[b.task_id]);
+//     }
+//     return 0;
+//   });
+
+//   // --- Kanban grouping ---
+//   const groupTicketsByStatus = () => {
+//     const groups = {};
+//     kanbanSettings.columns.filter((c) => c.visible).forEach((col) => { groups[col.title] = []; });
+//     sortedFilteredTickets.forEach((ticket) => {
+//       const status = ticketState[ticket.task_id] || "Open";
+//       if (groups.hasOwnProperty(status)) groups[status].push(ticket);
+//     });
+//     return groups;
+//   };
+
+//   // Drag & Drop
+//   const handleDragStart = (e, ticket) => { setDraggedTicket(ticket); e.dataTransfer.effectAllowed = "move"; };
+//   const handleDragOver = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; };
+//   const handleDrop = async (e, newStatus) => {
+//     e.preventDefault();
+//     if (!draggedTicket) return;
+//     const statusObj = taskStates.find((s) => s.status_name === newStatus);
+//     if (!statusObj) return;
+//     try {
+//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_state`, { ticketId: draggedTicket.task_id, status_id: statusObj.Id }, { withCredentials: true });
+//       setTicketState((prev) => ({ ...prev, [draggedTicket.task_id]: newStatus }));
+//       toast.success("Task status updated!");
+//     } catch (err) { toast.error("Failed to update task status"); }
+//     finally { setDraggedTicket(null); }
+//   };
+
+//   // --- Badge styles ---
+//   const getStateBadge = (statusName) => {
+//     const s = statusName?.toLowerCase();
+//     if (s === "open") return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20";
+//     if (s === "in progress") return "bg-amber-50 text-amber-700 ring-1 ring-amber-600/20";
+//     if (s === "resolved") return "bg-sky-50 text-sky-700 ring-1 ring-sky-600/20";
+//     if (s === "completed") return "bg-rose-50 text-rose-700 ring-1 ring-rose-600/20";
+//     return "bg-slate-50 text-slate-600 ring-1 ring-slate-500/20";
+//   };
+
+//   const getStateDot = (statusName) => {
+//     const s = statusName?.toLowerCase();
+//     if (s === "open") return "bg-emerald-500";
+//     if (s === "in progress") return "bg-amber-500";
+//     if (s === "resolved") return "bg-sky-500";
+//     if (s === "completed") return "bg-rose-500";
+//     return "bg-slate-400";
+//   };
+
+//   const getPriorityBadge = (priorityName) => {
+//     const p = priorityName?.toLowerCase();
+//     if (p === "low") return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20";
+//     if (p === "medium") return "bg-amber-50 text-amber-700 ring-1 ring-amber-600/20";
+//     if (p === "important") return "bg-orange-50 text-orange-700 ring-1 ring-orange-600/20";
+//     if (p === "urgent") return "bg-rose-50 text-rose-700 ring-1 ring-rose-600/20";
+//     return "bg-slate-50 text-slate-600 ring-1 ring-slate-500/20";
+//   };
+
+//   const getPriorityDot = (priorityName) => {
+//     const p = priorityName?.toLowerCase();
+//     if (p === "low") return "bg-emerald-500";
+//     if (p === "medium") return "bg-amber-500";
+//     if (p === "important") return "bg-orange-500";
+//     if (p === "urgent") return "bg-rose-500";
+//     return "bg-slate-400";
+//   };
+
+//   // --- Filter toggles ---
+//   const toggleState = (id) => { setSelectedStates((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; }); };
+//   const togglePriority = (id) => { setSelectedPriorities((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; }); };
+//   const toggleTag = (val) => { setSelectedTags((prev) => { const s = new Set(prev); s.has(val) ? s.delete(val) : s.add(val); return s; }); };
+
+//   const clearFilters = () => {
+//     if (taskStates.length > 0) {
+//       const s = new Set();
+//       taskStates.forEach((st) => { if (st.status_name.toLowerCase() !== "completed") s.add(st.Id.toString()); });
+//       setSelectedStates(s);
+//     } else setSelectedStates(new Set());
+//     if (priorities.length > 0) setSelectedPriorities(new Set(priorities.map((p) => p.Id.toString())));
+//     else setSelectedPriorities(new Set());
+//     if (tags.length > 0) setSelectedTags(new Set(tags.map((t) => t.value.toString())));
+//     else setSelectedTags(new Set());
+//     setAssignedUserSearch("");
+//     setSearchQuery("");
+//     setSortOption("priority");
+//   };
+
+//   // Close dropdowns on outside click
+//   useEffect(() => {
+//     const handler = (e) => {
+//       if (!e.target.closest("#status-dropdown") && !e.target.closest("#priority-dropdown") && !e.target.closest("#tag-dropdown") && !e.target.closest("#sort-dropdown")) {
+//         setOpenStatusDropdown(false);
+//         setOpenPriorityDropdown(false);
+//         setOpenTagDropdown(false);
+//         setOpenSortDropdown(false);
+//       }
+//     };
+//     document.addEventListener("mousedown", handler);
+//     return () => document.removeEventListener("mousedown", handler);
+//   }, []);
+
+//   // --- Inline editing ---
+//   const handlePriorityChange = async (taskId, newPriorityId) => {
+//     const name = priorities.find((p) => p.Id.toString() === newPriorityId)?.priority_name;
+//     if (!name) return;
+//     try {
+//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_priority`, { ticketId: taskId, priority_id: parseInt(newPriorityId) }, { withCredentials: true });
+//       setTicketPriority((prev) => ({ ...prev, [taskId]: name }));
+//       toast.success("Priority updated!");
+//     } catch (err) { toast.error("Failed to update priority"); }
+//     setEditingPriority(null);
+//   };
+
+//   const handleStateChange = async (taskId, newStateId) => {
+//     const name = taskStates.find((s) => s.Id.toString() === newStateId)?.status_name;
+//     if (!name) return;
+//     try {
+//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_state`, { ticketId: taskId, status_id: parseInt(newStateId) }, { withCredentials: true });
+//       setTicketState((prev) => ({ ...prev, [taskId]: name }));
+//       toast.success("Status updated!");
+//     } catch (err) { toast.error("Failed to update status"); }
+//     setEditingState(null);
+//   };
+
+//   const handleDueDateChange = async (taskId, newDueDate) => {
+//     try {
+//       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_due_date`, { ticketId: taskId, due_date: newDueDate }, { withCredentials: true });
+//       setTicketDueDate((prev) => ({ ...prev, [taskId]: newDueDate }));
+//       toast.success("Due date updated!");
+//     } catch (err) { toast.error("Failed to update due date"); }
+//     setEditingDueDate(null);
+//   };
+
+//   const cancelEditing = () => { setEditingPriority(null); setEditingState(null); setEditingDueDate(null); };
+
+//   // --- Task selection ---
+//   const toggleTaskSelection = (taskId) => { setSelectedTaskIds((prev) => { const s = new Set(prev); s.has(taskId) ? s.delete(taskId) : s.add(taskId); return s; }); };
+//   const toggleAllTasks = () => {
+//     if (selectedTaskIds.size === sortedFilteredTickets.length) setSelectedTaskIds(new Set());
+//     else setSelectedTaskIds(new Set(sortedFilteredTickets.map((t) => t.task_id)));
+//   };
+//   const selectedCount = selectedTaskIds.size;
+
+//   const escapeCSV = (value) => {
+//     if (value === null || value === undefined) return "";
+//     let v = value.toString().replace(/"/g, '""');
+//     return `"${v}"`;
+//   };
+
+//   // --- Export ---
+//   const exportToExcel = () => {
+//     if (selectedCount === 0) { toast.warning("Please select at least one task to export."); return; }
+//     const selectedTasks = sortedFilteredTickets.filter((t) => selectedTaskIds.has(t.task_id));
+//     const headers = ["Task ID", "Title", "Description", "Status", "Priority", "Created By", "Assigned Users", "Due Date", "Tags", "Up Since"];
+//     const csvContent = [
+//       headers.map(escapeCSV),
+//       ...selectedTasks.map((ticket) => {
+//         const assigned = allAssignedUsers[ticket.task_id]?.map((u) => `${u.fname} ${u.lname}`).join(", ") || "Unassigned";
+//         const dueDate = ticketDueDate[ticket.task_id] ? format(new Date(ticketDueDate[ticket.task_id]), "MMM dd, yyyy") : "No due date";
+//         const created = ticketCreatedAt[ticket.task_id];
+//         const creationDate = created ? format(new Date(created), "MMM dd, yyyy") : "Unknown";
+//         const daysAgo = created ? formatDistanceToNow(new Date(created), { addSuffix: true }) : "Unknown";
+//         return [
+//           escapeCSV(ticket.task_id), escapeCSV(ticket.title), escapeCSV(ticket.description),
+//           escapeCSV(ticketState[ticket.task_id] || ""), escapeCSV(ticketPriority[ticket.task_id] || ""),
+//           escapeCSV(`${ticket.creator.fname} ${ticket.creator.lname}`), escapeCSV(assigned),
+//           escapeCSV(dueDate), escapeCSV(ticket.task_tags || ""), escapeCSV(`${creationDate} (${daysAgo})`),
+//         ];
+//       }),
+//     ].map((row) => row.join(",")).join("\n");
+//     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+//     const link = document.createElement("a");
+//     link.setAttribute("href", URL.createObjectURL(blob));
+//     link.setAttribute("download", "tasks_export.csv");
+//     link.style.visibility = "hidden";
+//     document.body.appendChild(link);
+//     link.click();
+//     document.body.removeChild(link);
+//     toast.success("Export successful!");
+//   };
+
+//   // --- Share ---
+//   const openShareModal = (task) => {
+//     setSelectedTaskForShare(task);
+//     setShareEmail("");
+//     setShareMessage(`Check out this task: ${task.title} - ${window.location.origin}/TaskManager/task/${task.task_id}`);
+//     setShowShareModal(true);
+//   };
+//   const closeShareModal = () => { setShowShareModal(false); setSelectedTaskForShare(null); };
+
+//   // --- Helpers ---
+//   const getSelectedPriorityNames = () => {
+//     if (!priorities.length || !selectedPriorities.size) return "All Priorities";
+//     const sel = priorities.filter((p) => selectedPriorities.has(p.Id.toString())).map((p) => p.priority_name);
+//     if (sel.length === priorities.length) return "All Priorities";
+//     return sel.slice(0, 2).join(", ") + (sel.length > 2 ? ` +${sel.length - 2}` : "");
+//   };
+//   const getSelectedTagNames = () => {
+//     if (!tags.length || !selectedTags.size) return "All Tags";
+//     const sel = tags.filter((t) => selectedTags.has(t.value.toString())).map((t) => t.label);
+//     if (sel.length === tags.length) return "All Tags";
+//     return sel.slice(0, 2).join(", ") + (sel.length > 2 ? ` +${sel.length - 2}` : "");
+//   };
+
+//   const formatDueDate = (dateStr) => {
+//     if (!dateStr) return null;
+//     try { return format(new Date(dateStr), "MMM dd, yyyy"); } catch { return "Invalid date"; }
+//   };
+
+//   const getUpSince = (createdAt) => {
+//     if (!createdAt) return { date: "Unknown", relative: "Unknown" };
+//     try {
+//       return { date: format(new Date(createdAt), "MMM dd, yyyy"), relative: formatDistanceToNow(new Date(createdAt), { addSuffix: true }) };
+//     } catch { return { date: "Unknown", relative: "Unknown" }; }
+//   };
+
+//   const isDueDateOverdue = (dateStr) => {
+//     if (!dateStr) return false;
+//     return new Date(dateStr) < new Date();
+//   };
+
+//   // --- Avatar color from name ---
+//   const getAvatarColor = (name) => {
+//     const colors = [
+//       "bg-indigo-100 text-indigo-700", "bg-sky-100 text-sky-700", "bg-violet-100 text-violet-700",
+//       "bg-pink-100 text-pink-700", "bg-teal-100 text-teal-700", "bg-amber-100 text-amber-700",
+//     ];
+//     let hash = 0;
+//     for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+//     return colors[Math.abs(hash) % colors.length];
+//   };
+
+//   // --- Loading State ---
+//   if (loading) {
+//     return (
+//       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+//         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
+//           <div className="relative w-16 h-16 mx-auto mb-6">
+//             <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+//             <div className="absolute inset-0 rounded-full border-4 border-t-indigo-500 animate-spin"></div>
+//           </div>
+//           <p className="text-slate-600 font-medium text-sm tracking-wide">Loading tasks...</p>
+//         </motion.div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <motion.div
+//       className="min-h-screen bg-slate-50"
+//       variants={pageVariants}
+//       initial="hidden"
+//       animate="visible"
+//     >
+//       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="light" />
+
+//       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+//         {/* Header */}
+//         <header className="mb-8">
+//           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+//             <div>
+//               <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">All Tasks</h1>
+//               <p className="text-sm text-slate-500 mt-1">Manage and track your open tasks</p>
+//             </div>
+//             <div className="flex items-center gap-3">
+//               {isAllowedUser && (
+//                 <button
+//                   onClick={() => setShowTagsModal(true)}
+//                   className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 shadow-sm"
+//                 >
+//                   <FaTag className="text-xs text-violet-500" />
+//                   Tags
+//                 </button>
+//               )}
+//               <Link
+//                 href="/TaskManager/newTask"
+//                 className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-all duration-200 shadow-sm hover:shadow"
+//               >
+//                 <FaPlus className="text-xs" />
+//                 New Task
+//               </Link>
+//               <img
+//                 src="/Kiotel_Logo_bg.PNG"
+//                 alt="Dashboard Logo"
+//                 className="h-9 w-auto cursor-pointer hover:opacity-80 transition-opacity duration-200"
+//                 onClick={() => router.push("/TaskManager")}
+//               />
+//             </div>
+//           </div>
+//         </header>
+
+//         {/* Search & Toolbar */}
+//         <div className="bg-white border border-slate-200 rounded-xl p-4 mb-4 shadow-sm">
+//           <div className="flex flex-col md:flex-row md:items-center gap-3">
+//             {/* Search */}
+//             <div className="flex-1 relative">
+//               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+//               <input
+//                 type="text"
+//                 value={searchQuery}
+//                 onChange={(e) => setSearchQuery(e.target.value)}
+//                 placeholder="Search tasks..."
+//                 className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all duration-200 placeholder:text-slate-400"
+//               />
+//               {searchQuery && (
+//                 <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+//                   <FaTimes className="text-xs" />
+//                 </button>
+//               )}
+//             </div>
+
+//             {/* Toolbar */}
+//             <div className="flex items-center gap-2 flex-shrink-0">
+//               <button
+//                 onClick={toggleAllTasks}
+//                 className="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-all duration-200"
+//               >
+//                 {selectedCount === sortedFilteredTickets.length && sortedFilteredTickets.length > 0
+//                   ? <FaCheckSquare className="text-indigo-500" />
+//                   : <FaSquare className="text-slate-400" />}
+//                 <span className="font-medium">{selectedCount > 0 ? `${selectedCount}` : "All"}</span>
+//               </button>
+
+//               <button
+//                 onClick={exportToExcel}
+//                 disabled={selectedCount === 0}
+//                 className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${selectedCount === 0
+//                     ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+//                     : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm hover:shadow"
+//                   }`}
+//               >
+//                 <FaFileExcel className="text-xs" />
+//                 Export
+//               </button>
+
+//               {/* Sort Dropdown */}
+//               <div className="relative" id="sort-dropdown">
+//                 <button
+//                   className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${sortOption === "longest_created"
+//                       ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+//                       : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+//                     }`}
+//                   onClick={(e) => { e.stopPropagation(); setOpenSortDropdown((s) => !s); setOpenStatusDropdown(false); setOpenPriorityDropdown(false); setOpenTagDropdown(false); }}
+//                 >
+//                   <FaSort className="text-xs" />
+//                   {sortOption === "longest_created" ? "Oldest" : "Priority"}
+//                   <FaChevronDown className="text-[10px] ml-0.5" />
+//                 </button>
+//                 <AnimatePresence>
+//                   {openSortDropdown && (
+//                     <motion.div variants={dropdownVariants} initial="hidden" animate="visible" exit="exit"
+//                       className="absolute right-0 z-20 mt-1.5 w-44 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden"
+//                       onClick={(e) => e.stopPropagation()}
+//                     >
+//                       {[{ value: "priority", label: "Priority" }, { value: "longest_created", label: "Oldest First" }].map((opt) => (
+//                         <button key={opt.value}
+//                           className={`w-full text-left px-3 py-2.5 text-sm transition-colors duration-150 ${sortOption === opt.value ? "bg-indigo-50 text-indigo-700 font-medium" : "text-slate-600 hover:bg-slate-50"}`}
+//                           onClick={() => { setSortOption(opt.value); setOpenSortDropdown(false); }}
+//                         >
+//                           {opt.label}
+//                         </button>
+//                       ))}
+//                     </motion.div>
+//                   )}
+//                 </AnimatePresence>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Filters */}
+//         <div className="bg-white border border-slate-200 rounded-xl mb-6 shadow-sm overflow-hidden">
+//           <button
+//             onClick={() => setFiltersExpanded((v) => !v)}
+//             className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50/50 transition-colors duration-200"
+//           >
+//             <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+//               <FaFilter className="text-xs text-indigo-500" />
+//               Filters
+//               {(assignedUserSearch || searchQuery) && (
+//                 <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700">Active</span>
+//               )}
+//             </span>
+//             <div className="flex items-center gap-2">
+//               {viewMode === "kanban" && (
+//                 <span onClick={(e) => { e.stopPropagation(); setShowKanbanSettings(true); }} className="text-xs text-slate-500 hover:text-slate-700 cursor-pointer flex items-center gap-1">
+//                   <FaCog /> Customize
+//                 </span>
+//               )}
+//               <span onClick={(e) => { e.stopPropagation(); clearFilters(); }} className="text-xs text-slate-500 hover:text-slate-700 cursor-pointer">Clear</span>
+//               <motion.span animate={{ rotate: filtersExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+//                 <FaChevronDown className="text-xs text-slate-400" />
+//               </motion.span>
+//             </div>
+//           </button>
+
+//           <AnimatePresence>
+//             {filtersExpanded && (
+//               <motion.div
+//                 initial={{ height: 0, opacity: 0 }}
+//                 animate={{ height: "auto", opacity: 1 }}
+//                 exit={{ height: 0, opacity: 0 }}
+//                 transition={{ duration: 0.2 }}
+//                 className="overflow-hidden"
+//               >
+//                 <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 border-t border-slate-100 pt-3">
+//                   {/* Tag Filter */}
+//                   <div>
+//                     <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wider">Tag</label>
+//                     <div className="relative" id="tag-dropdown">
+//                       <button
+//                         className={`w-full flex items-center justify-between px-3 py-2 text-sm bg-slate-50 border rounded-lg transition-all duration-200 ${openTagDropdown ? "border-indigo-400 ring-2 ring-indigo-500/20" : "border-slate-200 hover:border-slate-300"}`}
+//                         onClick={(e) => { e.stopPropagation(); setOpenTagDropdown((s) => !s); setOpenStatusDropdown(false); setOpenPriorityDropdown(false); setOpenSortDropdown(false); }}
+//                       >
+//                         <span className="text-slate-600 truncate">{getSelectedTagNames()}</span>
+//                         <FaChevronDown className="text-[10px] text-slate-400 flex-shrink-0 ml-2" />
+//                       </button>
+//                       <AnimatePresence>
+//                         {openTagDropdown && (
+//                           <motion.div variants={dropdownVariants} initial="hidden" animate="visible" exit="exit"
+//                             className="absolute z-20 mt-1.5 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-64 overflow-hidden"
+//                             onClick={(e) => e.stopPropagation()}
+//                           >
+//                             <div className="p-2 border-b border-slate-100">
+//                               <input type="text" placeholder="Search tags..." value={tagSearch} onChange={(e) => setTagSearch(e.target.value)}
+//                                 className="w-full px-2.5 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-400"
+//                               />
+//                             </div>
+//                             <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
+//                               <span className="text-[11px] text-slate-400 uppercase tracking-wider">Tags</span>
+//                               <button onClick={() => setSelectedTags(selectedTags.size === tags.length ? new Set() : new Set(tags.map((t) => t.value.toString())))}
+//                                 className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium">
+//                                 {selectedTags.size === tags.length ? "Clear" : "All"}
+//                               </button>
+//                             </div>
+//                             <div className="max-h-44 overflow-y-auto">
+//                               {tags.filter((t) => t.label.toLowerCase().includes(tagSearch.toLowerCase())).map((tag) => (
+//                                 <button key={tag.value} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-slate-50 transition-colors" onClick={() => toggleTag(tag.value.toString())}>
+//                                   <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedTags.has(tag.value.toString()) ? "bg-indigo-600 border-indigo-600" : "border-slate-300"}`}>
+//                                     {selectedTags.has(tag.value.toString()) && <FaCheck className="text-[8px] text-white" />}
+//                                   </div>
+//                                   <span className={selectedTags.has(tag.value.toString()) ? "text-slate-900 font-medium" : "text-slate-600"}>{tag.label}</span>
+//                                 </button>
+//                               ))}
+//                             </div>
+//                           </motion.div>
+//                         )}
+//                       </AnimatePresence>
+//                     </div>
+//                   </div>
+
+//                   {/* Assigned User */}
+//                   <div>
+//                     <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wider">Assigned User</label>
+//                     <div className="relative">
+//                       <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+//                       <input type="text" value={assignedUserSearch} onChange={(e) => setAssignedUserSearch(e.target.value)} placeholder="Search by name..."
+//                         className="w-full pl-8 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all duration-200 placeholder:text-slate-400"
+//                       />
+//                     </div>
+//                   </div>
+
+//                   {/* Status Filter */}
+//                   <div>
+//                     <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wider">Status</label>
+//                     <div className="relative" id="status-dropdown">
+//                       <button
+//                         className={`w-full flex items-center justify-between px-3 py-2 text-sm bg-slate-50 border rounded-lg transition-all duration-200 ${openStatusDropdown ? "border-indigo-400 ring-2 ring-indigo-500/20" : "border-slate-200 hover:border-slate-300"}`}
+//                         onClick={(e) => { e.stopPropagation(); setOpenStatusDropdown((s) => !s); setOpenPriorityDropdown(false); setOpenTagDropdown(false); setOpenSortDropdown(false); }}
+//                       >
+//                         <span className="text-slate-600 truncate">{selectedStates.size === 0 ? "All" : `${selectedStates.size} selected`}</span>
+//                         <FaChevronDown className="text-[10px] text-slate-400 flex-shrink-0 ml-2" />
+//                       </button>
+//                       <AnimatePresence>
+//                         {openStatusDropdown && (
+//                           <motion.div variants={dropdownVariants} initial="hidden" animate="visible" exit="exit"
+//                             className="absolute z-20 mt-1.5 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto"
+//                             onClick={(e) => e.stopPropagation()}
+//                           >
+//                             {taskStates.map((state) => (
+//                               <button key={state.Id} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-slate-50 transition-colors" onClick={() => toggleState(state.Id.toString())}>
+//                                 <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedStates.has(state.Id.toString()) ? "bg-indigo-600 border-indigo-600" : "border-slate-300"}`}>
+//                                   {selectedStates.has(state.Id.toString()) && <FaCheck className="text-[8px] text-white" />}
+//                                 </div>
+//                                 <div className={`w-2 h-2 rounded-full ${getStateDot(state.status_name)}`}></div>
+//                                 <span className={selectedStates.has(state.Id.toString()) ? "text-slate-900 font-medium" : "text-slate-600"}>{state.status_name}</span>
+//                               </button>
+//                             ))}
+//                           </motion.div>
+//                         )}
+//                       </AnimatePresence>
+//                     </div>
+//                   </div>
+
+//                   {/* Priority Filter */}
+//                   <div>
+//                     <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wider">Priority</label>
+//                     <div className="relative" id="priority-dropdown">
+//                       <button
+//                         className={`w-full flex items-center justify-between px-3 py-2 text-sm bg-slate-50 border rounded-lg transition-all duration-200 ${openPriorityDropdown ? "border-indigo-400 ring-2 ring-indigo-500/20" : "border-slate-200 hover:border-slate-300"}`}
+//                         onClick={(e) => { e.stopPropagation(); setOpenPriorityDropdown((s) => !s); setOpenStatusDropdown(false); setOpenTagDropdown(false); setOpenSortDropdown(false); }}
+//                       >
+//                         <span className="text-slate-600 truncate">{getSelectedPriorityNames()}</span>
+//                         <FaChevronDown className="text-[10px] text-slate-400 flex-shrink-0 ml-2" />
+//                       </button>
+//                       <AnimatePresence>
+//                         {openPriorityDropdown && (
+//                           <motion.div variants={dropdownVariants} initial="hidden" animate="visible" exit="exit"
+//                             className="absolute z-20 mt-1.5 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto"
+//                             onClick={(e) => e.stopPropagation()}
+//                           >
+//                             <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
+//                               <span className="text-[11px] text-slate-400 uppercase tracking-wider">Priorities</span>
+//                               <button onClick={() => setSelectedPriorities(selectedPriorities.size === priorities.length ? new Set() : new Set(priorities.map((p) => p.Id.toString())))}
+//                                 className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium">
+//                                 {selectedPriorities.size === priorities.length ? "Clear" : "All"}
+//                               </button>
+//                             </div>
+//                             {priorities.map((p) => (
+//                               <button key={p.Id} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-slate-50 transition-colors" onClick={() => togglePriority(p.Id.toString())}>
+//                                 <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedPriorities.has(p.Id.toString()) ? "bg-indigo-600 border-indigo-600" : "border-slate-300"}`}>
+//                                   {selectedPriorities.has(p.Id.toString()) && <FaCheck className="text-[8px] text-white" />}
+//                                 </div>
+//                                 <div className={`w-2 h-2 rounded-full ${getPriorityDot(p.priority_name)}`}></div>
+//                                 <span className={selectedPriorities.has(p.Id.toString()) ? "text-slate-900 font-medium" : "text-slate-600"}>{p.priority_name}</span>
+//                               </button>
+//                             ))}
+//                           </motion.div>
+//                         )}
+//                       </AnimatePresence>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </motion.div>
+//             )}
+//           </AnimatePresence>
+//         </div>
+
+//         {/* Kanban Settings Modal */}
+//         <AnimatePresence>
+//           {showKanbanSettings && (
+//             <motion.div variants={modalOverlayVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+//               <motion.div variants={modalContentVariants} initial="hidden" animate="visible" exit="exit" className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+//                 <div className="p-6">
+//                   <div className="flex justify-between items-center mb-6">
+//                     <h3 className="text-lg font-semibold text-slate-900">Customize Kanban Board</h3>
+//                     <button onClick={() => setShowKanbanSettings(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+//                       <FaTimes />
+//                     </button>
+//                   </div>
+//                   <div className="space-y-2 mb-6">
+//                     {kanbanSettings.columns.map((column, index) => (
+//                       <div key={column.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+//                         <label className="flex items-center gap-3 cursor-pointer">
+//                           <input type="checkbox" checked={column.visible} onChange={() => toggleColumnVisibility(column.id)} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+//                           <span className="text-sm font-medium text-slate-700">{column.title}</span>
+//                         </label>
+//                         <div className="flex gap-1">
+//                           <button onClick={() => moveColumn(column.id, "left")} disabled={index === 0} className={`p-1.5 rounded text-xs ${index === 0 ? "text-slate-300" : "text-slate-500 hover:bg-slate-200"}`}>←</button>
+//                           <button onClick={() => moveColumn(column.id, "right")} disabled={index === kanbanSettings.columns.length - 1} className={`p-1.5 rounded text-xs ${index === kanbanSettings.columns.length - 1 ? "text-slate-300" : "text-slate-500 hover:bg-slate-200"}`}>→</button>
+//                         </div>
+//                       </div>
+//                     ))}
+//                   </div>
+//                   <div className="flex justify-end gap-2">
+//                     <button onClick={() => setShowKanbanSettings(false)} className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">Cancel</button>
+//                     <button onClick={saveKanbanSettings} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm">Save</button>
+//                   </div>
+//                 </div>
+//               </motion.div>
+//             </motion.div>
+//           )}
+//         </AnimatePresence>
+
+//         {/* Share Modal */}
+//         <AnimatePresence>
+//           {showShareModal && selectedTaskForShare && (
+//             <motion.div variants={modalOverlayVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+//               <motion.div variants={modalContentVariants} initial="hidden" animate="visible" exit="exit" className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+//                 <div className="p-6">
+//                   <div className="flex justify-between items-center mb-5">
+//                     <h3 className="text-lg font-semibold text-slate-900">Share Task</h3>
+//                     <button onClick={closeShareModal} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"><FaTimes /></button>
+//                   </div>
+//                   <div className="mb-5 p-3 bg-slate-50 rounded-lg border border-slate-100">
+//                     <h4 className="font-medium text-sm text-slate-800">{selectedTaskForShare.title}</h4>
+//                     <p className="text-xs text-slate-500 mt-1 line-clamp-2">{selectedTaskForShare.description}</p>
+//                   </div>
+//                   <div className="mb-5">
+//                     <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wider">Task Link</label>
+//                     <div className="flex gap-2">
+//                       <input type="text" value={`${window.location.origin}/TaskManager/task/${selectedTaskForShare.task_id}`} readOnly
+//                         className="flex-1 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-600"
+//                       />
+//                       <button
+//                         onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/TaskManager/task/${selectedTaskForShare.task_id}`); toast.success("Link copied!"); }}
+//                         className="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
+//                       >Copy</button>
+//                     </div>
+//                   </div>
+//                   <div>
+//                     <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wider">Share via Email</label>
+//                     <input type="email" placeholder="recipient@example.com" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)}
+//                       className="w-full px-3 py-2 mb-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+//                     />
+//                     <textarea rows={3} value={shareMessage} onChange={(e) => setShareMessage(e.target.value)}
+//                       className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 resize-none"
+//                     />
+//                     <button
+//                       onClick={async () => {
+//                         if (!shareEmail) { toast.warning("Please enter recipient email"); return; }
+//                         try {
+//                           await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/send/api/share_task_email`, {
+//                             taskId: selectedTaskForShare.task_id, title: selectedTaskForShare.title,
+//                             description: selectedTaskForShare.description, recipientEmail: shareEmail, message: shareMessage,
+//                           }, { withCredentials: true });
+//                           toast.success("Email sent!");
+//                           closeShareModal();
+//                         } catch (err) { toast.error("Failed to send email"); }
+//                       }}
+//                       className="mt-3 w-full px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+//                     >Send Email</button>
+//                   </div>
+//                 </div>
+//               </motion.div>
+//             </motion.div>
+//           )}
+//         </AnimatePresence>
+
+//         {/* Tags Modal */}
+//         {showTagsModal && <TagsModal isOpen={showTagsModal} onClose={() => setShowTagsModal(false)} />}
+
+//         {/* Table View */}
+//         {viewMode === "table" ? (
+//           <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden" ref={tableRef}>
+//             <div className="overflow-x-auto">
+//               <table className="min-w-full">
+//                 <thead>
+//                   <tr className="bg-slate-50/80 border-b border-slate-200">
+
+
+//                     <th className="px-4 py-3 text-left w-10">
+//                       <input type="checkbox"
+//                         checked={sortedFilteredTickets.length > 0 && selectedTaskIds.size === sortedFilteredTickets.length}
+//                         onChange={toggleAllTasks}
+//                         className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+//                       />
+//                     </th>
+//                     {[
+//                       { key: "tags", label: "Tags" },
+//                       { key: "title", label: "Task" },
+//                       { key: "createdBy", label: "Created By" },
+//                       { key: "assignedUsers", label: "Assigned" },
+//                       { key: "dueDate", label: "Due Date" },
+//                       { key: "upSince", label: "Up Since" },
+//                       { key: "state", label: "Status" },
+//                       { key: "priority", label: "Priority" },
+//                     ].map((col) => (
+//                       <th key={col.key} scope="col"
+//                         className="relative px-4 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider"
+//                         style={{ width: columnWidths[col.key] }}
+//                       >
+//                         <div className="flex items-center justify-between">
+//                           {col.label}
+//                           <div onMouseDown={(e) => startResizing(col.key, e)}
+//                             className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize opacity-0 hover:opacity-100 transition-opacity"
+//                           >
+//                             <div className="h-full w-0.5 bg-slate-300 mx-auto"></div>
+//                           </div>
+//                         </div>
+//                       </th>
+//                     ))}
+//                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider w-16">
+//                       Share
+//                     </th>
+//                   </tr>
+//                 </thead>
+//                 <tbody className="divide-y divide-slate-100">
+//                   {sortedFilteredTickets.length === 0 ? (
+//                     <tr>
+//                       <td colSpan="11" className="px-6 py-16 text-center">
+//                         <div className="flex flex-col items-center">
+//                           <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+//                             <FaTasks className="text-slate-400 text-xl" />
+//                           </div>
+//                           <h3 className="text-sm font-medium text-slate-800 mb-1">No tasks found</h3>
+//                           <p className="text-xs text-slate-500 mb-4">Try adjusting your search or filter criteria.</p>
+//                           <button onClick={clearFilters}
+//                             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+//                           >
+//                             <FaTimes className="text-[10px]" /> Clear Filters
+//                           </button>
+//                         </div>
+//                       </td>
+//                     </tr>
+//                   ) : (
+//                     sortedFilteredTickets.map((ticket, index) => {
+//                       const taskTagString = ticket.task_tags;
+//                       const taskTagsArray = typeof taskTagString === "string" ? taskTagString.split(",").map((t) => t.trim()).filter(Boolean) : [];
+//                       const upSince = getUpSince(ticketCreatedAt[ticket.task_id]);
+//                       const creatorName = `${ticket.creator.fname} ${ticket.creator.lname || ""}`.trim();
+
+//                       return (
+//                         <motion.tr key={ticket.task_id} custom={index} variants={rowVariants} initial="hidden" animate="visible"
+//                           className="group hover:bg-slate-50/70 transition-colors duration-150"
+//                         >
+//                           {/* Checkbox */}
+//                           <td className="px-4 py-3">
+//                             <input type="checkbox" checked={selectedTaskIds.has(ticket.task_id)} onChange={() => toggleTaskSelection(ticket.task_id)}
+//                               className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+//                             />
+//                           </td>
+
+//                           {/* Tags */}
+//                           <td className="px-4 py-3" style={{ width: columnWidths.tags }}>
+//                             <div className="flex flex-wrap gap-1">
+//                               {taskTagsArray.length > 0 ? taskTagsArray.map((tag, idx) => (
+//                                 <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 text-violet-700 ring-1 ring-violet-500/20">
+//                                   {tag}
+//                                 </span>
+//                               )) : <span className="text-slate-400 text-xs">—</span>}
+//                             </div>
+//                           </td>
+
+//                           {/* Title */}
+//                           <td className="px-4 py-3" style={{ width: columnWidths.title }}>
+//                             <a href={`/TaskManager/task/${ticket.task_id}`} className="text-sm font-medium text-slate-900 hover:text-indigo-600 transition-colors line-clamp-1">
+//                               {ticket.title}
+//                             </a>
+//                             <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{ticket.description}</p>
+//                           </td>
+
+//                           {/* Created By */}
+//                           <td className="px-4 py-3" style={{ width: columnWidths.createdBy }}>
+//                             <div className="flex items-center gap-2.5">
+//                               <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold ${getAvatarColor(creatorName)}`}>
+//                                 {ticket.creator.fname.charAt(0)}{ticket.creator.lname?.charAt(0) || ""}
+//                               </div>
+//                               <div className="min-w-0">
+//                                 <div className="text-sm font-medium text-slate-800 truncate">{creatorName}</div>
+//                                 <div className="text-[11px] text-slate-400">{ticket.creator.role}</div>
+//                               </div>
+//                             </div>
+//                           </td>
+
+//                           {/* Assigned Users */}
+//                           <td className="px-4 py-3" style={{ width: columnWidths.assignedUsers }}>
+//                             <div className="flex flex-wrap gap-1">
+//                               {allAssignedUsers[ticket.task_id]?.length > 0 ? (
+//                                 <>
+//                                   {allAssignedUsers[ticket.task_id].slice(0, 2).map((u, idx) => (
+//                                     <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-700" title={`${u.fname} ${u.lname} (${u.role})`}>
+//                                       {u.fname} {u.lname?.charAt(0) || ""}.
+//                                     </span>
+//                                   ))}
+//                                   {allAssignedUsers[ticket.task_id].length > 2 && (
+//                                     <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-500">
+//                                       +{allAssignedUsers[ticket.task_id].length - 2}
+//                                     </span>
+//                                   )}
+//                                 </>
+//                               ) : <span className="text-slate-400 text-xs">—</span>}
+//                             </div>
+//                           </td>
+
+//                           {/* Due Date */}
+//                           <td className="px-4 py-3" style={{ width: columnWidths.dueDate }}>
+//                             {editingDueDate === ticket.task_id ? (
+//                               <div className="flex items-center gap-1">
+//                                 <input type="date"
+//                                   defaultValue={ticketDueDate[ticket.task_id] ? new Date(ticketDueDate[ticket.task_id]).toISOString().split("T")[0] : ""}
+//                                   onChange={(e) => handleDueDateChange(ticket.task_id, e.target.value || null)}
+//                                   className="text-xs bg-white border border-slate-300 rounded-md px-2 py-1 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-400"
+//                                   onClick={(e) => e.stopPropagation()}
+//                                 />
+//                                 <button onClick={() => handleDueDateChange(ticket.task_id, null)} className="p-1 text-slate-400 hover:text-rose-500"><FaTimesCircle className="text-xs" /></button>
+//                                 <button onClick={cancelEditing} className="p-1 text-slate-400 hover:text-slate-600"><FaTimes className="text-xs" /></button>
+//                               </div>
+//                             ) : (
+//                               <button onClick={() => setEditingDueDate(ticket.task_id)}
+//                                 className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors group/due ${
+//                                   isDueDateOverdue(ticketDueDate[ticket.task_id])
+//                                     ? "bg-rose-50 text-rose-700 ring-1 ring-rose-500/20 hover:bg-rose-100"
+//                                     : "bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
+//                                 }`}
+//                               >
+//                                 {formatDueDate(ticketDueDate[ticket.task_id]) || "No date"}
+//                                 <FaEdit className="text-[10px] opacity-0 group-hover/due:opacity-100 transition-opacity" />
+//                               </button>
+//                             )}
+//                           </td>
+
+//                           {/* Up Since */}
+//                           <td className="px-4 py-3" style={{ width: columnWidths.upSince }}>
+//                             <div className="text-xs text-slate-800 font-medium">{upSince.date}</div>
+//                             <div className="text-[11px] text-slate-400">{upSince.relative}</div>
+//                           </td>
+
+//                           {/* State */}
+//                           <td className="px-4 py-3" style={{ width: columnWidths.state }}>
+//                             {editingState === ticket.task_id ? (
+//                               <div className="flex items-center gap-1">
+//                                 <select
+//                                   value={ticketState[ticket.task_id] ? taskStates.find((s) => s.status_name === ticketState[ticket.task_id])?.Id : ""}
+//                                   onChange={(e) => handleStateChange(ticket.task_id, e.target.value)}
+//                                   className="text-xs bg-white border border-slate-300 rounded-md px-2 py-1 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-400"
+//                                   onClick={(e) => e.stopPropagation()}
+//                                 >
+//                                   {taskStates.map((s) => <option key={s.Id} value={s.Id}>{s.status_name}</option>)}
+//                                 </select>
+//                                 <button onClick={cancelEditing} className="p-1 text-slate-400 hover:text-slate-600"><FaTimes className="text-xs" /></button>
+//                               </div>
+//                             ) : (
+//                               <button onClick={() => setEditingState(ticket.task_id)}
+//                                 className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors group/state ${getStateBadge(ticketState[ticket.task_id])}`}
+//                               >
+//                                 <div className={`w-1.5 h-1.5 rounded-full ${getStateDot(ticketState[ticket.task_id])}`}></div>
+//                                 {ticketState[ticket.task_id] || "Unknown"}
+//                                 <FaEdit className="text-[10px] opacity-0 group-hover/state:opacity-100 transition-opacity" />
+//                               </button>
+//                             )}
+//                           </td>
+
+//                           {/* Priority */}
+//                           <td className="px-4 py-3" style={{ width: columnWidths.priority }}>
+//                             {editingPriority === ticket.task_id ? (
+//                               <div className="flex items-center gap-1">
+//                                 <select
+//                                   value={ticketPriority[ticket.task_id] ? priorities.find((p) => p.priority_name === ticketPriority[ticket.task_id])?.Id : ""}
+//                                   onChange={(e) => handlePriorityChange(ticket.task_id, e.target.value)}
+//                                   className="text-xs bg-white border border-slate-300 rounded-md px-2 py-1 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-400"
+//                                   onClick={(e) => e.stopPropagation()}
+//                                 >
+//                                   {priorities.map((p) => <option key={p.Id} value={p.Id}>{p.priority_name}</option>)}
+//                                 </select>
+//                                 <button onClick={cancelEditing} className="p-1 text-slate-400 hover:text-slate-600"><FaTimes className="text-xs" /></button>
+//                               </div>
+//                             ) : (
+//                               <button onClick={() => setEditingPriority(ticket.task_id)}
+//                                 className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors group/prio ${getPriorityBadge(ticketPriority[ticket.task_id])}`}
+//                               >
+//                                 <div className={`w-1.5 h-1.5 rounded-full ${getPriorityDot(ticketPriority[ticket.task_id])}`}></div>
+//                                 {ticketPriority[ticket.task_id] || "Not Set"}
+//                                 <FaEdit className="text-[10px] opacity-0 group-hover/prio:opacity-100 transition-opacity" />
+//                               </button>
+//                             )}
+//                           </td>
+
+//                           {/* Share */}
+//                           <td className="px-4 py-3">
+//                             <button onClick={() => openShareModal(ticket)}
+//                               className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors opacity-0 group-hover:opacity-100"
+//                               title="Share task"
+//                             >
+//                               <FaShare className="text-xs" />
+//                             </button>
+//                           </td>
+//                         </motion.tr>
+//                       );
+//                     })
+//                   )}
+//                 </tbody>
+//               </table>
+//             </div>
+
+//             {/* Table Footer */}
+//             {sortedFilteredTickets.length > 0 && (
+//               <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+//                 <p className="text-xs text-slate-500">
+//                   Showing <span className="font-medium text-slate-700">{sortedFilteredTickets.length}</span> task{sortedFilteredTickets.length !== 1 ? "s" : ""}
+//                 </p>
+//                 {selectedCount > 0 && (
+//                   <p className="text-xs text-indigo-600 font-medium">{selectedCount} selected</p>
+//                 )}
+//               </div>
+//             )}
+//           </div>
+//         ) : (
+//           /* Kanban View */
+//           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+//             {Object.entries(groupTicketsByStatus()).map(([status, tickets]) => (
+//               <div key={status} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm min-h-[200px]"
+//                 onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, status)}
+//               >
+//                 {/* Column Header */}
+//                 <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+//                   <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+//                     <div className={`w-2 h-2 rounded-full ${getStateDot(status)}`}></div>
+//                     {status}
+//                   </span>
+//                   <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
+//                     {tickets.length}
+//                   </span>
+//                 </div>
+
+//                 {/* Column Body */}
+//                 <div className="p-3 space-y-2.5 max-h-[600px] overflow-y-auto bg-slate-50/50">
+//                   {tickets.length === 0 ? (
+//                     <div className="text-center py-8 border-2 border-dashed border-slate-200 rounded-lg">
+//                       <p className="text-xs text-slate-400">Drop tasks here</p>
+//                     </div>
+//                   ) : (
+//                     tickets.map((ticket) => {
+//                       const taskTagsArray = typeof ticket.task_tags === "string" ? ticket.task_tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
+//                       const upSince = getUpSince(ticketCreatedAt[ticket.task_id]);
+
+//                       return (
+//                         <motion.div key={ticket.task_id} layout
+//                           className="bg-white rounded-lg border border-slate-200 p-3 hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-move group"
+//                           draggable onDragStart={(e) => handleDragStart(e, ticket)}
+//                         >
+//                           {/* Card Title */}
+//                           <a href={`/TaskManager/task/${ticket.task_id}`}
+//                             className="text-sm font-medium text-slate-900 hover:text-indigo-600 line-clamp-2 transition-colors"
+//                             onClick={(e) => e.stopPropagation()}
+//                           >
+//                             {ticket.title}
+//                           </a>
+//                           <p className="text-xs text-slate-500 mt-1 line-clamp-1">{ticket.description}</p>
+
+//                           {/* Tags */}
+//                           <div className="flex flex-wrap gap-1 mt-2.5">
+//                             {taskTagsArray.length > 0 ? taskTagsArray.slice(0, 2).map((tag, idx) => (
+//                               <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-50 text-violet-600">{tag}</span>
+//                             )) : null}
+//                             {taskTagsArray.length > 2 && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-500">+{taskTagsArray.length - 2}</span>}
+//                           </div>
+
+//                           {/* Meta Row */}
+//                           <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100">
+//                             <div className="flex items-center gap-1.5">
+//                               <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold ${getAvatarColor(`${ticket.creator.fname} ${ticket.creator.lname || ""}`)}`}>
+//                                 {ticket.creator.fname.charAt(0)}{ticket.creator.lname?.charAt(0) || ""}
+//                               </div>
+//                               {allAssignedUsers[ticket.task_id]?.slice(0, 2).map((u, idx) => (
+//                                 <div key={idx} className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold -ml-1 ring-1 ring-white ${getAvatarColor(`${u.fname} ${u.lname}`)}`}>
+//                                   {u.fname.charAt(0)}{u.lname?.charAt(0) || ""}
+//                                 </div>
+//                               ))}
+//                               {(allAssignedUsers[ticket.task_id]?.length || 0) > 2 && (
+//                                 <span className="text-[10px] text-slate-400 ml-0.5">+{allAssignedUsers[ticket.task_id].length - 2}</span>
+//                               )}
+//                             </div>
+//                             <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${getPriorityBadge(ticketPriority[ticket.task_id])}`}>
+//                               <div className={`w-1 h-1 rounded-full ${getPriorityDot(ticketPriority[ticket.task_id])}`}></div>
+//                               {ticketPriority[ticket.task_id] || "—"}
+//                             </span>
+//                           </div>
+
+//                           {/* Up Since */}
+//                           <div className="flex items-center justify-between mt-2 text-[10px] text-slate-400">
+//                             <span>{upSince.date}</span>
+//                             <span>{upSince.relative}</span>
+//                           </div>
+
+//                           {/* Share */}
+//                           <div className="flex justify-end mt-2">
+//                             <button onClick={() => openShareModal(ticket)}
+//                               className="p-1 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors opacity-0 group-hover:opacity-100"
+//                             >
+//                               <FaShare className="text-[10px]" />
+//                             </button>
+//                           </div>
+//                         </motion.div>
+//                       );
+//                     })
+//                   )}
+//                 </div>
+//               </div>
+//             ))}
+//           </div>
+//         )}
+//       </div>
+//     </motion.div>
+//   );
+// }

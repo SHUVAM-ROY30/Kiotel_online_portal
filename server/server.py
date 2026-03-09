@@ -96,41 +96,7 @@ def login_required(f):
 
 
 
-# @app.route("/api/signin", methods=["POST"])
-# def login_user():
-#     email = request.json.get("email")
-#     password = request.json.get("password")
 
-#     if not email or not password:
-#         return jsonify({"error": "Email and password are required"}), 400
-
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
-#             cursor.callproc('Proc_tblUsers_CheckCredentials', (email, password, 0))
-#             cursor.execute("SELECT @_Proc_tblUsers_CheckCredentials_2")
-#             result = cursor.fetchone()
-#             credentials_valid = result.get('@_Proc_tblUsers_CheckCredentials_2')
-
-#             if credentials_valid == 1:
-#                 cursor.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
-#                 user = cursor.fetchone()
-#                 session["user_id"] = user['id']
-#                 session.permanent = True  # Make the session permanent (cookie won't be deleted after the browser is closed)
-#                 return jsonify({
-#                     "id": user['id'],
-#                     "email": user['emailid']
-#                 })
-#             else:
-#                 return jsonify({"error": "Unauthorized"}), 401
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Database query failed"}), 500
-#     finally:
-#         connection.close()
 
 
 
@@ -205,101 +171,6 @@ def get_user_email():
         return jsonify({"error": "Database query failed"}), 500
     finally:
         connection.close()
-
-
-
-
-
-# @app.route("/api/register", methods=["POST"])
-# def register_user():
-#     data = request.json
-#     email = data["email"]
-#     password = data["password"]
-#     fname = data.get("fname")
-#     lname = data.get("lname")
-#     dob = data.get("dob")
-#     address = data.get("address")
-#     address2 = data.get("address2")
-#     entity_name = data.get("entity_name")
-#     account_no = data.get("account_no")
-#     account_no2 = data.get("account_no2")
-#     mobileno = data.get("mobileno")
-#     role_id = int(data.get("role_id", 2))  # 👈 Convert to int here
-
-#     connection1 = create_connection()
-#     if not connection1:
-#         return jsonify({"error": "Failed to connect to primary database"}), 500
-
-#     connection2 = create_connection2() if role_id in (1, 2, 3) else None
-
-#     try:
-#         with connection1.cursor() as cursor1:
-#             # Check existing user
-#             cursor1.execute("SELECT id FROM tblusers WHERE emailid = %s OR account_no = %s", (email, account_no))
-#             existing_user = cursor1.fetchone()
-#             if existing_user:
-#                 return jsonify({"message": "Email or Account Number already exists"}), 409
-
-#             # Insert into primary DB
-#             user_id = 0
-#             cursor1.callproc('Proc_tblusers_Upsert', (
-#                 user_id, email, password, fname, lname, dob, address, account_no, mobileno, role_id
-#             ))
-#             connection1.commit()
-
-#             cursor1.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
-#             user = cursor1.fetchone()
-
-#             # Only proceed if role_id is 1, 2, or 3
-#             if connection2:
-#                 with connection2.cursor() as cursor2:
-#                     if role_id == 1:
-#                         # Insert into admins table
-#                         cursor2.execute("""
-#                             INSERT INTO admins (unique_id, first_name, last_name)
-#                             VALUES (%s, %s, %s)
-#                         """, (account_no, fname, lname))
-
-#                     elif role_id in (2, 3):
-#                         # Insert into employees table
-#                         cursor2.execute("""
-#                             INSERT INTO employees_test (
-#                                 unique_id,
-#                                 first_name,
-#                                 last_name,
-#                                 email,
-#                                 date_of_joining,
-#                                 annual_leave,
-#                                 sick_leave,
-#                                 casual_leave,
-#                                 other_leave
-#                             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-#                         """, (
-#                             account_no, fname, lname, email, dob, 0, 0, 0, 0
-#                         ))
-
-#                     connection2.commit()
-
-            
-
-#             return jsonify({
-#                 "id": user['id'],
-#                 "email": user['emailid'],
-#                 "message": "User registered successfully"
-#             })
-
-#     except pymysql.MySQLError as e:
-#         connection1.rollback()
-#         if connection2:
-#             connection2.rollback()
-#         print(f"Database error: {e}")
-#         return jsonify({"error": "Registration failed due to database error"}), 500
-
-#     finally:
-#         connection1.close()
-#         if connection2:
-#             connection2.close()
-
 
 
 
@@ -447,99 +318,7 @@ def register_user():
             connection2.close()
 
 
-# @app.route("/api/register", methods=["POST"])
-# def register_user():
-#     data = request.json
 
-#     # Required fields
-#     email = data.get("email")
-#     password = data.get("password")
-
-#     # Optional fields with 'N/A' defaults
-#     fname = data.get("fname", "N/A")
-#     lname = data.get("lname", "N/A")
-#     dob = data.get("dob", "0000-00-00")
-#     address = data.get("address", "N/A")
-#     address2 = data.get("address2", "N/A")
-#     entity_name = data.get("entity_name", "N/A")
-#     account_no = data.get("account_no", "N/A")
-#     account_no2 = data.get("account_no2", "N/A")
-#     mobileno = data.get("mobileno", "N/A")
-#     role_id = int(data.get("role_id", 2))  # Default to 2 if not provided
-
-#     connection1 = create_connection()
-#     if not connection1:
-#         return jsonify({"error": "Failed to connect to primary database"}), 500
-
-#     connection2 = create_connection2() if role_id in (1, 2, 3) else None
-
-#     try:
-#         with connection1.cursor() as cursor1:
-#             # Check existing user
-#             cursor1.execute("SELECT id FROM tblusers WHERE emailid = %s OR account_no = %s", (email, account_no))
-#             existing_user = cursor1.fetchone()
-#             if existing_user:
-#                 return jsonify({"message": "Email or Account Number already exists"}), 409
-
-#             # Insert into primary DB using the stored procedure
-#             user_id = 0  # Assuming upsert handles insert when user_id = 0
-#             cursor1.callproc('Proc_tblusers_Upsert_V2', (
-#                 user_id, email, password, fname, lname, dob, address, address2,
-#                 entity_name, account_no, account_no2, mobileno, role_id
-#             ))
-#             connection1.commit()
-
-#             # Fetch inserted user
-#             cursor1.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
-#             user = cursor1.fetchone()
-
-#         # Handle secondary DB insertion only for roles 1, 2, 3
-#         if connection2:
-#             with connection2.cursor() as cursor2:
-#                 if role_id == 1:
-#                     # Insert into admins table
-#                     cursor2.execute("""
-#                         INSERT INTO admins (unique_id, first_name, last_name)
-#                         VALUES (%s, %s, %s)
-#                     """, (account_no, fname, lname))
-
-#                 elif role_id in (2, 3):
-#                     # Insert into employees_test table
-#                     cursor2.execute("""
-#                         INSERT INTO employees (
-#                             unique_id,
-#                             first_name,
-#                             last_name,
-#                             email,
-#                             date_of_joining,
-#                             annual_leave,
-#                             sick_leave,
-#                             casual_leave,
-#                             other_leave
-#                         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-#                     """, (
-#                         account_no, fname, lname, email, dob, 0, 0, 0, 0
-#                     ))
-
-#                 connection2.commit()
-
-#         return jsonify({
-#             "id": user['id'],
-#             "email": user['emailid'],
-#             "message": "User registered successfully"
-#         })
-
-#     except pymysql.MySQLError as e:
-#         connection1.rollback()
-#         if connection2:
-#             connection2.rollback()
-#         print(f"Database error: {e}")
-#         return jsonify({"error": "Registration failed due to database error"}), 500
-
-#     finally:
-#         connection1.close()
-#         if connection2:
-#             connection2.close()
 
 
 # Assuming you have necessary imports like jsonify, create_connection, etc.
@@ -1200,43 +979,6 @@ def get_ticket_title(ticket_id):
         connection.close()
 
 
-
-# @app.route('/api/users', methods=['GET'])
-# def get_users():
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
-#             # Call the stored procedure to get the list of all users
-#             cursor.callproc('Proc_tblusers_displaylistofusers')
-#             users = cursor.fetchall()  # Fetch all results
-            
-#             if not users:
-#                 return jsonify({"error": "No users found"}), 404
-
-#             # Convert the result to a list of dictionaries
-#             users_list = []
-#             for user in users:
-#                 users_list.append({
-#                     "id": user['id'],
-#                     "fname": user['fname'],
-#                     "lname": user['lname'],
-#                     "emailid": user['emailid'],
-#                     "role": user['role'],
-#                     "account_no": user['account_no']
-#                     # Add other fields as necessary
-#                 })
-
-#             return jsonify(users_list)
-            
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Database query failed"}), 500
-#     finally:
-#         connection.close()
-
 @app.route('/api/users', methods=['GET'])
 def get_users():
     connection = create_connection()
@@ -1725,34 +1467,6 @@ def check_session():
     return jsonify({'authenticated': True})
 
 
-
-
-# @app.route("/api/user", methods=["GET"])
-# @login_required
-# def get_user_data():
-#     user_id = session.get("user_id")
-#     if not user_id:
-#         return jsonify({"error": "User not logged in"}), 401
-
-#     connection = create_connection()
-#     if connection is None:
-#         return jsonify({"error": "Failed to connect to the database"}), 500
-
-#     try:
-#         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
-#             cursor.execute("SELECT * FROM tblusers WHERE id = %s", (user_id,))
-#             user = cursor.fetchone()
-#             if user:
-#                 return jsonify({"email": user['emailid'], "role": user["role_id"], "password": user['password'], "fname":user['fname'],"lname":user['lname'],"dob":user['dob'],"address":user['address'],"account_no":user['account_no'],"mobileno":user['mobileno']})  # Return all fields in the user dictionary
-#             else:
-#                 return jsonify({"error": "User not found"}), 404
-#     except pymysql.MySQLError as e:
-#         print(f"The error '{e}' occurred")
-#         return jsonify({"error": "Database query failed"}), 500
-#     finally:
-#         connection.close()
-
-
 @app.route("/api/user", methods=["GET"])
 @login_required
 def get_user_data():
@@ -1788,37 +1502,6 @@ def get_user_data():
     finally:
         connection.close()
 
-
-# @app.route('/api/user/profile', methods=['GET'])
-# @login_required
-# def get_current_user():
-#     user_id = session.get('user_id')  # Get user ID from the session
-#     if not user_id:
-#         return jsonify({"error": "User not logged in"}), 401
-    
-#     try:
-#         cursor = mysql.connection.cursor()
-#         query = "SELECT emailid, fname, lname, dob, address, account_no, mobileno, role_id FROM tblusers WHERE id = %s"
-#         cursor.execute(query, (user_id,))
-#         user = cursor.fetchone()
-#         if user:
-#             user_data = {
-#                 "emailid": user[0],
-#                 "fname": user[1],
-#                 "lname": user[2],
-#                 "dob": user[3],
-#                 "address": user[4],
-#                 "account_no": user[5],
-#                 "mobileno": user[6],
-#                 "role_id": user[7]
-#             }
-#             return jsonify(user_data), 200
-#         return jsonify({"message": "User not found"}), 404
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-
-# from flask import jsonify, session
-# import MySQLdb  # Assuming you're using MySQLdb or a similar MySQL connector
 
 @app.route('/api/user/profile', methods=['GET'])
 def get_user_profile():
@@ -2628,598 +2311,7 @@ smtp_server = "smtp.gmail.com"
 sender_email = "noreply@kiotel.co"
 password = "tfyr kugr sjpj ayvh"
 
-
-
-
-
-
-# @app.route("/api/task", methods=["POST"])
-# @login_required
-# def create_task():
-#     if session.get("is_creating_task"):
-#         return jsonify({"error": "Request already in progress"}), 429  # Too Many Requests
-
-#     session["is_creating_task"] = True  # Lock
-
-#     try:
-#         user_id = session.get("user_id")
-#         if not user_id:
-#             return jsonify({"error": "User ID not found in session"}), 400
-
-#         title = request.form.get("title")
-#         description = request.form.get("description")
-#         assigned_users = request.form.getlist("assignedUsers[]")
-#         task_state = request.form.get("ticketState")
-#         task_priority = request.form.get("ticketPriority")
-#         attachments = request.files.getlist("attachments")
-
-#         # ✅ NEW: Get selected tags
-#         tags = request.form.getlist("tags[]")  # List of tag IDs like ['1', '3']
-#         tags_str = ",".join([str(t) for t in tags]) if tags else None
-
-#         if not title or not description:
-#             return jsonify({"error": "Title and description are required"}), 400
-
-#         connection = create_connection()
-#         if connection is None:
-#             return jsonify({"error": "Failed to connect to the database"}), 500
-
-#         try:
-#             attachment_filenames = []
-#             upload_folder = app.config['UPLOAD_FOLDER']
-
-#             with connection.cursor() as cursor:
-#                 # Handle file attachments
-#                 if attachments:
-#                     for attachment in attachments:
-#                         original_filename = attachment.filename
-#                         unique_name = generate_unique_name(original_filename)
-#                         file_path = os.path.join(upload_folder, unique_name)
-#                         attachment.save(file_path)
-#                         attachment_filenames.append(original_filename)
-#                         attachment_filenames.append(unique_name)
-
-#                 attachments_json = json.dumps(attachment_filenames)
-
-#                 # Set current user context
-#                 cursor.execute("SET @current_user_id = %s", (user_id,))
-
-#                 # Call SP with new `tags_str` parameter
-#                 cursor.callproc('Proc_tbltasks_Upsert_test_2', (
-#                     0,                              # IN p_task_id (0 = insert)
-#                     title,                          # IN p_title
-#                     description,                    # IN p_description
-#                     attachments_json,               # IN p_attachments_json
-#                     None,                           # IN p_attachment_name (legacy)
-#                     task_state,                     # IN p_status_id
-#                     json.dumps(assigned_users),     # IN p_assigned_users_json
-#                     task_priority,                  # IN p_priority_id
-#                     tags_str                        # IN p_tags (new parameter)
-#                 ))
-
-#                 connection.commit()
-
-#                 # Fetch emails for notification
-#                 assigned_user_emails = []
-#                 if assigned_users:
-#                     placeholders = ','.join(['%s'] * len(assigned_users))
-#                     cursor.execute(f"SELECT emailid FROM tblusers WHERE id IN ({placeholders})", assigned_users)
-#                     assigned_user_emails = [row['emailid'] for row in cursor.fetchall()]
-
-#                 cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
-#                 creator_email_row = cursor.fetchone()
-#                 creator_email = creator_email_row['emailid'] if creator_email_row else None
-
-#                 # Send email notification
-#                 send_email_notification_new_task(
-#                     title, description, cursor.lastrowid,
-#                     creator_email, assigned_user_emails
-#                 )
-
-#                 return jsonify({"message": "Task created successfully"}), 201
-
-#         except pymysql.MySQLError as e:
-#             connection.rollback()
-#             print(f"Database error: {e}")
-#             return jsonify({"error": "Database operation failed"}), 500
-
-#         finally:
-#             connection.close()
-
-#     except Exception as e:
-#         print(f"Unexpected error: {e}")
-#         return jsonify({"error": "An internal error occurred"}), 500
-
-#     finally:
-#         session.pop("is_creating_task", None)
-
 from datetime import datetime, timezone # Import timezone
-# @app.route("/api/task", methods=["POST"])
-# @login_required
-# def create_task():
-#     if session.get("is_creating_task"):
-#         return jsonify({"error": "Request already in progress"}), 429  # Too Many Requests
-
-#     session["is_creating_task"] = True  # Lock
-
-#     try:
-#         user_id = session.get("user_id")
-#         if not user_id:
-#             return jsonify({"error": "User ID not found in session"}), 400
-
-#         title = request.form.get("title")
-#         description = request.form.get("description")
-#         assigned_users = request.form.getlist("assignedUsers[]")
-#         task_state = request.form.get("ticketState")
-#         task_priority = request.form.get("ticketPriority")
-#         attachments = request.files.getlist("attachments")
-
-#         # ✅ Get selected tags
-#         tags = request.form.getlist("tags[]")  # List of tag IDs like ['1', '3']
-#         tags_str = ",".join([str(t) for t in tags]) if tags else None
-
-#         # --- Scheduling/Reminder Data ---
-#         scheduled_clone_str = request.form.get("clone_schedule_datetime")
-#         is_subtask = request.form.get("is_subtask", default=False, type=bool)
-#         reminder_datetime_str = request.form.get("reminder_datetime")
-
-#         # Parse datetime strings if provided - FIX FOR TIMEZONE AWARE COMPARISON
-#         clone_schedule_datetime = None
-#         reminder_datetime = None
-#         if scheduled_clone_str:
-#             try:
-#                 # Parse the datetime string. This will be timezone-aware if 'Z' or offset is present.
-#                 parsed_dt = datetime.fromisoformat(scheduled_clone_str.replace('Z', '+00:00'))
-#                 # If the parsed datetime is naive, localize it to UTC.
-#                 if parsed_dt.tzinfo is None:
-#                     parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
-#                 clone_schedule_datetime = parsed_dt
-
-#                 # Compare with the current UTC time (also timezone-aware)
-#                 if clone_schedule_datetime <= datetime.now(timezone.utc):
-#                      return jsonify({"error": "Clone schedule datetime must be in the future."}), 400
-#             except ValueError:
-#                  return jsonify({"error": "Invalid clone schedule datetime format. Expected ISO 8601 (e.g., YYYY-MM-DDTHH:MM:SSZ)."}), 400
-
-#         if reminder_datetime_str:
-#             try:
-#                 # Parse the datetime string.
-#                 parsed_dt = datetime.fromisoformat(reminder_datetime_str.replace('Z', '+00:00'))
-#                 # If the parsed datetime is naive, localize it to UTC.
-#                 if parsed_dt.tzinfo is None:
-#                     parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
-#                 reminder_datetime = parsed_dt
-
-#                 # Compare with the current UTC time (also timezone-aware)
-#                 if reminder_datetime <= datetime.now(timezone.utc):
-#                      return jsonify({"error": "Reminder datetime must be in the future."}), 400
-#             except ValueError:
-#                  return jsonify({"error": "Invalid reminder datetime format. Expected ISO 8601 (e.g., YYYY-MM-DDTHH:MM:SSZ)."}), 400
-
-#         scheduled_clone = clone_schedule_datetime is not None
-#         # --- END Scheduling/Reminder Data ---
-
-#         if not title or not description:
-#             return jsonify({"error": "Title and description are required"}), 400
-
-#         connection = create_connection()
-#         if connection is None:
-#             return jsonify({"error": "Failed to connect to the database"}), 500
-
-#         try:
-#             original_filenames = []  # Store original filenames for 'attachments' column
-#             last_unique_name = None  # Store the last generated unique name for 'unique_name' column
-#             upload_folder = app.config.get('UPLOAD_FOLDER')
-
-#             # Validate Upload Folder
-#             if not upload_folder or not os.path.exists(upload_folder):
-#                  print(f"ERROR: Upload folder misconfigured or missing: {upload_folder}")
-#                  return jsonify({"error": "Server configuration error: Upload folder not found"}), 500
-
-#             with connection.cursor() as cursor:
-#                 # Handle file attachments
-#                 if attachments:
-#                     for attachment in attachments:
-#                         if attachment and attachment.filename != '':
-#                             original_filename = attachment.filename
-#                             unique_name = generate_unique_name(original_filename) # Ensure this function exists
-#                             if not unique_name:
-#                                  print(f"ERROR: Failed to generate unique name for {original_filename}")
-#                                  return jsonify({"error": "Failed to process attachment filename"}), 500
-
-#                             file_path = os.path.join(upload_folder, unique_name)
-#                             try:
-#                                 attachment.save(file_path)
-#                                 original_filenames.append(original_filename)
-#                                 # --- FIX: Store only the last unique name (as a plain string) ---
-#                                 last_unique_name = unique_name # Update the last unique name
-#                                 print(f"Saved attachment: {original_filename} as {unique_name}")
-#                             except Exception as save_error:
-#                                 print(f"ERROR saving file {original_filename} to {file_path}: {save_error}")
-#                                 return jsonify({"error": f"Failed to save attachment: {original_filename}"}), 500
-#                         else:
-#                             print("INFO: Skipped empty file part.")
-
-#                 # Prepare data for columns
-#                 # Store original filenames as JSON array in 'attachments' column
-#                 attachments_json = json.dumps(original_filenames) if original_filenames else None
-#                 # Store only the LAST unique name directly in 'unique_name' column (VARCHAR/TEXT)
-#                 # If no files, last_unique_name will be None, inserting NULL into the DB.
-#                 # If you prefer an empty string, you could use: last_unique_name or ""
-
-#                 # Set current user context
-#                 cursor.execute("SET @current_user_id = %s", (user_id,))
-
-#                 # --- Call Updated Stored Procedure ---
-#                 # Ensure your SP 'Proc_tbltasks_Upsert_test_3' accepts p_unique_name as VARCHAR/TEXT
-#                 # Parameters expected:
-#                 # (p_id, p_title, p_description, p_attachments_json, p_unique_name,
-#                 #  p_attachment_name, p_status_id, p_assigned_users_json, p_priority_id, p_tags,
-#                 #  p_scheduled_clone, p_clone_schedule_datetime, p_is_subtask, p_reminder_datetime)
-#                 cursor.callproc('Proc_tbltasks_Upsert_test_3', ( # <-- Updated SP name
-#                     0,                              # IN p_task_id (0 = insert)
-#                     title,                          # IN p_title
-#                     description,                    # IN p_description
-#                     attachments_json,               # IN p_attachments_json (original names as JSON)
-#                     last_unique_name,               # IN p_unique_name (LAST unique name as plain VARCHAR/TEXT)
-#                     None,                           # IN p_attachment_name (legacy)
-#                     task_state,                     # IN p_status_id
-#                     json.dumps(assigned_users) if assigned_users else None, # IN p_assigned_users_json
-#                     task_priority,                  # IN p_priority_id
-#                     tags_str,                       # IN p_tags
-#                     # --- Scheduling Parameters ---
-#                     scheduled_clone,                # IN p_scheduled_clone
-#                     clone_schedule_datetime,        # IN p_clone_schedule_datetime (timezone-aware)
-#                     is_subtask,                     # IN p_is_subtask
-#                     reminder_datetime               # IN p_reminder_datetime (timezone-aware)
-#                 ))
-
-#                 connection.commit()
-#                 new_task_id = cursor.lastrowid
-#                 print(f"INFO: Task created successfully with ID: {new_task_id}")
-
-#                 # --- Send Notifications ---
-#                 try:
-#                     assigned_user_emails = []
-#                     if assigned_users:
-#                         placeholders = ','.join(['%s'] * len(assigned_users))
-#                         cursor.execute(f"SELECT emailid FROM tblusers WHERE id IN ({placeholders})", assigned_users)
-#                         assigned_user_emails = [row['emailid'] for row in cursor.fetchall()]
-
-#                     cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
-#                     creator_email_row = cursor.fetchone()
-#                     creator_email = creator_email_row['emailid'] if creator_email_row else None
-
-#                     send_email_notification_new_task(
-#                         title, description, new_task_id,
-#                         creator_email, assigned_user_emails
-#                     )
-#                 except Exception as notify_error:
-#                      print(f"WARNING: Failed to send notification for task {new_task_id}: {notify_error}")
-
-#                 return jsonify({
-#                     "message": "Task created successfully",
-#                     "task_id": new_task_id,
-#                     "scheduled": scheduled_clone
-#                 }), 201
-
-#         except pymysql.MySQLError as e:
-#             connection.rollback()
-#             print(f"Database error during task creation: {e}")
-#             return jsonify({"error": "Database operation failed"}), 500
-
-#         finally:
-#             connection.close()
-#             print("DEBUG: Database connection closed.")
-
-#     except Exception as e:
-#         print(f"Unexpected error during task creation: {e}")
-#         return jsonify({"error": "An internal error occurred"}), 500
-
-#     finally:
-#         session.pop("is_creating_task", None)
-#         print("DEBUG: Session lock released.")
-
-# @app.route("/api/task", methods=["POST"])
-# @login_required
-# def create_task():
-#     if session.get("is_creating_task"):
-#         return jsonify({"error": "Request already in progress"}), 429
-
-#     session["is_creating_task"] = True
-
-#     try:
-#         user_id = session.get("user_id")
-#         if not user_id:
-#             return jsonify({"error": "User ID not found in session"}), 400
-
-#         # --- Required Fields ---
-#         title = request.form.get("title")
-#         description = request.form.get("description")
-#         if not title or not description:
-#             return jsonify({"error": "Title and description are required"}), 400
-
-#         # --- Task Meta ---
-#         assigned_users = request.form.getlist("assignedUsers[]")
-#         task_state = request.form.get("ticketState")
-#         task_priority = request.form.get("ticketPriority")
-#         attachments = request.files.getlist("attachments")
-#         tags = request.form.getlist("tags[]")
-#         tags_str = ",".join([str(t) for t in tags]) if tags else None
-
-#         # --- Parent / Subtask ---
-#         is_subtask = request.form.get("is_subtask", default=False, type=bool)
-#         parent_task_id = request.form.get("parent_task_id")  # optional
-#         if is_subtask and not parent_task_id:
-#             return jsonify({"error": "Parent task ID required for a subtask"}), 400
-
-#         # --- Scheduling ---
-#         scheduled_clone_str = request.form.get("clone_schedule_datetime")
-#         reminder_datetime_str = request.form.get("reminder_datetime")
-
-#         def parse_datetime(dt_str):
-#             if not dt_str:
-#                 return None
-#             try:
-#                 parsed_dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
-#                 if parsed_dt.tzinfo is None:
-#                     parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
-#                 if parsed_dt <= datetime.now(timezone.utc):
-#                     return None
-#                 return parsed_dt
-#             except ValueError:
-#                 return None
-
-#         clone_schedule_datetime = parse_datetime(scheduled_clone_str)
-#         reminder_datetime = parse_datetime(reminder_datetime_str)
-#         scheduled_clone = clone_schedule_datetime is not None
-
-#         # --- File Handling ---
-#         original_filenames, last_unique_name = [], None
-#         upload_folder = app.config.get('UPLOAD_FOLDER')
-
-#         if not upload_folder or not os.path.exists(upload_folder):
-#             return jsonify({"error": "Upload folder missing or misconfigured"}), 500
-
-#         for attachment in attachments:
-#             if attachment and attachment.filename != "":
-#                 original_filename = attachment.filename
-#                 unique_name = generate_unique_name(original_filename)
-#                 if not unique_name:
-#                     return jsonify({"error": "Failed to generate unique name"}), 500
-
-#                 file_path = os.path.join(upload_folder, unique_name)
-#                 try:
-#                     attachment.save(file_path)
-#                     original_filenames.append(original_filename)
-#                     last_unique_name = unique_name
-#                 except Exception as save_error:
-#                     print(f"ERROR saving file: {save_error}")
-#                     return jsonify({"error": f"Failed to save {original_filename}"}), 500
-
-#         attachments_json = json.dumps(original_filenames) if original_filenames else None
-
-#         # --- DB Operation ---
-#         connection = create_connection()
-#         if connection is None:
-#             return jsonify({"error": "Failed to connect to database"}), 500
-
-#         try:
-#             with connection.cursor() as cursor:
-#                 cursor.execute("SET @current_user_id = %s", (user_id,))
-
-#                 cursor.callproc('Proc_tbltasks_Upsert_withSubtasks', (
-#                     0,                              # p_task_id (0 = insert)222
-#                     title,                          # p_title
-#                     description,                    # p_description
-#                     attachments_json,               # p_attachments_json
-#                     last_unique_name,               # p_unique_name
-#                     None,                           # p_attachment_name (legacy)
-#                     task_state,                     # p_status_id
-#                     json.dumps(assigned_users) if assigned_users else None, # p_assigned_users_json
-#                     task_priority,                  # p_priority_id
-#                     tags_str,                       # p_tags
-#                     scheduled_clone,                # p_scheduled_clone
-#                     clone_schedule_datetime,        # p_clone_schedule_datetime
-#                     is_subtask,                     # p_is_subtask
-#                     reminder_datetime,              # p_reminder_datetime
-#                     parent_task_id                  # NEW: p_parent_task_id
-#                 ))
-
-#                 connection.commit()
-#                 new_task_id = cursor.lastrowid
-
-#                 # --- Notifications ---
-#                 try:
-#                     assigned_user_emails = []
-#                     if assigned_users:
-#                         placeholders = ','.join(['%s'] * len(assigned_users))
-#                         cursor.execute(f"SELECT emailid FROM tblusers WHERE id IN ({placeholders})", assigned_users)
-#                         assigned_user_emails = [row['emailid'] for row in cursor.fetchall()]
-
-#                     cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
-#                     creator_email_row = cursor.fetchone()
-#                     creator_email = creator_email_row['emailid'] if creator_email_row else None
-
-#                     send_email_notification_new_task(
-#                         title, description, new_task_id,
-#                         creator_email, assigned_user_emails
-#                     )
-#                 except Exception as notify_error:
-#                     print(f"WARNING: Notification failed for task {new_task_id}: {notify_error}")
-
-#                 return jsonify({
-#                     "message": "Task created successfully",
-#                     "task_id": new_task_id,
-#                     "is_subtask": is_subtask,
-#                     "parent_task_id": parent_task_id
-#                 }), 201
-
-#         except pymysql.MySQLError as e:
-#             connection.rollback()
-#             print(f"DB Error: {e}")
-#             return jsonify({"error": "Database operation failed"}), 500
-
-#         finally:
-#             connection.close()
-
-#     except Exception as e:
-#         print(f"Unexpected error: {e}")
-#         return jsonify({"error": "Internal server error"}), 500
-
-#     finally:
-#         session.pop("is_creating_task", None)
-
-
-
-# @app.route("/api/task", methods=["POST"])
-# @login_required
-# def create_task():
-#     if session.get("is_creating_task"):
-#         return jsonify({"error": "Request already in progress"}), 429
-
-#     session["is_creating_task"] = True
-
-#     try:
-#         user_id = session.get("user_id")
-#         if not user_id:
-#             return jsonify({"error": "User ID not found in session"}), 400
-
-#         # --- Required Fields ---
-#         title = request.form.get("title")
-#         description = request.form.get("description")
-#         if not title or not description:
-#             return jsonify({"error": "Title and description are required"}), 400
-
-#         # --- Task Meta ---
-#         assigned_users = request.form.getlist("assignedUsers[]")
-#         task_state = request.form.get("ticketState")
-#         task_priority = request.form.get("ticketPriority")
-#         attachments = request.files.getlist("attachments")
-#         tags = request.form.getlist("tags[]")
-#         tags_str = ",".join([str(t) for t in tags]) if tags else None
-
-#         # --- Parent / Subtask ---
-#         is_subtask = request.form.get("is_subtask", default=False, type=bool)
-#         parent_task_id = request.form.get("parent_task_id")  # optional
-#         if is_subtask and not parent_task_id:
-#             return jsonify({"error": "Parent task ID required for a subtask"}), 400
-
-#         # --- Scheduling ---
-#         due_date_str = request.form.get("due_date")   # ✅ changed from clone_schedule_datetime
-#         reminder_datetime_str = request.form.get("reminder_datetime")
-
-#         def parse_datetime(dt_str):
-#             if not dt_str:
-#                 return None
-#             try:
-#                 parsed_dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
-#                 if parsed_dt.tzinfo is None:
-#                     parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
-#                 return parsed_dt
-#             except ValueError:
-#                 return None
-
-#         due_date = parse_datetime(due_date_str)   # ✅ changed
-#         reminder_datetime = parse_datetime(reminder_datetime_str)
-#         scheduled_clone = due_date is not None    # ✅ flag still works (true if due_date exists)
-
-#         # --- File Handling ---
-#         original_filenames, last_unique_name = [], None
-#         upload_folder = app.config.get('UPLOAD_FOLDER')
-
-#         if not upload_folder or not os.path.exists(upload_folder):
-#             return jsonify({"error": "Upload folder missing or misconfigured"}), 500
-
-#         for attachment in attachments:
-#             if attachment and attachment.filename != "":
-#                 original_filename = attachment.filename
-#                 unique_name = generate_unique_name(original_filename)
-#                 if not unique_name:
-#                     return jsonify({"error": "Failed to generate unique name"}), 500
-
-#                 file_path = os.path.join(upload_folder, unique_name)
-#                 try:
-#                     attachment.save(file_path)
-#                     original_filenames.append(original_filename)
-#                     last_unique_name = unique_name
-#                 except Exception as save_error:
-#                     print(f"ERROR saving file: {save_error}")
-#                     return jsonify({"error": f"Failed to save {original_filename}"}), 500
-
-#         attachments_json = json.dumps(original_filenames) if original_filenames else None
-
-#         # --- DB Operation ---
-#         connection = create_connection()
-#         if connection is None:
-#             return jsonify({"error": "Failed to connect to database"}), 500
-
-#         try:
-#             with connection.cursor() as cursor:
-#                 cursor.execute("SET @current_user_id = %s", (user_id,))
-
-#                 # ✅ Call the new SP with due_date instead of clone_schedule_datetime
-#                 cursor.callproc('sp_save_task_with_due_date2', (
-#                     0,                              # p_task_id (0 = insert)
-#                     title,                          # p_title
-#                     description,                    # p_description
-#                     attachments_json,               # p_attachments
-#                     last_unique_name,               # p_unique_names
-#                     task_state,                     # p_status_id
-#                     task_priority,                  # p_priority_id
-#                     tags_str,                       # p_tags
-#                     scheduled_clone,                # p_scheduled_clone
-#                     due_date,                       # ✅ p_due_date
-#                     is_subtask,                     # p_is_subtask
-#                     parent_task_id,                 # p_parent_task_id
-#                     reminder_datetime,              # p_reminder_datetime
-#                     json.dumps(assigned_users) if assigned_users else None  # p_assignedto
-#                 ))
-
-#                 connection.commit()
-#                 new_task_id = cursor.lastrowid
-
-#                 # --- Notifications ---
-#                 try:
-#                     assigned_user_emails = []
-#                     if assigned_users:
-#                         placeholders = ','.join(['%s'] * len(assigned_users))
-#                         cursor.execute(f"SELECT emailid FROM tblusers WHERE id IN ({placeholders})", assigned_users)
-#                         assigned_user_emails = [row['emailid'] for row in cursor.fetchall()]
-
-#                     cursor.execute("SELECT emailid FROM tblusers WHERE id = %s", (user_id,))
-#                     creator_email_row = cursor.fetchone()
-#                     creator_email = creator_email_row['emailid'] if creator_email_row else None
-
-#                     send_email_notification_new_task(
-#                         title, description, new_task_id,
-#                         creator_email, assigned_user_emails
-#                     )
-#                 except Exception as notify_error:
-#                     print(f"WARNING: Notification failed for task {new_task_id}: {notify_error}")
-
-#                 return jsonify({
-#                     "message": "Task created successfully",
-#                     "task_id": new_task_id,
-#                     "is_subtask": is_subtask,
-#                     "parent_task_id": parent_task_id
-#                 }), 201
-
-#         except pymysql.MySQLError as e:
-#             connection.rollback()
-#             print(f"DB Error: {e}")
-#             return jsonify({"error": "Database operation failed"}), 500
-
-#         finally:
-#             connection.close()
-
-#     except Exception as e:
-#         print(f"Unexpected error: {e}")
-#         return jsonify({"error": "Internal server error"}), 500
-
-#     finally:
-#         session.pop("is_creating_task", None)
-
 
 
 @app.route("/api/task", methods=["POST"])
@@ -3293,8 +2385,23 @@ def create_task():
         if not upload_folder or not os.path.exists(upload_folder):
             return jsonify({"error": "Upload folder missing or misconfigured"}), 500
 
+        # original_files = []
+        # unique_names = []
+
+        # for file in attachments:
+        #     if file and file.filename:
+        #         original = file.filename
+        #         unique = generate_unique_name(original)
+
+        #         file_path = os.path.join(upload_folder, unique)
+        #         file.save(file_path)
+
+        #         original_files.append(original)
+        #         unique_names.append(unique)
+
         original_files = []
         unique_names = []
+        saved_file_paths = []   # NEW
 
         for file in attachments:
             if file and file.filename:
@@ -3306,7 +2413,9 @@ def create_task():
 
                 original_files.append(original)
                 unique_names.append(unique)
+                saved_file_paths.append(file_path)  # STORE ACTUAL PATH
 
+        attachment_paths = saved_file_paths
         # Save original filenames in attachments JSON
         attachments_json = json.dumps(original_files) if original_files else None
 
@@ -3373,14 +2482,21 @@ def create_task():
                     creator_email_row = cursor.fetchone()
                     creator_email = creator_email_row["emailid"] if creator_email_row else None
 
+                    # send_email_notification_new_task(
+                    #     title,
+                    #     description,
+                    #     new_task_id,
+                    #     creator_email,
+                    #     assigned_user_emails
+                    # )
                     send_email_notification_new_task(
-                        title,
-                        description,
-                        new_task_id,
-                        creator_email,
-                        assigned_user_emails
+                    title,
+                    description,
+                    new_task_id,
+                    creator_email,
+                    assigned_user_emails,
+                    attachment_paths
                     )
-
                 except Exception as notify_err:
                     print("WARNING: Notification failed:", notify_err)
 
@@ -3454,35 +2570,97 @@ def get_subtasks(parent_task_id):
         connection.close()
 
 
-def send_email_notification_new_task(title, description, ticket_id, creator_email, assigned_user_emails):
+# def send_email_notification_new_task(title, description, ticket_id, creator_email, assigned_user_emails):
+#     try:
+#         # Create the email message
+#         msg = MIMEMultipart()
+#         msg['From'] = sender_email
+#         msg['To'] = creator_email  # Set the task creator's email as the main recipient
+#         msg['Cc'] = ', '.join(assigned_user_emails)  # Add all assigned users to CC
+#         msg['Subject'] = "New Task Created and Assigned"
+
+#         # Add body text
+#         body = f"New Task Created\n\nTask ID: {ticket_id}\nTitle: {title}\nDescription: {description}"
+#         msg.attach(MIMEText(body, 'plain'))
+
+#         # List of recipients (task creator and assigned users)
+#         recipients = [creator_email] + assigned_user_emails
+
+#         # Create secure connection with the server and send the email
+#         context = ssl.create_default_context()
+#         with smtplib.SMTP(smtp_server, port) as server:
+#             server.ehlo()  # Optional
+#             server.starttls(context=context)
+#             server.ehlo()  # Optional
+#             server.login(sender_email, password)
+#             server.sendmail(sender_email, recipients, msg.as_string())
+
+#         print("Email sent successfully to the task creator and assigned users")
+#     except Exception as e:
+#         print(f"Email sending failed: {e}")
+
+
+from email.mime.base import MIMEBase
+from email import encoders
+import os
+
+def send_email_notification_new_task(
+    title,
+    description,
+    ticket_id,
+    creator_email,
+    assigned_user_emails,
+    attachment_paths=None   # NEW PARAM
+):
     try:
-        # Create the email message
         msg = MIMEMultipart()
         msg['From'] = sender_email
-        msg['To'] = creator_email  # Set the task creator's email as the main recipient
-        msg['Cc'] = ', '.join(assigned_user_emails)  # Add all assigned users to CC
+        msg['To'] = creator_email
+        msg['Cc'] = ', '.join(assigned_user_emails)
         msg['Subject'] = "New Task Created and Assigned"
 
-        # Add body text
-        body = f"New Task Created\n\nTask ID: {ticket_id}\nTitle: {title}\nDescription: {description}"
+        body = f"""New Task Created
+
+Task ID: {ticket_id}
+Title: {title}
+Description: {description}
+"""
         msg.attach(MIMEText(body, 'plain'))
 
-        # List of recipients (task creator and assigned users)
+        # ---------------------------------------------
+        #  ATTACH FILES
+        # ---------------------------------------------
+        if attachment_paths:
+            for file_path in attachment_paths:
+                if os.path.exists(file_path):
+                    with open(file_path, "rb") as attachment:
+                        part = MIMEBase("application", "octet-stream")
+                        part.set_payload(attachment.read())
+
+                    encoders.encode_base64(part)
+
+                    filename = os.path.basename(file_path)
+                    part.add_header(
+                        "Content-Disposition",
+                        f"attachment; filename={filename}",
+                    )
+
+                    msg.attach(part)
+
         recipients = [creator_email] + assigned_user_emails
 
-        # Create secure connection with the server and send the email
         context = ssl.create_default_context()
         with smtplib.SMTP(smtp_server, port) as server:
-            server.ehlo()  # Optional
+            server.ehlo()
             server.starttls(context=context)
-            server.ehlo()  # Optional
+            server.ehlo()
             server.login(sender_email, password)
             server.sendmail(sender_email, recipients, msg.as_string())
 
-        print("Email sent successfully to the task creator and assigned users")
+        print("Email sent successfully with attachments")
+
     except Exception as e:
         print(f"Email sending failed: {e}")
-
 
 @app.route("/api/opened_task", methods=["GET"])
 @login_required
@@ -4752,27 +3930,6 @@ def create_recurring_task():
             with connection.cursor() as cursor:
 
                 cursor.execute("SET @current_user_id = %s", (user_id,))
-
-                # # 1️⃣ CREATE THE BASE TASK (normal task)
-                # cursor.callproc("sp_save_task_with_due_date2", (
-                #     0,
-                #     title,
-                #     description,
-                #     attachments_json,
-                #     last_unique,
-                #     task_state,
-                #     task_priority,
-                #     tags_str,
-                #     scheduled_clone,
-                #     due_date,
-                #     False,
-                #     None,
-                #     None,
-                #     json.dumps(assigned_users) if assigned_users else None
-                # ))
-
-                # connection.commit()
-                # base_task_id = cursor.lastrowid
 
                 args = (
                     0,  # p_id for insert

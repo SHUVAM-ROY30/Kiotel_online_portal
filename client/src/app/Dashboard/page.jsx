@@ -1001,7 +1001,7 @@ function Dashboard() {
       show: !isAttendanceOnlyUser
     },
     {
-      title: "MethodCRM",
+      title: "Billing history",
       href: "/Customer_Portal",
       icon: FaChartLine,
       gradient: "from-indigo-500 to-blue-600",
