@@ -7,7 +7,7 @@ export const metadata = {
   title: "Kiotel",
   description: "Kiotel tickets",
   icons: {
-    icon: "/Kiotel_Logo_bg.PNG", // or use .png, .svg if you prefer
+    icon: "/favicon.ico", // or use .png, .svg if you prefer
   },
 };
 
