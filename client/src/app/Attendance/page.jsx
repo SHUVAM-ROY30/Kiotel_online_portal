@@ -2897,85 +2897,6 @@ export default function ClockPage() {
   // handlePhotoRetake
   // handleSubmitPhoto
   // formatTime
-
-  const handleConfirmShift = async () => {
-    if (!selectedShift || !accountNo) {
-      setMessage("Please select a shift and ensure your ID is entered.");
-      return;
-    }
-    setLoading(true);
-    setMessage("");
-    try {
-      const currentDate = new Date().toISOString().split("T")[0];
-      const resStatus = await fetch(
-        `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(accountNo)}&date=${currentDate}&shift_id=${selectedShift.id}`,
-      );
-      const dataStatus = await resStatus.json();
-
-      // Helper function to extract time from datetime string
-      const extractTime = (datetime) => {
-        if (!datetime) return null;
-        // If it's already a time string (HH:mm or HH:mm:ss), return as-is
-        if (
-          typeof datetime === "string" &&
-          datetime.length <= 8 &&
-          !datetime.includes("T")
-        ) {
-          return datetime;
-        }
-        // If it's an ISO datetime, extract just the time portion
-        if (typeof datetime === "string" && datetime.includes("T")) {
-          const timePart = datetime.split("T")[1];
-          if (timePart) {
-            return timePart.split(".")[0]; // Remove milliseconds if present
-          }
-        }
-        return datetime;
-      };
-
-      if (!resStatus.ok || !dataStatus.success) {
-        setIsClockedIn(false);
-        setClockInTime(null);
-        setClockOutTime(null);
-        setPhotoType("clock_in");
-        setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
-        setStep("action");
-        return;
-      }
-
-      const status = dataStatus.data.status;
-      const clockIn = dataStatus.data.clock_in;
-      const clockOut = dataStatus.data.clock_out;
-
-      if (status === "clocked_in") {
-        setIsClockedIn(true);
-        setClockInTime(extractTime(clockIn));
-        setClockOutTime(null);
-        setPhotoType("clock_out");
-        setMessage(`Currently clocked in. Ready to clock out.`);
-        setStep("action");
-      } else if (status === "clocked_out") {
-        setIsClockedIn(false);
-        setClockInTime(extractTime(clockIn));
-        setClockOutTime(extractTime(clockOut));
-        setPhotoType("clock_in");
-        setMessage(`Already clocked out. Ready to clock in again.`);
-        setStep("action");
-      } else {
-        setIsClockedIn(false);
-        setClockInTime(null);
-        setClockOutTime(null);
-        setPhotoType("clock_in");
-        setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
-        setStep("action");
-      }
-    } catch (err) {
-      setMessage("Failed to check attendance status. Please try again.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
   const handlePhotoCapture = (dataUrl) => {
     setPhotoData(dataUrl);
   };
@@ -2983,231 +2904,505 @@ export default function ClockPage() {
   const handlePhotoRetake = () => {
     setPhotoData(null);
   };
-  // const handleSubmitPhoto = async () => {
-  //   if (!photoData || !selectedShift) return;
-  //   setLoading(true);
-  //   setMessage("");
-  //   try {
-  //     const response = await fetch(photoData);
-  //     const blob = await response.blob();
-  //     const formData = new FormData();
-  //     formData.append("photo", blob, "photo.jpg");
-  //     formData.append("account_no", accountNo);
-  //     formData.append("photo_type", photoType);
-  //     formData.append("selected_shift_id", selectedShift.id);
 
-  //     const res = await fetch(
-  //       `${API_BASE_URL}/clockin/attendance/clock?account_no=${encodeURIComponent(accountNo)}&photo_type=${photoType}`,
-  //       {
-  //         method: "POST",
-  //         body: formData,
-  //       },
-  //     );
 
-  //     const data = await res.json();
+//   const handleConfirmShift = async () => {
+//     if (!selectedShift || !accountNo) {
+//       setMessage("Please select a shift and ensure your ID is entered.");
+//       return;
+//     }
+//     setLoading(true);
+//     setMessage("");
+//     try {
+//       const currentDate = new Date().toISOString().split("T")[0];
+//       const resStatus = await fetch(
+//         `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(accountNo)}&date=${currentDate}&shift_id=${selectedShift.id}`,
+//       );
+//       const dataStatus = await resStatus.json();
 
-  //     if (!res.ok || !data.success) {
-  //       setMessage(data.message || "Action failed");
-  //       return;
-  //     }
+//       // Helper function to extract time from datetime string
+//       const extractTime = (datetime) => {
+//         if (!datetime) return null;
+//         // If it's already a time string (HH:mm or HH:mm:ss), return as-is
+//         if (
+//           typeof datetime === "string" &&
+//           datetime.length <= 8 &&
+//           !datetime.includes("T")
+//         ) {
+//           return datetime;
+//         }
+//         // If it's an ISO datetime, extract just the time portion
+//         if (typeof datetime === "string" && datetime.includes("T")) {
+//           const timePart = datetime.split("T")[1];
+//           if (timePart) {
+//             return timePart.split(".")[0]; // Remove milliseconds if present
+//           }
+//         }
+//         return datetime;
+//       };
 
-  //     // Helper function to extract time from datetime string
-  //     const extractTime = (datetime) => {
-  //       if (!datetime) return null;
-  //       // If it's already a time string (HH:mm or HH:mm:ss), return as-is
-  //       if (
-  //         typeof datetime === "string" &&
-  //         datetime.length <= 8 &&
-  //         !datetime.includes("T")
-  //       ) {
-  //         return datetime;
-  //       }
-  //       // If it's an ISO datetime, extract just the time portion
-  //       if (typeof datetime === "string" && datetime.includes("T")) {
-  //         const timePart = datetime.split("T")[1];
-  //         if (timePart) {
-  //           return timePart.split(".")[0]; // Remove milliseconds if present
-  //         }
-  //       }
-  //       return datetime;
-  //     };
+//       if (!resStatus.ok || !dataStatus.success) {
+//         setIsClockedIn(false);
+//         setClockInTime(null);
+//         setClockOutTime(null);
+//         setPhotoType("clock_in");
+//         setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
+//         setStep("action");
+//         return;
+//       }
 
-  //     // Set photo as captured AFTER we update the times
-  //     if (data.data.clock_out) {
-  //       // Clocked out
-  //       const newClockOutTime = extractTime(data.data.clock_out);
-  //       const newClockInTime = data.data.clock_in
-  //         ? extractTime(data.data.clock_in)
-  //         : clockInTime;
+//       const status = dataStatus.data.status;
+//       const clockIn = dataStatus.data.clock_in;
+//       const clockOut = dataStatus.data.clock_out;
 
-  //       setClockOutTime(newClockOutTime);
-  //       setClockInTime(newClockInTime);
-  //       setIsClockedIn(false);
-  //       setMessage("✅ Clocked out successfully!");
-  //       setPhotoType("clock_in");
+//       if (status === "clocked_in") {
+//         setIsClockedIn(true);
+//         setClockInTime(extractTime(clockIn));
+//         setClockOutTime(null);
+//         setPhotoType("clock_out");
+//         setMessage(`Currently clocked in. Ready to clock out.`);
+//         setStep("action");
+//       } else if (status === "clocked_out") {
+//         setIsClockedIn(false);
+//         setClockInTime(extractTime(clockIn));
+//         setClockOutTime(extractTime(clockOut));
+//         setPhotoType("clock_in");
+//         setMessage(`Already clocked out. Ready to clock in again.`);
+//         setStep("action");
+//       } else {
+//         setIsClockedIn(false);
+//         setClockInTime(null);
+//         setClockOutTime(null);
+//         setPhotoType("clock_in");
+//         setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
+//         setStep("action");
+//       }
+//     } catch (err) {
+//       setMessage("Failed to check attendance status. Please try again.");
+//       console.error(err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  //       // Small delay to ensure state is updated before setting photoCaptured
-  //       setTimeout(() => {
-  //         setPhotoCaptured(true);
-  //       }, 100);
-  //     } else {
-  //       // Clocked in
-  //       const newClockInTime = extractTime(data.data.clock_in);
+//   // const handleSubmitPhoto = async () => {
+//   //   if (!photoData || !selectedShift) return;
+//   //   setLoading(true);
+//   //   setMessage("");
+//   //   try {
+//   //     const response = await fetch(photoData);
+//   //     const blob = await response.blob();
+//   //     const formData = new FormData();
+//   //     formData.append("photo", blob, "photo.jpg");
+//   //     formData.append("account_no", accountNo);
+//   //     formData.append("photo_type", photoType);
+//   //     formData.append("selected_shift_id", selectedShift.id);
 
-  //       setClockInTime(newClockInTime);
-  //       setClockOutTime(null);
-  //       setIsClockedIn(true);
-  //       setMessage("✅ Clocked in successfully!");
-  //       setPhotoType("clock_out");
+//   //     const res = await fetch(
+//   //       `${API_BASE_URL}/clockin/attendance/clock?account_no=${encodeURIComponent(accountNo)}&photo_type=${photoType}`,
+//   //       {
+//   //         method: "POST",
+//   //         body: formData,
+//   //       },
+//   //     );
 
-  //       // Small delay to ensure state is updated before setting photoCaptured
-  //       setTimeout(() => {
-  //         setPhotoCaptured(true);
-  //       }, 100);
-  //     }
-  //   } catch (err) {
-  //     setMessage("Failed to process. Please try again.");
-  //     console.error(err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+//   //     const data = await res.json();
 
-// ─── REPLACE your existing handleSubmitPhoto function with this ───
-  const handleSubmitPhoto = async () => {
-    if (!photoData || !selectedShift) return;
-    setLoading(true);
-    setMessage("");
-    try {
-      const response = await fetch(photoData);
-      const blob = await response.blob();
-      const formData = new FormData();
-      formData.append("photo", blob, "photo.jpg");
-      formData.append("account_no", accountNo);
-      formData.append("photo_type", photoType);
-      formData.append("selected_shift_id", selectedShift.id);
+//   //     if (!res.ok || !data.success) {
+//   //       setMessage(data.message || "Action failed");
+//   //       return;
+//   //     }
 
-      const res = await fetch(
-        `${API_BASE_URL}/clockin/attendance/clock?account_no=${encodeURIComponent(accountNo)}&photo_type=${photoType}`,
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
+//   //     // Helper function to extract time from datetime string
+//   //     const extractTime = (datetime) => {
+//   //       if (!datetime) return null;
+//   //       // If it's already a time string (HH:mm or HH:mm:ss), return as-is
+//   //       if (
+//   //         typeof datetime === "string" &&
+//   //         datetime.length <= 8 &&
+//   //         !datetime.includes("T")
+//   //       ) {
+//   //         return datetime;
+//   //       }
+//   //       // If it's an ISO datetime, extract just the time portion
+//   //       if (typeof datetime === "string" && datetime.includes("T")) {
+//   //         const timePart = datetime.split("T")[1];
+//   //         if (timePart) {
+//   //           return timePart.split(".")[0]; // Remove milliseconds if present
+//   //         }
+//   //       }
+//   //       return datetime;
+//   //     };
 
-      const data = await res.json();
+//   //     // Set photo as captured AFTER we update the times
+//   //     if (data.data.clock_out) {
+//   //       // Clocked out
+//   //       const newClockOutTime = extractTime(data.data.clock_out);
+//   //       const newClockInTime = data.data.clock_in
+//   //         ? extractTime(data.data.clock_in)
+//   //         : clockInTime;
 
-      if (!res.ok || !data.success) {
-        setMessage(data.message || "Action failed");
-        return;
-      }
+//   //       setClockOutTime(newClockOutTime);
+//   //       setClockInTime(newClockInTime);
+//   //       setIsClockedIn(false);
+//   //       setMessage("✅ Clocked out successfully!");
+//   //       setPhotoType("clock_in");
 
-      // ─── FIX: Read directly from API response (data.data) ───
-      // The API returns the full attendance record with clock_in / clock_out.
-      // We no longer rely on partial state — we take both values from the
-      // single response so they are always in sync.
-      const responseClockIn  = data.data?.clock_in  ?? null;
-      const responseClockOut = data.data?.clock_out ?? null;
+//   //       // Small delay to ensure state is updated before setting photoCaptured
+//   //       setTimeout(() => {
+//   //         setPhotoCaptured(true);
+//   //       }, 100);
+//   //     } else {
+//   //       // Clocked in
+//   //       const newClockInTime = extractTime(data.data.clock_in);
 
-      if (responseClockOut) {
-        // ── Clock-out flow ──
-        // Set ALL state synchronously in one batch before showing the
-        // "photo captured" screen, so times are visible immediately.
-        setClockInTime(responseClockIn);
-        setClockOutTime(responseClockOut);
-        setIsClockedIn(false);
-        setPhotoType("clock_in");
-        setMessage("✅ Clocked out successfully!");
-        setPhotoCaptured(true); // No setTimeout — state is already correct
-      } else {
-        // ── Clock-in flow ──
-        setClockInTime(responseClockIn);
-        setClockOutTime(null);
-        setIsClockedIn(true);
-        setPhotoType("clock_out");
-        setMessage("✅ Clocked in successfully!");
-        setPhotoCaptured(true); // No setTimeout — state is already correct
-      }
-    } catch (err) {
-      setMessage("Failed to process. Please try again.");
-      console.error(err);
-    } finally {
-      setLoading(false);
+//   //       setClockInTime(newClockInTime);
+//   //       setClockOutTime(null);
+//   //       setIsClockedIn(true);
+//   //       setMessage("✅ Clocked in successfully!");
+//   //       setPhotoType("clock_out");
+
+//   //       // Small delay to ensure state is updated before setting photoCaptured
+//   //       setTimeout(() => {
+//   //         setPhotoCaptured(true);
+//   //       }, 100);
+//   //     }
+//   //   } catch (err) {
+//   //     setMessage("Failed to process. Please try again.");
+//   //     console.error(err);
+//   //   } finally {
+//   //     setLoading(false);
+//   //   }
+//   // };
+
+// // ─── REPLACE your existing handleSubmitPhoto function with this ───
+//   const handleSubmitPhoto = async () => {
+//     if (!photoData || !selectedShift) return;
+//     setLoading(true);
+//     setMessage("");
+//     try {
+//       const response = await fetch(photoData);
+//       const blob = await response.blob();
+//       const formData = new FormData();
+//       formData.append("photo", blob, "photo.jpg");
+//       formData.append("account_no", accountNo);
+//       formData.append("photo_type", photoType);
+//       formData.append("selected_shift_id", selectedShift.id);
+
+//       const res = await fetch(
+//         `${API_BASE_URL}/clockin/attendance/clock?account_no=${encodeURIComponent(accountNo)}&photo_type=${photoType}`,
+//         {
+//           method: "POST",
+//           body: formData,
+//         },
+//       );
+
+//       const data = await res.json();
+
+//       if (!res.ok || !data.success) {
+//         setMessage(data.message || "Action failed");
+//         return;
+//       }
+
+//       // ─── FIX: Read directly from API response (data.data) ───
+//       // The API returns the full attendance record with clock_in / clock_out.
+//       // We no longer rely on partial state — we take both values from the
+//       // single response so they are always in sync.
+//       const responseClockIn  = data.data?.clock_in  ?? null;
+//       const responseClockOut = data.data?.clock_out ?? null;
+
+//       if (responseClockOut) {
+//         // ── Clock-out flow ──
+//         // Set ALL state synchronously in one batch before showing the
+//         // "photo captured" screen, so times are visible immediately.
+//         setClockInTime(responseClockIn);
+//         setClockOutTime(responseClockOut);
+//         setIsClockedIn(false);
+//         setPhotoType("clock_in");
+//         setMessage("✅ Clocked out successfully!");
+//         setPhotoCaptured(true); // No setTimeout — state is already correct
+//       } else {
+//         // ── Clock-in flow ──
+//         setClockInTime(responseClockIn);
+//         setClockOutTime(null);
+//         setIsClockedIn(true);
+//         setPhotoType("clock_out");
+//         setMessage("✅ Clocked in successfully!");
+//         setPhotoCaptured(true); // No setTimeout — state is already correct
+//       }
+//     } catch (err) {
+//       setMessage("Failed to process. Please try again.");
+//       console.error(err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   // Replace the formatTime function with this:
+//   // Replace the formatTime function with this simple version:
+//   // const formatTime = (value) => {
+//   //   if (!value) return "—";
+
+//   //   // If it's already a time string (HH:mm:ss or HH:mm)
+//   //   if (
+//   //     typeof value === "string" &&
+//   //     value.length <= 8 &&
+//   //     !value.includes("T") &&
+//   //     !value.includes("Z")
+//   //   ) {
+//   //     const parts = value.split(":");
+//   //     if (parts.length >= 2) {
+//   //       let hours = parseInt(parts[0]);
+//   //       const minutes = parts[1];
+//   //       const ampm = hours >= 12 ? "PM" : "AM";
+//   //       hours = hours % 12 || 12; // Convert 0 to 12 for midnight, 13-23 to 1-11
+//   //       return `${hours}:${minutes} ${ampm}`;
+//   //     }
+//   //     return value;
+//   //   }
+
+//   //   return "—";
+//   // };
+
+
+//     // ─── REPLACE your existing formatTime function with this ───
+//   const formatTime = (value) => {
+//     if (!value) return "—";
+
+//     try {
+//       // Handle ISO datetime strings: "2025-03-12T09:30:00.000Z" or "2025-03-12T09:30:00"
+//       if (typeof value === "string" && (value.includes("T") || value.includes("Z"))) {
+//         const date = new Date(value);
+//         if (!isNaN(date.getTime())) {
+//           return date.toLocaleTimeString("en-US", {
+//             hour: "numeric",
+//             minute: "2-digit",
+//             hour12: true,
+//           });
+//         }
+//       }
+
+//       // Handle plain time strings: "09:30:00" or "09:30"
+//       if (typeof value === "string" && value.length <= 8 && !value.includes("T")) {
+//         const parts = value.split(":");
+//         if (parts.length >= 2) {
+//           let hours = parseInt(parts[0]);
+//           const minutes = parts[1];
+//           const ampm = hours >= 12 ? "PM" : "AM";
+//           hours = hours % 12 || 12;
+//           return `${hours}:${minutes} ${ampm}`;
+//         }
+//       }
+
+//       // Last resort: try passing directly to Date constructor
+//       const date = new Date(value);
+//       if (!isNaN(date.getTime())) {
+//         return date.toLocaleTimeString("en-US", {
+//           hour: "numeric",
+//           minute: "2-digit",
+//           hour12: true,
+//         });
+//       }
+//     } catch (e) {
+//       console.error("formatTime error:", e);
+//     }
+
+//     return "—";
+//   };
+
+// ═══════════════════════════════════════════════════════════
+// DROP-IN REPLACEMENTS — swap these 3 functions in your file
+// ═══════════════════════════════════════════════════════════
+
+// ─── 1. formatTime ───────────────────────────────────────
+// Never uses new Date() — always string-splits to avoid
+// the browser applying a UTC→IST (+5:30) offset.
+const formatTime = (value) => {
+  if (!value) return "—";
+  try {
+    let timeStr = null;
+
+    // "2026-03-12T07:08:01.000Z"  or  "2026-03-12T07:08:01"
+    if (typeof value === "string" && value.includes("T")) {
+      timeStr = value.split("T")[1].replace("Z", "").split(".")[0]; // "07:08:01"
     }
-  };
-
-  // Replace the formatTime function with this:
-  // Replace the formatTime function with this simple version:
-  // const formatTime = (value) => {
-  //   if (!value) return "—";
-
-  //   // If it's already a time string (HH:mm:ss or HH:mm)
-  //   if (
-  //     typeof value === "string" &&
-  //     value.length <= 8 &&
-  //     !value.includes("T") &&
-  //     !value.includes("Z")
-  //   ) {
-  //     const parts = value.split(":");
-  //     if (parts.length >= 2) {
-  //       let hours = parseInt(parts[0]);
-  //       const minutes = parts[1];
-  //       const ampm = hours >= 12 ? "PM" : "AM";
-  //       hours = hours % 12 || 12; // Convert 0 to 12 for midnight, 13-23 to 1-11
-  //       return `${hours}:${minutes} ${ampm}`;
-  //     }
-  //     return value;
-  //   }
-
-  //   return "—";
-  // };
-
-
-    // ─── REPLACE your existing formatTime function with this ───
-  const formatTime = (value) => {
-    if (!value) return "—";
-
-    try {
-      // Handle ISO datetime strings: "2025-03-12T09:30:00.000Z" or "2025-03-12T09:30:00"
-      if (typeof value === "string" && (value.includes("T") || value.includes("Z"))) {
-        const date = new Date(value);
-        if (!isNaN(date.getTime())) {
-          return date.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-          });
-        }
-      }
-
-      // Handle plain time strings: "09:30:00" or "09:30"
-      if (typeof value === "string" && value.length <= 8 && !value.includes("T")) {
-        const parts = value.split(":");
-        if (parts.length >= 2) {
-          let hours = parseInt(parts[0]);
-          const minutes = parts[1];
-          const ampm = hours >= 12 ? "PM" : "AM";
-          hours = hours % 12 || 12;
-          return `${hours}:${minutes} ${ampm}`;
-        }
-      }
-
-      // Last resort: try passing directly to Date constructor
-      const date = new Date(value);
-      if (!isNaN(date.getTime())) {
-        return date.toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-        });
-      }
-    } catch (e) {
-      console.error("formatTime error:", e);
+    // "2026-03-12 07:08:01"  (MySQL DATETIME without T)
+    else if (typeof value === "string" && value.includes(" ") && value.includes(":")) {
+      timeStr = value.split(" ")[1]; // "07:08:01"
+    }
+    // "07:08:01"  or  "07:08"  (plain time)
+    else if (typeof value === "string" && value.includes(":")) {
+      timeStr = value;
     }
 
-    return "—";
-  };
+    if (timeStr) {
+      const parts = timeStr.split(":");
+      let hours   = parseInt(parts[0], 10);
+      const mins  = (parts[1] || "00").padStart(2, "0");
+      if (isNaN(hours)) return "—";
+      const ampm = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12 || 12;
+      return `${hours}:${mins} ${ampm}`;
+    }
+  } catch (e) {
+    console.error("formatTime error:", e);
+  }
+  return "—";
+};
 
+
+// ─── 2. handleConfirmShift ───────────────────────────────
+// Uses extractTime to strip only the HH:mm:ss portion so
+// formatTime always receives a plain time string — never an
+// ISO string that could be misread as UTC.
+const handleConfirmShift = async () => {
+  if (!selectedShift || !accountNo) {
+    setMessage("Please select a shift and ensure your ID is entered.");
+    return;
+  }
+  setLoading(true);
+  setMessage("");
+  try {
+    const currentDate = new Date().toISOString().split("T")[0];
+    const resStatus = await fetch(
+      `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(accountNo)}&date=${currentDate}&shift_id=${selectedShift.id}`
+    );
+    const dataStatus = await resStatus.json();
+
+    // Strips a datetime down to "HH:mm:ss" so formatTime
+    // never has to deal with ISO timezone conversions.
+    const extractTime = (datetime) => {
+      if (!datetime) return null;
+      // Already a plain time string
+      if (typeof datetime === "string" && datetime.length <= 8 && !datetime.includes("T")) {
+        return datetime;
+      }
+      // "2026-03-12T07:08:01.000Z" or "2026-03-12T07:08:01"
+      if (typeof datetime === "string" && datetime.includes("T")) {
+        return datetime.split("T")[1].replace("Z", "").split(".")[0];
+      }
+      // "2026-03-12 07:08:01" (MySQL DATETIME)
+      if (typeof datetime === "string" && datetime.includes(" ")) {
+        return datetime.split(" ")[1];
+      }
+      return datetime;
+    };
+
+    if (!resStatus.ok || !dataStatus.success) {
+      setIsClockedIn(false);
+      setClockInTime(null);
+      setClockOutTime(null);
+      setPhotoType("clock_in");
+      setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
+      setStep("action");
+      return;
+    }
+
+    const status   = dataStatus.data.status;
+    const clockIn  = dataStatus.data.clock_in;
+    const clockOut = dataStatus.data.clock_out;
+
+    if (status === "clocked_in") {
+      setIsClockedIn(true);
+      setClockInTime(extractTime(clockIn));
+      setClockOutTime(null);
+      setPhotoType("clock_out");
+      setMessage("Currently clocked in. Ready to clock out.");
+      setStep("action");
+    } else if (status === "clocked_out") {
+      setIsClockedIn(false);
+      setClockInTime(extractTime(clockIn));
+      setClockOutTime(extractTime(clockOut));
+      setPhotoType("clock_in");
+      setMessage("Already clocked out. Ready to clock in again.");
+      setStep("action");
+    } else {
+      setIsClockedIn(false);
+      setClockInTime(null);
+      setClockOutTime(null);
+      setPhotoType("clock_in");
+      setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
+      setStep("action");
+    }
+  } catch (err) {
+    setMessage("Failed to check attendance status. Please try again.");
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+// ─── 3. handleSubmitPhoto ────────────────────────────────
+// Same extractTime helper applied to the POST response so
+// both clock-in and clock-out times are always plain
+// "HH:mm:ss" strings before hitting formatTime.
+const handleSubmitPhoto = async () => {
+  if (!photoData || !selectedShift) return;
+  setLoading(true);
+  setMessage("");
+  try {
+    const response = await fetch(photoData);
+    const blob     = await response.blob();
+    const formData = new FormData();
+    formData.append("photo",             blob, "photo.jpg");
+    formData.append("account_no",        accountNo);
+    formData.append("photo_type",        photoType);
+    formData.append("selected_shift_id", selectedShift.id);
+
+    const res  = await fetch(
+      `${API_BASE_URL}/clockin/attendance/clock?account_no=${encodeURIComponent(accountNo)}&photo_type=${photoType}`,
+      { method: "POST", body: formData }
+    );
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      setMessage(data.message || "Action failed");
+      return;
+    }
+
+    // Extract plain "HH:mm:ss" from whatever format the API returns
+    const extractTime = (datetime) => {
+      if (!datetime) return null;
+      if (typeof datetime === "string" && datetime.length <= 8 && !datetime.includes("T")) {
+        return datetime;
+      }
+      if (typeof datetime === "string" && datetime.includes("T")) {
+        return datetime.split("T")[1].replace("Z", "").split(".")[0];
+      }
+      if (typeof datetime === "string" && datetime.includes(" ")) {
+        return datetime.split(" ")[1];
+      }
+      return datetime;
+    };
+
+    const safeClockIn  = extractTime(data.data?.clock_in);
+    const safeClockOut = extractTime(data.data?.clock_out);
+
+    if (safeClockOut) {
+      // Clock-out completed
+      setClockInTime(safeClockIn);
+      setClockOutTime(safeClockOut);
+      setIsClockedIn(false);
+      setPhotoType("clock_in");
+      setMessage("✅ Clocked out successfully!");
+      setPhotoCaptured(true);
+    } else {
+      // Clock-in completed
+      setClockInTime(safeClockIn);
+      setClockOutTime(null);
+      setIsClockedIn(true);
+      setPhotoType("clock_out");
+      setMessage("✅ Clocked in successfully!");
+      setPhotoCaptured(true);
+    }
+  } catch (err) {
+    setMessage("Failed to process. Please try again.");
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const resetSession = () => {
     if (isDirectShiftUser) {
