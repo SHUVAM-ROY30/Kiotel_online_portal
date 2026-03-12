@@ -1338,7 +1338,7 @@ function AnnotationPanel({
                     backgroundColor: (h.bg_color || "#FEF08A") + "33",
                   }}
                 >
-                  <p className="text-sm text-gray-800 font-medium mb-2 line-clamp-3">"{h.text}"</p>
+                  <p className="text-sm text-gray-800 font-medium mb-2 line-clamp-3">{`"${h.text}"`}</p>
                   <div className="flex items-center gap-2 mb-1">
                     <span
                       className="inline-block w-3 h-3 rounded-full border"
@@ -1392,10 +1392,10 @@ function AnnotationPanel({
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mb-1">
-                    <span className="font-semibold">Original:</span> "{cr.original_text}"
+                    <span className="font-semibold">Original:</span> {`"${cr.suggested_text}"`}
                   </p>
                   <p className="text-sm text-gray-800 mb-2">
-                    <span className="font-semibold">Suggested:</span> "{cr.suggested_text}"
+                    <span className="font-semibold">Suggested:</span> {`"${cr.suggested_text}"`}
                   </p>
                   {cr.note && (
                     <p className="text-xs text-gray-500 italic mb-2">Note: {cr.note}</p>
@@ -1539,7 +1539,7 @@ function HighlightModal({ selectedText, onClose, onSubmit, visibleTo, setVisible
           <div>
             <label className="text-sm font-semibold text-gray-700 mb-1 block">Selected Text</label>
             <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-200 max-h-24 overflow-y-auto">
-              "{selectedText}"
+               {`"${selectedText}"`}
             </p>
           </div>
           <div>
@@ -1620,7 +1620,8 @@ function ChangeRequestModal({ selectedText, onClose, onSubmit }) {
           <div>
             <label className="text-sm font-semibold text-gray-700 mb-1 block">Original Text</label>
             <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-200 max-h-24 overflow-y-auto">
-              "{selectedText}"
+              
+               {`"${selectedText}"`}
             </p>
           </div>
           <div>

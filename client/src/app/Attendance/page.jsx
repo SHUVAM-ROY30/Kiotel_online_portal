@@ -3399,7 +3399,7 @@ export default function ClockPage() {
             {isNewFaceUser && (
               <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
                 <p className="text-amber-800 text-sm font-medium">
-                  👋 First time? Enter your ID below and we'll register your face for instant clock-ins next time.
+                  👋 First time? Enter your ID below and {"we'll"} register your face for instant clock-ins next time.
                 </p>
               </div>
             )}
@@ -3528,7 +3528,7 @@ export default function ClockPage() {
                   {isNewFaceUser && (
                     <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
                       <p className="text-amber-800 text-sm font-medium">
-                        👋 First time? Enter your ID below and we'll register your face for instant clock-ins next time.
+                        👋 First time? Enter your ID below and {"we'll"} register your face for instant clock-ins next time.
                       </p>
                     </div>
                   )}
