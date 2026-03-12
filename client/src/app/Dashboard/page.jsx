@@ -976,6 +976,14 @@ function Dashboard() {
   };
 
   const navigationCards = [
+        {
+      title: "Company Policy",
+      href: "/Company-policy",
+      icon: FaClipboardCheck,
+      gradient: "from-blue-600 to-indigo-500",
+      description: "View company policies",
+      show: !isAttendanceOnlyUser && userRole !== 4
+    },
     {
       title: "HR",
       href: "/emp-dashboard",
