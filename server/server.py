@@ -31,7 +31,12 @@ from email import encoders  # Add this for encoding attachments
 
 
 
-
+# import json
+import numpy as np
+import cv2
+# from flask import Flask, request, jsonify
+from deepface import DeepFace
+import logging
 
 
 
@@ -96,6 +101,9 @@ def login_required(f):
 
 
 
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
 
 
 
@@ -4019,6 +4027,536 @@ def delete_user_by_unique_id(account_no):
 
 
 
+
+# from deepface.detectors import DetectorWrapper
+# ══════════════════════════════════════════════════════════════════
+# ROUTES
+# ══════════════════════════════════════════════════════════════════
+
+# # ── GET /api/face/health ──────────────────────────────────────────
+# @app.route("/api/face/health", methods=["GET"])
+# def face_health():
+#     return jsonify({
+#         "status"           : "ok",
+#         "employees_cached" : len(embedding_cache),
+#         "model"            : MODEL_NAME,
+#         "detector"         : DETECTOR,
+#     }), 200
+
+
+# ── Config ────────────────────────────────────────────────────────
+MODEL_NAME = "ArcFace"    # Best accuracy, non-negotiable
+DETECTOR   = "mtcnn"      # Best balance of speed + accuracy for kiosk
+THRESHOLD  = 0.60         # Good starting point, tune after testing
+
+embedding_cache: dict = {}
+
+
+def cosine_distance(a: np.ndarray, b: np.ndarray) -> float:
+    a = a / (np.linalg.norm(a) + 1e-10)
+    b = b / (np.linalg.norm(b) + 1e-10)
+    return float(1.0 - np.dot(a, b))
+
+
+def load_cache_from_rows(rows: list):
+    global embedding_cache
+    raw = {}
+    for row in rows:
+        emp_id = row["employee_id"]
+        emb    = row["embedding"]
+
+        if isinstance(emb, str):
+            emb = json.loads(emb)
+        elif isinstance(emb, dict):
+            emb = list(emb.values())
+        elif isinstance(emb, list):
+            pass
+        else:
+            print(f"⚠️ Unknown embedding type for {emp_id}: {type(emb)}")
+            continue
+
+        if len(emb) != 512:
+            print(f"⚠️ Wrong embedding length for {emp_id}: {len(emb)}")
+            continue
+
+        raw.setdefault(emp_id, []).append(np.array(emb, dtype=np.float32))
+
+    embedding_cache = {
+        emp_id: np.mean(embs, axis=0)
+        for emp_id, embs in raw.items()
+    }
+    print(f"✅ Cache loaded: {len(embedding_cache)} employees")
+
+
+# def extract_embedding_from_image(img: np.ndarray) -> list:
+#     try:
+#         print("   calling DeepFace.represent...")
+#         result = DeepFace.represent(
+#             img_path          = img,
+#             model_name        = MODEL_NAME,
+#             detector_backend  = DETECTOR,
+#             enforce_detection = True,
+#             align             = True,
+#         )
+#         print(f"   DeepFace result count: {len(result)}")
+#         return result[0]["embedding"]
+#     except Exception as e:
+#         print(f"   DeepFace failed: {type(e).__name__}: {e}")
+#         raise ValueError(f"No face detected: {e}")
+
+def extract_embedding_from_image(img: np.ndarray) -> list:
+    try:
+        print("   calling DeepFace.represent...")
+        
+        # ── Step 1: Detect all faces first ──
+        
+        face_objs = DeepFace.extract_faces(
+            img_path         = img,
+            detector_backend = DETECTOR,
+            enforce_detection = True,
+            align            = True,
+        )
+        
+        if not face_objs:
+            raise ValueError("No face detected")
+
+        print(f"   Detected {len(face_objs)} face(s)")
+
+        # ── Step 2: Pick the largest face (person closest to camera) ──
+        def face_area(face_obj):
+            region = face_obj.get("facial_area", {})
+            w = region.get("w", 0)
+            h = region.get("h", 0)
+            return w * h
+
+        largest_face = max(face_objs, key=face_area)
+        region       = largest_face["facial_area"]
+        
+        print(f"   Largest face area: {face_area(largest_face)}px | confidence: {largest_face.get('confidence', 0):.2f}")
+
+        # ── Step 3: Check confidence of largest face ──
+        # Reject if face confidence is too low
+        MIN_FACE_CONFIDENCE = 0.90
+        if largest_face.get("confidence", 0) < MIN_FACE_CONFIDENCE:
+            raise ValueError(f"Face confidence too low: {largest_face.get('confidence', 0):.2f}")
+
+        # ── Step 4: Check face is large enough (not far away) ──
+        # Face must be at least 10% of image width
+        img_h, img_w = img.shape[:2]
+        face_w = region.get("w", 0)
+        face_h = region.get("h", 0)
+        min_face_size = img_w * 0.10
+
+        if face_w < min_face_size:
+            raise ValueError(f"Face too small ({face_w}px) — please move closer")
+
+        # ── Step 5: Check face is roughly centered ──
+        # Face center must be within middle 70% of image
+        face_center_x = region.get("x", 0) + face_w / 2
+        face_center_y = region.get("y", 0) + face_h / 2
+        
+        left_bound  = img_w * 0.15
+        right_bound = img_w * 0.85
+        top_bound   = img_h * 0.10
+        bot_bound   = img_h * 0.90
+
+        if not (left_bound < face_center_x < right_bound and
+                top_bound  < face_center_y < bot_bound):
+            raise ValueError("Face not centered — please position yourself in front of the camera")
+
+        # ── Step 6: Crop to largest face and get embedding ──
+        x = max(0, region.get("x", 0))
+        y = max(0, region.get("y", 0))
+        w = region.get("w", img_w)
+        h = region.get("h", img_h)
+
+        # Add 20% padding around face for better recognition
+        pad_x = int(w * 0.20)
+        pad_y = int(h * 0.20)
+        x1 = max(0, x - pad_x)
+        y1 = max(0, y - pad_y)
+        x2 = min(img_w, x + w + pad_x)
+        y2 = min(img_h, y + h + pad_y)
+
+        cropped_face = img[y1:y2, x1:x2]
+
+        # ── Step 7: Get embedding from cropped face only ──
+        result = DeepFace.represent(
+            img_path          = cropped_face,
+            model_name        = MODEL_NAME,
+            detector_backend  = DETECTOR,
+            enforce_detection = False,  # already cropped, skip re-detection
+            align             = True,
+        )
+
+        print(f"   ✅ Embedding extracted from largest face")
+        return result[0]["embedding"]
+
+    except ValueError:
+        raise
+    except Exception as e:
+        print(f"   DeepFace failed: {type(e).__name__}: {e}")
+        raise ValueError(f"Face processing failed: {e}")
+
+def get_image_from_request() -> np.ndarray:
+    if "photo" not in request.files:
+        raise ValueError("No file found under key 'photo'")
+    file = request.files["photo"]
+    data = file.read()
+    arr  = np.frombuffer(data, np.uint8)
+    img  = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    if img is None:
+        raise ValueError("Could not decode image")
+
+    # Resize to 640px wide max — speeds up mtcnn significantly
+    h, w = img.shape[:2]
+    if w > 640:
+        scale = 640 / w
+        img = cv2.resize(img, (640, int(h * scale)))
+
+    return img
+
+
+# ── Startup ───────────────────────────────────────────────────────
+def startup_load_embeddings():
+    print("🔄 startup_load_embeddings called...")
+    try:
+        connection = create_connection2()      # ← your DB
+        if not connection:
+            print("⚠️ Startup cache load skipped — DB unavailable")
+            return
+
+        with connection.cursor() as cursor:    # DictCursor already set
+            cursor.execute(
+                "SELECT employee_id, embedding FROM employee_face_data2"
+            )
+            rows = cursor.fetchall()           # returns list of dicts
+
+        load_cache_from_rows(rows)
+        print(f"✅ Startup load complete: {len(embedding_cache)} employees")
+
+    except Exception as e:
+        print(f"🚨 Startup cache load failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+    finally:
+        try:
+            connection.close()
+        except:
+            pass
+
+
+# ══════════════════════════════════════════════════════════════════
+# ROUTES
+# ══════════════════════════════════════════════════════════════════
+
+@app.route("/api/face/health", methods=["GET"])
+def face_health():
+    return jsonify({
+        "status"           : "ok",
+        "employees_cached" : len(embedding_cache),
+        "model"            : MODEL_NAME,
+        "detector"         : DETECTOR,
+    }), 200
+
+
+@app.route("/api/face/identify", methods=["POST"])
+def identify_face():
+    print("🔵 identify_face called")
+    try:
+        img = get_image_from_request()
+    except ValueError as e:
+        return jsonify({"success": False, "reason": "bad_request", "detail": str(e)}), 400
+
+    try:
+        embedding = extract_embedding_from_image(img)
+        print(f"✅ Embedding extracted")
+    except ValueError as e:
+        print(f"❌ {e}")
+        return jsonify({"success": False, "reason": "no_face", "detail": str(e)})
+
+    if not embedding_cache:
+        return jsonify({"success": False, "reason": "no_employees_registered"})
+
+    query_emb = np.array(embedding, dtype=np.float32)
+
+    # ── Get ALL distances ──
+    distances = []
+    for emp_id, stored_emb in embedding_cache.items():
+        if isinstance(stored_emb, np.ndarray):
+            dist = cosine_distance(query_emb, stored_emb)
+        else:
+            dist = min(cosine_distance(query_emb, e) for e in stored_emb)
+        distances.append((emp_id, dist))
+        print(f"   {emp_id} → {dist:.4f}")
+
+    # Sort best first
+    distances.sort(key=lambda x: x[1])
+
+    best_id   = distances[0][0]
+    best_dist = distances[0][1]
+
+    print(f"Best: {best_id} @ {best_dist:.4f} | Threshold: {THRESHOLD}")
+
+    # ── Check 1: Must be within threshold ──
+    if best_dist > THRESHOLD:
+        print(f"❌ Rejected: {best_dist:.4f} > {THRESHOLD}")
+        return jsonify({
+            "success" : False,
+            "reason"  : "no_match",
+            "distance": round(best_dist, 4),
+        }), 200
+
+    # ── Check 2: Must have clear gap from 2nd best ──
+    MIN_GAP = 0.08
+    if len(distances) > 1:
+        second_dist = distances[1][1]
+        gap = second_dist - best_dist
+        print(f"2nd: {distances[1][0]} @ {second_dist:.4f} | Gap: {gap:.4f}")
+
+        if gap < MIN_GAP:
+            print(f"❌ Ambiguous: gap {gap:.4f} < {MIN_GAP} — rejecting")
+            return jsonify({
+                "success" : False,
+                "reason"  : "ambiguous_match",
+                "detail"  : "Too similar to another employee — please try again",
+                "distance": round(best_dist, 4),
+            }), 200
+
+    print(f"✅ Confirmed match: {best_id} @ {best_dist:.4f}")
+    return jsonify({
+        "success"    : True,
+        "employee_id": best_id,
+        "distance"   : round(best_dist, 4),
+        "confidence" : round((1 - best_dist) * 100, 1),
+    }), 200
+
+# @app.route("/api/face/register", methods=["POST"])
+# def register_face():
+#     print("🔵 register_face called")
+#     print(f"   form keys : {list(request.form.keys())}")
+#     print(f"   file keys : {list(request.files.keys())}")
+
+#     employee_id = request.form.get("employee_id", "").strip()
+#     if not employee_id:
+#         print("❌ No employee_id")
+#         return jsonify({"success": False, "message": "employee_id is required"}), 400
+
+#     print(f"✅ employee_id = {employee_id}")
+
+#     try:
+#         img = get_image_from_request()
+#         print(f"✅ Image decoded: shape={img.shape}")
+#     except ValueError as e:
+#         print(f"❌ Image error: {e}")
+#         return jsonify({"success": False, "message": str(e)}), 400
+
+#     try:
+#         print("⏳ Extracting ArcFace embedding...")
+#         embedding = extract_embedding_from_image(img)
+#         print(f"✅ Embedding extracted: len={len(embedding)}")
+#     except ValueError as e:
+#         print(f"❌ Embedding failed: {e}")
+#         return jsonify({"success": False, "message": str(e)}), 422
+#     except Exception as e:
+#     # ── Catch ALL exceptions not just ValueError ──
+#         print(f"❌ Unexpected embedding error: {e}")
+#         import traceback
+#         traceback.print_exc()
+#         return jsonify({"success": False, "message": str(e)}), 500
+
+#     try:
+#         print("⏳ Saving to DB...")
+#         connection = create_connection2()      # ← your DB
+#         if not connection:
+#             print("❌ DB connection failed")
+#             return jsonify({"success": False, "message": "DB connection failed"}), 500
+
+#         with connection.cursor() as cursor:
+#             cursor.execute(
+#                 "DELETE FROM employee_face_data2 WHERE employee_id = %s",
+#                 (employee_id,)
+#             )
+#             cursor.execute(
+#                 """INSERT INTO employee_face_data2 (employee_id, embedding, model_version)
+#                    VALUES (%s, %s, 'arcface-v1')""",
+#                 (employee_id, json.dumps(embedding))
+#             )
+#             connection.commit()
+
+#         print("✅ DB insert committed")
+
+#         # Update cache immediately
+#         embedding_cache[employee_id] = np.array(embedding, dtype=np.float32)
+#         print(f"✅ Cache updated | total: {len(embedding_cache)}")
+
+#         return jsonify({
+#             "success"    : True,
+#             "message"    : "Face registered successfully",
+#             "employee_id": employee_id,
+#         }), 201
+
+#     except Exception as e:
+#         print(f"🚨 DB error: {e}")
+#         import traceback
+#         traceback.print_exc()
+#         return jsonify({"success": False, "message": str(e)}), 500
+
+#     finally:
+#         try:
+#             connection.close()
+#         except:
+#             pass
+
+@app.route("/api/face/register", methods=["POST"])
+def register_face():
+    employee_id = request.form.get("employee_id", "").strip()
+    if not employee_id:
+        return jsonify({"success": False, "message": "employee_id is required"}), 400
+
+    # Collect all photos sent (photo_0, photo_1 ... photo_4)
+    photos = []
+    for key in request.files:
+        if key.startswith("photo"):
+            photos.append(request.files[key])
+
+    if not photos:
+        return jsonify({"success": False, "message": "No photos provided"}), 400
+
+    print(f"📸 Registering {len(photos)} photos for {employee_id}")
+
+    embeddings = []
+    for i, photo in enumerate(photos):
+        try:
+            data = photo.read()
+            arr  = np.frombuffer(data, np.uint8)
+            img  = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+            if img is None:
+                continue
+
+            # Resize for speed
+            h, w = img.shape[:2]
+            if w > 640:
+                scale = 640 / w
+                img = cv2.resize(img, (640, int(h * scale)))
+
+            embedding = extract_embedding_from_image(img)
+            embeddings.append(embedding)
+            print(f"   ✅ Photo {i+1}/{len(photos)} done")
+        except Exception as e:
+            print(f"   ⚠️ Photo {i+1} skipped: {e}")
+            continue
+
+    if not embeddings:
+        return jsonify({"success": False, "message": "No face detected in any photo"}), 422
+
+    try:
+        connection = create_connection2()
+        if not connection:
+            return jsonify({"success": False, "message": "DB connection failed"}), 500
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "DELETE FROM employee_face_data2 WHERE employee_id = %s",
+                (employee_id,)
+            )
+            for emb in embeddings:
+                cursor.execute(
+                    """INSERT INTO employee_face_data2 (employee_id, embedding, model_version)
+                       VALUES (%s, %s, 'arcface-v1')""",
+                    (employee_id, json.dumps(emb))
+                )
+            connection.commit()
+
+        print(f"✅ Saved {len(embeddings)} embeddings for {employee_id}")
+
+        # Reload cache
+        startup_load_embeddings()
+
+        return jsonify({
+            "success"       : True,
+            "message"       : f"Face registered with {len(embeddings)} captures",
+            "employee_id"   : employee_id,
+            "captures_saved": len(embeddings),
+        }), 201
+
+    except Exception as e:
+        print(f"🚨 DB error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+    finally:
+        try:
+            connection.close()
+        except:
+            pass
+
+
+@app.route("/api/face/reload-cache", methods=["POST"])
+def reload_cache():
+    try:
+        connection = create_connection2()      # ← your DB
+        if not connection:
+            return jsonify({"error": "DB connection failed"}), 500
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT employee_id, embedding FROM employee_face_data2"
+            )
+            rows = cursor.fetchall()           # DictCursor returns dicts
+
+        load_cache_from_rows(rows)
+
+        return jsonify({
+            "message"          : "Cache reloaded",
+            "employees_loaded" : len(embedding_cache),
+        }), 200
+
+    except Exception as e:
+        print(f"🚨 Reload cache error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        try:
+            connection.close()
+        except:
+            pass
+
+
+@app.route("/api/face/employee/<account_no>", methods=["DELETE"])
+def delete_face_data(account_no):
+    try:
+        connection = create_connection2()      # ← your DB
+        if not connection:
+            return jsonify({"error": "DB connection failed"}), 500
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "DELETE FROM employee_face_data2 WHERE employee_id = %s",
+                (account_no,)
+            )
+            connection.commit()
+
+        embedding_cache.pop(account_no, None)
+        print(f"✅ Deleted face data for {account_no}")
+
+        return jsonify({"message": "Face data deleted successfully"}), 200
+
+    except Exception as e:
+        print(f"🚨 Delete face error: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+    finally:
+        try:
+            connection.close()
+        except:
+            pass
+
+
+# ── Call at module level so it runs on startup ────────────────────
+startup_load_embeddings()
 
 
 if __name__ == '__main__':

@@ -2677,7 +2677,7 @@ const ALLOWED_EMAIL = "Clockin@kiotel.co";
 
 const DIRECT_SHIFT_EMAILS = [
   "shuvam.r@kiotel.co",
-  "official.bhuvneshsingh@gmail.com"
+  "bhuvnesh.s@kiotel.co"
 ];
 
 export default function ClockPage() {
