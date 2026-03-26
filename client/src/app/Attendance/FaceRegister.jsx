@@ -6,7 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import { FaCamera, FaSpinner, FaCheckCircle, FaRedo } from "react-icons/fa";
 
 const API_BASE_URL    = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-const REQUIRED_CAPTURES = 3;
+const REQUIRED_CAPTURES = 4;
 
 export default function FaceRegister({ employeeId, employeeName, onRegistered, onSkip }) {
   const videoRef      = useRef(null);
