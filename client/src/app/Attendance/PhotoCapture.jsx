@@ -875,13 +875,7 @@ const PhotoCapture = ({
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
           </div>
-          <div>
-            <h4 className="text-sm font-semibold text-blue-900 mb-1">Verification Tips</h4>
-            <ul className="text-xs text-blue-700 space-y-1">
-              <li>• Ensure your face is clearly visible and well-lit</li>
-              <li>• Position yourself within the frame guides</li>
-            </ul>
-          </div>
+          
         </div>
       </div>
 
