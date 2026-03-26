@@ -3959,7 +3959,7 @@ export default function ClockPage() {
                 {/* Center Content */}
                 <div className="relative z-10 text-center w-full flex-1 flex flex-col justify-center pb-10">
                   {/* Logo Centered Above Clock */}
-                  <div className="mb-10 bg-blue-100/95 backdrop-blur-md px-8 py-4 rounded-3xl shadow-xl inline-block mx-auto border border-blue-200/50">
+                  <div className="mb-10 bg-white backdrop-blur-md px-8 py-4 rounded-3xl shadow-xl inline-block mx-auto border border-blue-200/50">
                     <img src="/Kiotel_Logo_bg.PNG" alt="KIOTEL" className="h-12 lg:h-16 w-auto object-contain" />
                   </div>
 
@@ -4175,7 +4175,7 @@ export default function ClockPage() {
                 {/* Center Content */}
                 <div className="relative z-10 text-center w-full flex-1 flex flex-col justify-center pb-10">
                   {/* Logo Centered Above Clock */}
-                  <div className="mb-10 bg-blue-100/95 backdrop-blur-md px-8 py-4 rounded-3xl shadow-xl inline-block mx-auto border border-blue-200/50">
+                  <div className="mb-10 bg-white backdrop-blur-md px-8 py-4 rounded-3xl shadow-xl inline-block mx-auto border border-blue-200/50">
                     <img src="/Kiotel_Logo_bg.PNG" alt="KIOTEL" className="h-12 lg:h-16 w-auto object-contain" />
                   </div>
 
@@ -4395,7 +4395,7 @@ export default function ClockPage() {
                 {/* Center Content */}
                 <div className="relative z-10 text-center w-full flex-1 flex flex-col justify-center pb-10">
                   {/* Logo Centered Above Clock */}
-                  <div className="mb-10 bg-blue-100/95 backdrop-blur-md px-6 py-3 rounded-2xl shadow-xl inline-block mx-auto border border-blue-200/50">
+                  <div className="mb-10 bg-white backdrop-blur-md px-6 py-3 rounded-2xl shadow-xl inline-block mx-auto border border-blue-200/50">
                     <img src="/Kiotel_Logo_bg.PNG" alt="KIOTEL" className="h-10 lg:h-12 w-auto object-contain" />
                   </div>
 
@@ -4618,7 +4618,7 @@ export default function ClockPage() {
                 {/* Center Content */}
                 <div className="relative z-10 text-center w-full flex-1 flex flex-col justify-center pb-10">
                   {/* Logo Centered Above Clock */}
-                  <div className="mb-10 bg-blue-100/95 backdrop-blur-md px-6 py-3 rounded-2xl shadow-xl inline-block mx-auto border border-blue-200/50">
+                  <div className="mb-10 bg-white backdrop-blur-md px-6 py-3 rounded-2xl shadow-xl inline-block mx-auto border border-blue-200/50">
                     <img src="/Kiotel_Logo_bg.PNG" alt="KIOTEL" className="h-10 lg:h-12 w-auto object-contain" />
                   </div>
 
@@ -4928,7 +4928,7 @@ export default function ClockPage() {
                 <div className="relative z-10 flex-1 flex flex-col justify-center pb-10">
                   
                   {/* Logo Centered Above Clock */}
-                  <div className="mb-10 bg-blue-100/95 backdrop-blur-md px-6 py-3 rounded-2xl shadow-xl inline-block mx-auto border border-blue-200/50">
+                  <div className="mb-10 bg-white backdrop-blur-md px-6 py-3 rounded-2xl shadow-xl inline-block mx-auto border border-blue-200/50">
                     <img src="/Kiotel_Logo_bg.PNG" alt="KIOTEL" className="h-10 lg:h-12 w-auto object-contain" />
                   </div>
 
