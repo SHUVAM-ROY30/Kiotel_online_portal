@@ -1033,6 +1033,14 @@ function Dashboard() {
       show: !isAttendanceOnlyUser && userRole === 1
     },
     {
+      title: "Careers Admin",
+      href: "/Admin_careers",
+      icon: FaClipboardCheck,
+      gradient: "from-cyan-600 to-blue-600",
+      description: "Careers view",
+      show: !isAttendanceOnlyUser && userRole === 1
+    },
+    {
       title: "Admin Panel",
       href: "/components/Admin",
       icon: FaCog,
