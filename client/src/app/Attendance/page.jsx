@@ -2713,21 +2713,154 @@ export default function ClockPage() {
       // ═══════════════════════════════════════════════════════════
       // FRONTEND TIME RESTRICTION LOGIC (+/- 2 HOURS FOR CLOCK IN)
       // ═══════════════════════════════════════════════════════════
-      if (attendanceDate && selectedShift.shift_name !== 'ADMIN') {
-        const exactShiftStart = new Date(`${attendanceDate}T${selectedShift.start_time}+05:30`);
-        const nowMs = Date.now(); 
-        const twoHoursMs = 2 * 60 * 60 * 1000;
+      // if (attendanceDate && selectedShift.shift_name !== 'ADMIN') {
+      //   const exactShiftStart = new Date(`${attendanceDate}T${selectedShift.start_time}+05:30`);
+      //   const nowMs = Date.now(); 
+      //   const twoHoursMs = 2 * 60 * 60 * 1000;
 
-        if (status === "not_clocked_in" || status === "clocked_out") {
-          // Check if too early
-          if (nowMs < exactShiftStart.getTime() - twoHoursMs) {
-            setMessage(`🚫 Cannot clock in yet. clock-in opens 2 hours before your shift starts (${formatTime(selectedShift.start_time)}). Please Contact to Admin...!`);
+      //   if (status === "not_clocked_in" || status === "clocked_out") {
+      //     // Check if too early
+      //     if (nowMs < exactShiftStart.getTime() - twoHoursMs) {
+      //       setMessage(`🚫 Cannot clock in yet. clock-in opens 2 hours before your shift starts (${formatTime(selectedShift.start_time)}). Please Contact to Admin...!`);
+      //       setLoading(false);
+      //       return;
+      //     }
+      //     // Check if too late
+      //     if (nowMs > exactShiftStart.getTime() + twoHoursMs) {
+      //       setMessage(`🚫 Clock-in closed. You are more than 2 hours late for your shift (${formatTime(selectedShift.start_time)}).  Please Contact to Admin...!`);
+      //       setLoading(false);
+      //       return;
+      //     }
+      //   }
+      // }
+
+      //       // ═══════════════════════════════════════════════════════════
+      // // ROBUST FRONTEND TIME RESTRICTION LOGIC (+/- 2 HOURS IN, +6 HOURS OUT)
+      // // ═══════════════════════════════════════════════════════════
+      // if (selectedShift.shift_name !== 'ADMIN') {
+      //   const now = new Date();
+      //   const [startH, startM] = selectedShift.start_time.split(':').map(Number);
+      //   const [endH, endM] = selectedShift.end_time.split(':').map(Number);
+
+      //   let closestStartDiff = Infinity;
+      //   let closestEndDiff = Infinity;
+
+      //   // Find the absolute closest occurrence of this shift (yesterday, today, tomorrow)
+      //   // This ensures shifts with attendance_day_offset=-1 are calculated perfectly against real-world local time!
+      //   [-1, 0, 1].forEach(offset => {
+      //     const tempStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, startH, startM, 0);
+      //     const tempEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, endH, endM, 0);
+          
+      //     if (endH < startH || selectedShift.is_cross_midnight === 1) {
+      //       tempEnd.setDate(tempEnd.getDate() + 1);
+      //     }
+
+      //     const sDiff = (now - tempStart) / (1000 * 60 * 60); // Difference in hours
+      //     if (Math.abs(sDiff) < Math.abs(closestStartDiff)) {
+      //       closestStartDiff = sDiff;
+      //     }
+
+      //     const eDiff = (now - tempEnd) / (1000 * 60 * 60); // Difference in hours
+      //     if (Math.abs(eDiff) < Math.abs(closestEndDiff)) {
+      //       closestEndDiff = eDiff;
+      //     }
+      //   });
+
+      //   if (status === "not_clocked_in" || status === "clocked_out") {
+      //     // Attempting to Clock IN
+      //     if (closestStartDiff < -2) {
+      //       setMessage(`🚫 Cannot clock in yet. Clock-in opens 2 hours before your shift starts (${formatTime(selectedShift.start_time)}). Please Contact Admin!`);
+      //       setLoading(false);
+      //       return;
+      //     }
+      //     if (closestStartDiff > 2) {
+      //       setMessage(`🚫 Clock-in closed. You are more than 2 hours late for your shift (${formatTime(selectedShift.start_time)}). Please Contact Admin!`);
+      //       setLoading(false);
+      //       return;
+      //     }
+      //   } else if (status === "clocked_in") {
+      //     // Attempting to Clock OUT
+      //     if (closestEndDiff > 6) {
+      //       setMessage(`🚫 Clock out blocked! It has been more than 6 hours since your shift ended (${formatTime(selectedShift.end_time)}). Please Contact Admin!`);
+      //       setLoading(false);
+      //       return;
+      //     }
+      //   }
+      // }
+      // // ═══════════════════════════════════════════════════════════
+      // // ═══════════════════════════════════════════════════════════
+
+      // if (status === "clocked_in") {
+      //   setIsClockedIn(true);
+      //   setClockInTime(extractTime(clockIn));
+      //   setClockOutTime(null);
+      //   setPhotoType("clock_out");
+      //   setMessage("Currently clocked in. Ready to clock out.");
+      //   setStep("action");
+      // } else if (status === "clocked_out") {
+      //   setIsClockedIn(false);
+      //   setClockInTime(extractTime(clockIn));
+      //   setClockOutTime(extractTime(clockOut));
+      //   setPhotoType("clock_in");
+      //   setMessage("Already clocked out. Ready to clock in again.");
+      //   setStep("action");
+      // } else {
+      //   setIsClockedIn(false);
+      //   setClockInTime(null);
+      //   setClockOutTime(null);
+      //   setPhotoType("clock_in");
+      //   setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
+      //   setStep("action");
+      // }
+            // ═══════════════════════════════════════════════════════════
+      // ROBUST FRONTEND TIME RESTRICTION LOGIC (+/- 2 HOURS IN)
+      // Auto-transitions to "Clock In" if previous Clock Out was missed
+      // ═══════════════════════════════════════════════════════════
+      let currentStatus = status; // Make status mutable so we can override it
+
+      if (selectedShift.shift_name !== 'ADMIN') {
+        const now = new Date();
+        const [startH, startM] = selectedShift.start_time.split(':').map(Number);
+        const [endH, endM] = selectedShift.end_time.split(':').map(Number);
+
+        let closestStartDiff = Infinity;
+        let closestEndDiff = Infinity;
+
+        // Find the absolute closest occurrence of this shift (yesterday, today, tomorrow)
+        [-1, 0, 1].forEach(offset => {
+          const tempStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, startH, startM, 0);
+          const tempEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, endH, endM, 0);
+          
+          if (endH < startH || selectedShift.is_cross_midnight === 1) {
+            tempEnd.setDate(tempEnd.getDate() + 1);
+          }
+
+          const sDiff = (now - tempStart) / (1000 * 60 * 60); // Difference in hours
+          if (Math.abs(sDiff) < Math.abs(closestStartDiff)) {
+            closestStartDiff = sDiff;
+          }
+
+          const eDiff = (now - tempEnd) / (1000 * 60 * 60); // Difference in hours
+          if (Math.abs(eDiff) < Math.abs(closestEndDiff)) {
+            closestEndDiff = eDiff;
+          }
+        });
+
+        if (currentStatus === "clocked_in" && closestEndDiff > 6) {
+          // OVERRIDE: They missed their previous clock out!
+          // We convert their status to "not_clocked_in" so they proceed to Clock IN for the new shift.
+          currentStatus = "not_clocked_in";
+        }
+
+        // Now validate the Clock IN rules
+        if (currentStatus === "not_clocked_in" || currentStatus === "clocked_out") {
+          if (closestStartDiff < -2) {
+            setMessage(`🚫 Cannot clock in yet. Clock-in opens 2 hours before your shift starts (${formatTime(selectedShift.start_time)}). Please Contact Admin!`);
             setLoading(false);
             return;
           }
-          // Check if too late
-          if (nowMs > exactShiftStart.getTime() + twoHoursMs) {
-            setMessage(`🚫 Clock-in closed. You are more than 2 hours late for your shift (${formatTime(selectedShift.start_time)}).  Please Contact to Admin...!`);
+          if (closestStartDiff > 2) {
+            setMessage(`🚫 Clock-in closed. You are more than 2 hours late for your shift (${formatTime(selectedShift.start_time)}). Please Contact Admin!`);
             setLoading(false);
             return;
           }
@@ -2735,14 +2868,14 @@ export default function ClockPage() {
       }
       // ═══════════════════════════════════════════════════════════
 
-      if (status === "clocked_in") {
+      if (currentStatus === "clocked_in") {
         setIsClockedIn(true);
         setClockInTime(extractTime(clockIn));
         setClockOutTime(null);
         setPhotoType("clock_out");
         setMessage("Currently clocked in. Ready to clock out.");
         setStep("action");
-      } else if (status === "clocked_out") {
+      } else if (currentStatus === "clocked_out") {
         setIsClockedIn(false);
         setClockInTime(extractTime(clockIn));
         setClockOutTime(extractTime(clockOut));
@@ -2754,7 +2887,14 @@ export default function ClockPage() {
         setClockInTime(null);
         setClockOutTime(null);
         setPhotoType("clock_in");
-        setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
+        
+        // Let the user know if they are clocking in after missing a previous punch
+        if (status === "clocked_in" && currentStatus === "not_clocked_in") {
+          setMessage(`Previous clock-out missed. Ready to clock in for ${selectedShift.shift_name}`);
+        } else {
+          setMessage(`Ready to clock in for ${selectedShift.shift_name}`);
+        }
+        
         setStep("action");
       }
     } catch (err) {
