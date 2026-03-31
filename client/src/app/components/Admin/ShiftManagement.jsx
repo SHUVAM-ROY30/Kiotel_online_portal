@@ -675,6 +675,492 @@
 // export default ShiftManagement;
 
 
+// 'use client';
+
+// import { useState, useEffect, useMemo } from 'react';
+// import axios from 'axios';
+// import { motion, AnimatePresence } from 'framer-motion';
+
+// import {
+//   Box,
+//   Button,
+//   Card,
+//   CardContent,
+//   Chip,
+//   Dialog,
+//   DialogContent,
+//   Divider,
+//   FormControl,
+//   FormControlLabel,
+//   Grid,
+//   IconButton,
+//   InputLabel,
+//   MenuItem,
+//   Select,
+//   Stack,
+//   Switch,
+//   TextField,
+//   Typography,
+//   Alert,
+//   Tooltip
+// } from '@mui/material';
+
+// import AddIcon from '@mui/icons-material/Add';
+// import CloseIcon from '@mui/icons-material/Close';
+// import AccessTimeIcon from '@mui/icons-material/AccessTime';
+// import EditIcon from '@mui/icons-material/Edit';
+// import DeleteIcon from '@mui/icons-material/Delete';
+// import CategoryIcon from '@mui/icons-material/Category';
+// import WorkspacesIcon from '@mui/icons-material/Workspaces';
+// import SaveIcon from '@mui/icons-material/Save';
+
+// const ShiftManagement = ({ onClose }) => {
+//   const [shifts, setShifts] = useState([]);
+//   const [categories, setCategories] = useState([]);
+//   const [editingShift, setEditingShift] = useState(null);
+//   const [isSaving, setIsSaving] = useState(false);
+//   const [error, setError] = useState('');
+//   const [selectedCategory, setSelectedCategory] = useState('all');
+//   const [showForm, setShowForm] = useState(false);
+
+//   const [form, setForm] = useState({
+//     shift_name: '',
+//     start_time: '09:00',
+//     end_time: '18:00',
+//     grace_minutes: 0,
+//     description: '',
+//     is_active: true,
+//     category_id: ''
+//   });
+
+//   useEffect(() => {
+//     fetchShifts();
+//     fetchCategories();
+//   }, []);
+
+//   const fetchShifts = async () => {
+//     try {
+//       const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/clockin/shifts`);
+//       setShifts(response.data || []);
+//     } catch (err) {
+//       console.error('Failed to fetch shifts:', err);
+//       setError('Failed to load shifts');
+//     }
+//   };
+
+//   const fetchCategories = async () => {
+//     try {
+//       const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/clockin/categories`);
+//       setCategories(response.data || []);
+//     } catch (err) {
+//       console.error('Failed to fetch categories:', err);
+//       setError('Failed to load shift categories');
+//     }
+//   };
+
+//   const to24HourHHMM = (value) => {
+//     if (!value) return '';
+//     const v = String(value).trim();
+
+//     const m24 = v.match(/^([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/);
+//     if (m24) return `${m24[1].padStart(2, '0')}:${m24[2]}`;
+
+//     const m12 = v.match(/^(\d{1,2}):([0-5]\d)\s*([AaPp][Mm])$/);
+//     if (m12) {
+//       let hh = parseInt(m12[1], 10);
+//       const mm = m12[2];
+//       const ampm = m12[3].toUpperCase();
+//       if (ampm === 'AM') hh = hh === 12 ? 0 : hh;
+//       else hh = hh === 12 ? 12 : hh + 12;
+//       return `${String(hh).padStart(2, '0')}:${mm}`;
+//     }
+
+//     return '';
+//   };
+
+//   const normalizeTimeForInput = (t) => {
+//     if (!t) return '';
+//     const m = String(t).match(/^([01]?\d|2[0-3]):([0-5]\d)/);
+//     return m ? `${m[1].padStart(2, '0')}:${m[2]}` : '';
+//   };
+
+//   const setField = (name, value) => {
+//     setForm((prev) => ({ ...prev, [name]: value }));
+//   };
+
+//   const resetForm = () => {
+//     setForm({
+//       shift_name: '',
+//       start_time: '09:00',
+//       end_time: '18:00',
+//       grace_minutes: 0,
+//       description: '',
+//       is_active: true,
+//       category_id: ''
+//     });
+//     setEditingShift(null);
+//     setShowForm(false);
+//     setError('');
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+
+//     if (!form.shift_name.trim()) return setError('Shift name is required');
+//     if (!form.category_id) return setError('Category is required');
+
+//     setIsSaving(true);
+//     setError('');
+
+//     const payload = {
+//       ...form,
+//       start_time: to24HourHHMM(form.start_time),
+//       end_time: to24HourHHMM(form.end_time)
+//     };
+
+//     if (!payload.start_time || !payload.end_time) {
+//       setError('Invalid time format. Use HH:MM (24-hour format)');
+//       setIsSaving(false);
+//       return;
+//     }
+
+//     try {
+//       if (editingShift) {
+//         await axios.put(
+//           `${process.env.NEXT_PUBLIC_BACKEND_URL}/clockin/shifts/${editingShift.id}`,
+//           payload,
+//           { withCredentials: true }
+//         );
+//       } else {
+//         await axios.post(
+//           `${process.env.NEXT_PUBLIC_BACKEND_URL}/clockin/shifts`,
+//           payload,
+//           { withCredentials: true }
+//         );
+//       }
+
+//       await fetchShifts();
+//       resetForm();
+//     } catch (err) {
+//       console.error('Error saving shift:', err);
+//       setError(err.response?.data?.error || 'Failed to save shift');
+//     } finally {
+//       setIsSaving(false);
+//     }
+//   };
+
+//   const deleteShift = async (shiftId) => {
+//     if (!confirm('Are you sure you want to delete this shift?')) return;
+//     try {
+//       await axios.delete(
+//         `${process.env.NEXT_PUBLIC_BACKEND_URL}/clockin/shifts/${shiftId}`,
+//         { withCredentials: true }
+//       );
+//       await fetchShifts();
+//     } catch (err) {
+//       console.error('Error deleting shift:', err);
+//       alert('Failed to delete shift');
+//     }
+//   };
+
+//   const editShift = (shift) => {
+//     setForm({
+//       shift_name: shift.shift_name || '',
+//       start_time: normalizeTimeForInput(shift.start_time) || '09:00',
+//       end_time: normalizeTimeForInput(shift.end_time) || '18:00',
+//       grace_minutes: shift.grace_minutes || 0,
+//       description: shift.description || '',
+//       is_active: shift.is_active !== undefined ? Boolean(shift.is_active) : true,
+//       category_id: shift.category_id ? String(shift.category_id) : ''
+//     });
+//     setEditingShift(shift);
+//     setShowForm(true);
+//     window.scrollTo({ top: 0, behavior: 'smooth' });
+//   };
+
+//   const filteredShifts = useMemo(() => {
+//     if (selectedCategory === 'all') return shifts;
+//     return shifts.filter((shift) => String(shift.category_id) === String(selectedCategory));
+//   }, [selectedCategory, shifts]);
+
+//   return (
+//     <Dialog open onClose={onClose} maxWidth="xl" fullWidth>
+//       <DialogContent sx={{ p: 0 }}>
+//         {/* Header */}
+//         <Box
+//           sx={{
+//             px: 3,
+//             py: 2.5,
+//             borderBottom: '1px solid',
+//             borderColor: 'divider',
+//             bgcolor: 'background.paper',
+//             position: 'sticky',
+//             top: 0,
+//             zIndex: 10
+//           }}
+//         >
+//           <Stack direction="row" justifyContent="space-between" alignItems="center">
+//             <Stack direction="row" spacing={1.5} alignItems="center">
+//               <Box
+//                 sx={{
+//                   width: 40,
+//                   height: 40,
+//                   borderRadius: 2,
+//                   bgcolor: 'primary.main',
+//                   display: 'grid',
+//                   placeItems: 'center',
+//                   color: 'white'
+//                 }}
+//               >
+//                 <WorkspacesIcon fontSize="small" />
+//               </Box>
+//               <Box>
+//                 <Typography variant="h6" fontWeight={700}>Shift Management</Typography>
+//                 <Typography variant="body2" color="text.secondary">
+//                   Professional scheduling workspace
+//                 </Typography>
+//               </Box>
+//             </Stack>
+//             <IconButton onClick={onClose}><CloseIcon /></IconButton>
+//           </Stack>
+//         </Box>
+
+//         <Box sx={{ p: 3 }}>
+//           <AnimatePresence>
+//             {error && (
+//               <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+//                 <Alert
+//                   severity="error"
+//                   sx={{ mb: 2 }}
+//                   action={
+//                     <IconButton size="small" onClick={() => setError('')}>
+//                       <CloseIcon fontSize="small" />
+//                     </IconButton>
+//                   }
+//                 >
+//                   {error}
+//                 </Alert>
+//               </motion.div>
+//             )}
+//           </AnimatePresence>
+
+//           {/* Top actions */}
+//           <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 2 }}>
+//             {!showForm ? (
+//               <Button
+//                 variant="contained"
+//                 startIcon={<AddIcon />}
+//                 onClick={() => setShowForm(true)}
+//                 sx={{ width: 'fit-content' }}
+//               >
+//                 Create New Shift
+//               </Button>
+//             ) : <Box />}
+
+//             {!showForm && (
+//               <FormControl size="small" sx={{ minWidth: 220 }}>
+//                 <InputLabel>Filter Category</InputLabel>
+//                 <Select
+//                   label="Filter Category"
+//                   value={selectedCategory}
+//                   onChange={(e) => setSelectedCategory(e.target.value)}
+//                 >
+//                   <MenuItem value="all">All Categories</MenuItem>
+//                   {categories.map((cat) => (
+//                     <MenuItem key={cat.id} value={String(cat.id)}>{cat.name}</MenuItem>
+//                   ))}
+//                 </Select>
+//               </FormControl>
+//             )}
+//           </Stack>
+
+//           {/* Form */}
+//           <AnimatePresence>
+//             {showForm && (
+//               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+//                 <Card variant="outlined" sx={{ mb: 3, borderRadius: 3 }}>
+//                   <CardContent>
+//                     <Typography variant="subtitle1" fontWeight={700} mb={2}>
+//                       {editingShift ? 'Edit Shift' : 'Create New Shift'}
+//                     </Typography>
+//                     <Divider sx={{ mb: 2 }} />
+
+//                     <Grid container spacing={2}>
+//                       <Grid item xs={12} md={4}>
+//                         <TextField
+//                           label="Shift Name *"
+//                           value={form.shift_name}
+//                           onChange={(e) => setField('shift_name', e.target.value)}
+//                           fullWidth
+//                           size="small"
+//                         />
+//                       </Grid>
+
+//                       <Grid item xs={12} md={4}>
+//                         <FormControl fullWidth size="small">
+//                           <InputLabel>Category *</InputLabel>
+//                           <Select
+//                             label="Category *"
+//                             value={form.category_id ? String(form.category_id) : ''}
+//                             onChange={(e) => setField('category_id', e.target.value)}
+//                           >
+//                             {categories.map((cat) => (
+//                               <MenuItem key={cat.id} value={String(cat.id)}>{cat.name}</MenuItem>
+//                             ))}
+//                           </Select>
+//                         </FormControl>
+//                       </Grid>
+
+//                       <Grid item xs={12} md={4}>
+//                         <TextField
+//                           label="Start Time *"
+//                           type="time"
+//                           value={form.start_time}
+//                           onChange={(e) => setField('start_time', e.target.value)}
+//                           fullWidth
+//                           size="small"
+//                           InputLabelProps={{ shrink: true }}
+//                         />
+//                       </Grid>
+
+//                       <Grid item xs={12} md={4}>
+//                         <TextField
+//                           label="End Time *"
+//                           type="time"
+//                           value={form.end_time}
+//                           onChange={(e) => setField('end_time', e.target.value)}
+//                           fullWidth
+//                           size="small"
+//                           InputLabelProps={{ shrink: true }}
+//                         />
+//                       </Grid>
+
+                      
+
+//                       <Grid item xs={12} md={4} display="flex" alignItems="center">
+//                         <FormControlLabel
+//                           control={
+//                             <Switch
+//                               checked={form.is_active}
+//                               onChange={(e) => setField('is_active', e.target.checked)}
+//                             />
+//                           }
+//                           label="Active Shift"
+//                         />
+//                       </Grid>
+
+//                       <Grid item xs={12}>
+//                         <TextField
+//                           label="Description"
+//                           multiline
+//                           minRows={3}
+//                           value={form.description}
+//                           onChange={(e) => setField('description', e.target.value)}
+//                           fullWidth
+//                           size="small"
+//                         />
+//                       </Grid>
+//                     </Grid>
+
+//                     <Stack direction="row" justifyContent="flex-end" spacing={1.5} mt={3}>
+//                       <Button variant="outlined" onClick={resetForm}>Cancel</Button>
+//                       <Button
+//                         variant="contained"
+//                         onClick={handleSubmit}
+//                         disabled={isSaving}
+//                         startIcon={<SaveIcon />}
+//                       >
+//                         {isSaving ? 'Saving...' : editingShift ? 'Update Shift' : 'Create Shift'}
+//                       </Button>
+//                     </Stack>
+//                   </CardContent>
+//                 </Card>
+//               </motion.div>
+//             )}
+//           </AnimatePresence>
+
+//           {/* Shift List */}
+//           <Card variant="outlined" sx={{ borderRadius: 3 }}>
+//             <CardContent>
+//               <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+//                 <Typography variant="subtitle1" fontWeight={700}>All Shifts</Typography>
+//                 <Chip label={filteredShifts.length} color="primary" size="small" />
+//               </Stack>
+
+//               {filteredShifts.length === 0 ? (
+//                 <Box py={7} textAlign="center">
+//                   <AccessTimeIcon sx={{ color: 'text.disabled', fontSize: 34, mb: 1 }} />
+//                   <Typography variant="body1" fontWeight={600}>No shifts found</Typography>
+//                   <Typography variant="body2" color="text.secondary">
+//                     {selectedCategory !== 'all' ? 'Try another category.' : 'Create your first shift.'}
+//                   </Typography>
+//                 </Box>
+//               ) : (
+//                 <Stack spacing={1.25}>
+//                   {filteredShifts.map((shift) => (
+//                     <Card key={shift.id} variant="outlined" sx={{ borderRadius: 2 }}>
+//                       <CardContent sx={{ py: '14px !important' }}>
+//                         <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>
+//                           <Box>
+//                             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+//                               <Typography variant="subtitle1" fontWeight={700}>{shift.shift_name}</Typography>
+//                               <Chip
+//                                 size="small"
+//                                 label={shift.is_active ? 'Active' : 'Inactive'}
+//                                 color={shift.is_active ? 'success' : 'default'}
+//                               />
+//                             </Stack>
+
+//                             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mt={1}>
+//                               <Stack direction="row" spacing={0.8} alignItems="center">
+//                                 <CategoryIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+//                                 <Typography variant="body2">{shift.category_name || 'Uncategorized'}</Typography>
+//                               </Stack>
+//                               <Stack direction="row" spacing={0.8} alignItems="center">
+//                                 <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+//                                 <Typography variant="body2">{shift.start_time} - {shift.end_time}</Typography>
+//                               </Stack>
+//                               {/* <Typography variant="body2" color="text.secondary">
+//                                 Grace: {shift.grace_minutes || 0} min
+//                               </Typography> */}
+//                             </Stack>
+
+//                             {shift.description ? (
+//                               <Typography variant="body2" color="text.secondary" mt={1}>
+//                                 {shift.description}
+//                               </Typography>
+//                             ) : null}
+//                           </Box>
+
+//                           <Stack direction="row" spacing={0.5} alignItems="center">
+//                             <Tooltip title="Edit">
+//                               <IconButton color="primary" onClick={() => editShift(shift)}>
+//                                 <EditIcon />
+//                               </IconButton>
+//                             </Tooltip>
+//                             <Tooltip title="Delete">
+//                               <IconButton color="error" onClick={() => deleteShift(shift.id)}>
+//                                 <DeleteIcon />
+//                               </IconButton>
+//                             </Tooltip>
+//                           </Stack>
+//                         </Stack>
+//                       </CardContent>
+//                     </Card>
+//                   ))}
+//                 </Stack>
+//               )}
+//             </CardContent>
+//           </Card>
+//         </Box>
+//       </DialogContent>
+//     </Dialog>
+//   );
+// };
+
+// export default ShiftManagement;
+
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -713,6 +1199,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CategoryIcon from '@mui/icons-material/Category';
 import WorkspacesIcon from '@mui/icons-material/Workspaces';
 import SaveIcon from '@mui/icons-material/Save';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 const ShiftManagement = ({ onClose }) => {
   const [shifts, setShifts] = useState([]);
@@ -730,7 +1217,8 @@ const ShiftManagement = ({ onClose }) => {
     grace_minutes: 0,
     description: '',
     is_active: true,
-    category_id: ''
+    category_id: '',
+    attendance_day_offset: 0 // 👈 NEW STATE
   });
 
   useEffect(() => {
@@ -796,7 +1284,8 @@ const ShiftManagement = ({ onClose }) => {
       grace_minutes: 0,
       description: '',
       is_active: true,
-      category_id: ''
+      category_id: '',
+      attendance_day_offset: 0
     });
     setEditingShift(null);
     setShowForm(false);
@@ -871,7 +1360,8 @@ const ShiftManagement = ({ onClose }) => {
       grace_minutes: shift.grace_minutes || 0,
       description: shift.description || '',
       is_active: shift.is_active !== undefined ? Boolean(shift.is_active) : true,
-      category_id: shift.category_id ? String(shift.category_id) : ''
+      category_id: shift.category_id ? String(shift.category_id) : '',
+      attendance_day_offset: shift.attendance_day_offset || 0
     });
     setEditingShift(shift);
     setShowForm(true);
@@ -1012,6 +1502,25 @@ const ShiftManagement = ({ onClose }) => {
                       </Grid>
 
                       <Grid item xs={12} md={4}>
+                        <FormControl fullWidth size="small" disabled={!!editingShift}>
+                          <InputLabel>Attendance Record Date</InputLabel>
+                          <Select
+                            label="Attendance Record Date"
+                            value={form.attendance_day_offset}
+                            onChange={(e) => setField('attendance_day_offset', e.target.value)}
+                          >
+                            <MenuItem value={0}>Same Day (0)</MenuItem>
+                            <MenuItem value={-1}>Previous Day (-1)</MenuItem>
+                          </Select>
+                          {!!editingShift && (
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, px: 1, lineHeight: 1.1 }}>
+                              Cannot be changed after shift creation.
+                            </Typography>
+                          )}
+                        </FormControl>
+                      </Grid>
+
+                      <Grid item xs={12} md={4}>
                         <TextField
                           label="Start Time *"
                           type="time"
@@ -1035,18 +1544,6 @@ const ShiftManagement = ({ onClose }) => {
                         />
                       </Grid>
 
-                      {/* <Grid item xs={12} md={4}>
-                        <TextField
-                          label="Grace Minutes"
-                          type="number"
-                          inputProps={{ min: 0 }}
-                          value={form.grace_minutes}
-                          onChange={(e) => setField('grace_minutes', e.target.value)}
-                          fullWidth
-                          size="small"
-                        />
-                      </Grid> */}
-
                       <Grid item xs={12} md={4} display="flex" alignItems="center">
                         <FormControlLabel
                           control={
@@ -1058,6 +1555,20 @@ const ShiftManagement = ({ onClose }) => {
                           label="Active Shift"
                         />
                       </Grid>
+
+                      {/* Educational Alert for Previous Day Offset */}
+                      {!editingShift && form.attendance_day_offset === -1 && (
+                        <Grid item xs={12}>
+                          <Alert severity="info" icon={<InfoOutlinedIcon />} sx={{ borderRadius: 2 }}>
+                            <Typography variant="subtitle2" fontWeight={700}>Understanding Previous Day (-1) Offset</Typography>
+                            <Typography variant="body2" mt={0.5}>
+                              This setting is strictly for late-night shifts (e.g. starting at 12:30 AM). If an employee clocks into this shift on Tuesday at 12:30 AM, the system will record their attendance and payroll hours as belonging to <b>Monday</b>. 
+                              <br /><br />
+                              <i>Note: This value permanently locks once you create the shift.</i>
+                            </Typography>
+                          </Alert>
+                        </Grid>
+                      )}
 
                       <Grid item xs={12}>
                         <TextField
@@ -1119,6 +1630,18 @@ const ShiftManagement = ({ onClose }) => {
                                 label={shift.is_active ? 'Active' : 'Inactive'}
                                 color={shift.is_active ? 'success' : 'default'}
                               />
+                              {shift.attendance_day_offset === -1 && (
+                                <Tooltip title="Hours worked on this shift count towards the previous calendar day's payroll.">
+                                  <Chip
+                                    size="small"
+                                    icon={<AccessTimeIcon fontSize="small" />}
+                                    label="-1 Day Offset"
+                                    color="info"
+                                    variant="outlined"
+                                    sx={{ fontWeight: 600, bgcolor: 'info.50' }}
+                                  />
+                                </Tooltip>
+                              )}
                             </Stack>
 
                             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mt={1}>
@@ -1130,9 +1653,6 @@ const ShiftManagement = ({ onClose }) => {
                                 <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                                 <Typography variant="body2">{shift.start_time} - {shift.end_time}</Typography>
                               </Stack>
-                              {/* <Typography variant="body2" color="text.secondary">
-                                Grace: {shift.grace_minutes || 0} min
-                              </Typography> */}
                             </Stack>
 
                             {shift.description ? (
@@ -1148,11 +1668,11 @@ const ShiftManagement = ({ onClose }) => {
                                 <EditIcon />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="Delete">
+                            {/* <Tooltip title="Delete">
                               <IconButton color="error" onClick={() => deleteShift(shift.id)}>
                                 <DeleteIcon />
-                              </IconButton>
-                            </Tooltip>
+                              </IconButton> */}
+                            {/* </Tooltip> */}
                           </Stack>
                         </Stack>
                       </CardContent>
