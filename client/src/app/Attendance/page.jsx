@@ -6372,11 +6372,9 @@ export default function ClockPage() {
     setStep("face_scan");
   };
 
-  const handleFaceNoMatch = () => {
-    // Deliberately empty! 
-    // We prevent automatic redirection to the ID page so the scanner has 
-    // time to continuously analyze and directly display the results once matched.
-    // Genuinely new users will click the "Manual ID Entry" button below.
+ const handleFaceNoMatch = () => {
+    setIsNewFaceUser(true);
+    setStep("id");
   };
 
   const handleFaceScanError = (error) => {
