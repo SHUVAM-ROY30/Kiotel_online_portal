@@ -876,6 +876,939 @@
 // }
 
 
+// // components/TicketDetails.jsx
+// "use client";
+// import { useEffect, useState, useRef } from "react";
+// import axios from "axios";
+// import { useRouter } from "next/navigation";
+// import Select from "react-select";
+// import {
+//   FaTasks,
+//   FaUser,
+//   FaTag,
+//   FaExclamationTriangle,
+//   FaCalendarAlt,
+//   FaPaperclip,
+//   FaChevronDown,
+//   FaChevronUp,
+//   FaSave,
+//   FaCheck,
+//   FaTimes,
+//   FaEllipsisV,
+//   FaCommentDots,
+//   FaUserPlus,
+//   FaSync
+// } from "react-icons/fa";
+
+// export default function TicketDetails({ params }) {
+//   const ticketId = params.taskId;
+//   const [ticketDetails, setTicketDetails] = useState(null);
+//   const [replies, setReplies] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+//   const [user, setUser] = useState(null);
+//   const [statuses, setStatuses] = useState([]);
+//   const [priorities, setPriorities] = useState([]);
+//   const [selectedStatus, setSelectedStatus] = useState("");
+//   const [selectedPriority, setSelectedPriority] = useState("");
+//   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+//   const [isPriorityDropdownOpen, setIsPriorityDropdownOpen] = useState(false);
+//   const [taskState, setTaskState] = useState(null);
+//   const [taskPriority, setTaskPriority] = useState(null);
+//   const [assignedUsers, setAssignedUsers] = useState([]);
+//   const [isAssignDropdownOpen, setIsAssignDropdownOpen] = useState(false);
+//   const [users, setUsers] = useState([]);
+//   const [selectedUser, setSelectedUser] = useState(null);
+//   // --- NEW STATE FOR SUBTASKS ---
+//   const [subtasks, setSubtasks] = useState([]); 
+//   // --- END NEW STATE ---
+
+//   const statusDropdownRef = useRef(null);
+//   const priorityDropdownRef = useRef(null);
+//   const assignDropdownRef = useRef(null);
+//   const router = useRouter();
+
+//   // Close dropdowns when clicking outside
+//   useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target)) {
+//         setIsStatusDropdownOpen(false);
+//       }
+//       if (priorityDropdownRef.current && !priorityDropdownRef.current.contains(event.target)) {
+//         setIsPriorityDropdownOpen(false);
+//       }
+//       if (assignDropdownRef.current && !assignDropdownRef.current.contains(event.target)) {
+//         setIsAssignDropdownOpen(false);
+//       }
+//     };
+//     document.addEventListener("mousedown", handleClickOutside);
+//     return () => {
+//       document.removeEventListener("mousedown", handleClickOutside);
+//     };
+//   }, []);
+
+//   // Utility to check if a file is an image
+//   const isImage = (filename) => {
+//     if (!filename || typeof filename !== "string") {
+//       return false;
+//     }
+//     const imageExtensions = [
+//       "jpg",
+//       "jpeg",
+//       "png",
+//       "gif",
+//       "bmp",
+//       "webp",
+//       "svg",
+//       "tiff",
+//       "tif",
+//     ];
+//     const parts = filename.split(".");
+//     if (parts.length < 2) {
+//       return false;
+//     }
+//     const ext = parts.pop().toLowerCase();
+//     return imageExtensions.includes(ext);
+//   };
+
+//   // Utility to check if a file exists on the server
+//   const checkFileExistence = async (filePath) => {
+//     try {
+//       const response = await axios.head(filePath);
+//       return response.status === 200;
+//     } catch (error) {
+//       return false;
+//     }
+//   };
+
+//   // Handle file download
+//   const handleDownload = async (filePath, filename) => {
+//     const fileExists = await checkFileExistence(filePath);
+//     if (fileExists) {
+//       const link = document.createElement("a");
+//       link.href = filePath;
+//       link.setAttribute("download", filename);
+//       document.body.appendChild(link);
+//       link.click();
+//       document.body.removeChild(link);
+//     } else {
+//       alert("File not found on the server.");
+//     }
+//   };
+
+//   // Fetch ticket details and replies
+//   useEffect(() => {
+//     const fetchTicketDetails = async () => {
+//       try {
+//         const [ticketResponse, repliesResponse] = await Promise.all([
+//           axios.get(
+//             `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${ticketId}`,
+//             {
+//               withCredentials: true,
+//             }
+//           ),
+//           axios.get(
+//             `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${ticketId}/replies`,
+//             {
+//               withCredentials: true,
+//             }
+//           ),
+//         ]);
+//         const ticketData = ticketResponse.data;
+//         // --- SAFE PARSE unique_multi ---
+//         let multi = ticketData.unique_multi;
+
+//         if (!multi) {
+//           ticketData.unique_multi = [];
+//         } else if (typeof multi === "string") {
+//           try {
+//             ticketData.unique_multi = JSON.parse(multi);
+//             if (!Array.isArray(ticketData.unique_multi)) ticketData.unique_multi = [];
+//           } catch {
+//             ticketData.unique_multi = [];
+//           }
+//         } else if (!Array.isArray(multi)) {
+//           ticketData.unique_multi = [];
+//         }
+
+//         setTicketDetails(ticketData);
+//         setSelectedStatus(ticketData.status_id);
+//         setSelectedPriority(ticketData.priority_id);
+//         const repliesWithAttachments = repliesResponse.data.map((reply) => ({
+//           ...reply,
+//           attachments: reply.unique_name,
+//         }));
+//         setReplies(repliesWithAttachments);
+//       } catch (err) {
+//         console.error("Error fetching ticket details:", err);
+//         setError(err.response?.data?.message || "An error occurred");
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+//     if (ticketId) fetchTicketDetails();
+//   }, [ticketId]);
+
+//   // --- NEW: Fetch subtasks when ticketDetails.id is available ---
+//   useEffect(() => {
+//     const fetchSubtasks = async () => {
+//       if (!ticketDetails?.id) return; // Ensure we have the parent task ID
+
+//       try {
+//         // Call the new API endpoint for subtasks
+//         const response = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tasks/subtasks/${ticketId}`,
+//           { withCredentials: true }
+//         );
+//         // console.log("Fetched subtasks:", response.data); // For debugging
+//         setSubtasks(response.data || []); // Ensure it's an array
+//       } catch (err) {
+//         console.error("Error fetching subtasks:", err);
+//         // Optionally set an error state for subtasks if needed
+//         // setErrorSubtasks("Failed to load subtasks");
+//         setSubtasks([]); // Ensure subtasks is empty on error
+//       }
+//     };
+
+//     fetchSubtasks();
+//   }, [ticketDetails?.id]); // Depend on ticketDetails.id
+//   // --- END NEW FETCH ---
+
+//   // Fetch statuses and priorities
+//   useEffect(() => {
+//     const fetchOptions = async () => {
+//       try {
+//         const [statusRes, priorityRes] = await Promise.all([
+//           axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/taskstate`),
+//           axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/priority`),
+//         ]);
+//         setStatuses(statusRes.data);
+//         setPriorities(priorityRes.data);
+//       } catch (err) {
+//         console.error("Failed to fetch options:", err);
+//       }
+//     };
+//     fetchOptions();
+//   }, []);
+
+//   // Fetch current task state
+//   useEffect(() => {
+//     const fetchTaskState = async () => {
+//       try {
+//         const response = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_state_for_task/${ticketId}`,
+//           { withCredentials: true }
+//         );
+//         if (response.data && !response.data.error) {
+//           setTaskState(response.data);
+//         }
+//       } catch (err) {
+//         console.error("Error fetching task state:", err);
+//       }
+//     };
+//     if (ticketId) fetchTaskState();
+//   }, [ticketId]);
+
+//   // Fetch current task priority
+//   useEffect(() => {
+//     const fetchTaskPriority = async () => {
+//       try {
+//         const response = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_priority_for_task/${ticketId}`,
+//           { withCredentials: true }
+//         );
+//         if (response.data && !response.data.error) {
+//           setTaskPriority(response.data);
+//         }
+//       } catch (err) {
+//         console.error("Error fetching task priority:", err);
+//       }
+//     };
+//     if (ticketId) fetchTaskPriority();
+//   }, [ticketId]);
+
+//   // Fetch assigned users
+//   useEffect(() => {
+//     const fetchAssignedUsers = async () => {
+//       try {
+//         const response = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticketId}`,
+//           { withCredentials: true }
+//         );
+//         if (response.data && Array.isArray(response.data)) {
+//           setAssignedUsers(response.data);
+//         } else if (response.data && !Array.isArray(response.data)) {
+//           setAssignedUsers([response.data]);
+//         } else {
+//           setAssignedUsers([]);
+//         }
+//       } catch (err) {
+//         console.error("Error fetching assigned users:", err);
+//         setAssignedUsers([]);
+//       }
+//     };
+//     if (ticketId) fetchAssignedUsers();
+//   }, [ticketId]);
+
+//   // Fetch user session
+//   useEffect(() => {
+//     const fetchUserDetails = async () => {
+//       try {
+//         const response = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+//           { withCredentials: true }
+//         );
+//         setUser(response.data);
+//       } catch (err) {
+//         console.error("Error fetching user details:", err);
+//       }
+//     };
+//     fetchUserDetails();
+//   }, []);
+ 
+//   // Fetch users for assignment dropdown
+//   useEffect(() => {
+//     const fetchUsers = async () => {
+//       try {
+//         const response = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`
+//         );
+//         const filteredUsers = response.data
+//           .filter((user) => user.role !== "Client")
+//           .map((user) => ({
+//             value: user.id,
+//             label: `${user.fname} ${user.lname}`,
+//           }));
+//         setUsers(filteredUsers);
+//       } catch (error) {
+//         console.error("Error fetching users:", error);
+//       }
+//     };
+//     fetchUsers();
+//   }, []);
+
+//   // Save updated status
+//   const handleUpdateStatus = async () => {
+//     const confirmChange = window.confirm(
+//       "Are you sure you want to update the status?"
+//     );
+//     if (!confirmChange) return;
+//     if (!selectedStatus) {
+//       alert("⚠️ Please select a status.");
+//       return;
+//     }
+//     try {
+//       const response = await axios.post(
+//         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_state`,
+//         { status_id: selectedStatus, ticketId },
+//         { withCredentials: true }
+//       );
+//       if (response.status === 200) {
+//         alert("✅ Status updated successfully!");
+//         setTicketDetails({
+//           ...ticketDetails,
+//           status_id: selectedStatus,
+//           status_name:
+//             statuses.find((s) => s.Id === selectedStatus)?.status_name ||
+//             ticketDetails.status_name,
+//         });
+//       }
+//     } catch (err) {
+//       console.error("🚨 Error updating status:", err);
+//       alert("❌ Failed to update status.");
+//     }
+//   };
+
+//   // Save updated priority
+//   const handleUpdatePriority = async () => {
+//     const confirmChange = window.confirm(
+//       "Are you sure you want to update the priority?"
+//     );
+//     if (!confirmChange) return;
+//     if (!selectedPriority) {
+//       alert("⚠️ Please select a priority.");
+//       return;
+//     }
+//     try {
+//       const response = await axios.post(
+//         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_priority`,
+//         { priority_id: selectedPriority, ticketId },
+//         { withCredentials: true }
+//       );
+//       if (response.status === 200) {
+//         alert("✅ Priority updated successfully!");
+//         setTicketDetails({
+//           ...ticketDetails,
+//           priority_id: selectedPriority,
+//           priority_name:
+//             priorities.find((p) => p.Id === selectedPriority)?.priority_name ||
+//             ticketDetails.priority_name,
+//         });
+//       }
+//     } catch (err) {
+//       console.error("🚨 Error updating priority:", err);
+//       alert("❌ Failed to update priority.");
+//     }
+//   };
+
+//   const handleAssignUser = async () => {
+//     if (!selectedUser) {
+//       alert("⚠️ Please select a user to assign.");
+//       return;
+//     }
+//     try {
+//       const response = await axios.post(
+//         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/assign_user_to_task`,
+//         {
+//           task_id: ticketId,
+//           assigned_to: selectedUser.value,
+//         },
+//         { withCredentials: true }
+//       );
+//       if (response.data.success) {
+//         alert("✅ User assigned successfully!");
+//         // Refresh assigned users
+//         const updatedUsersResponse = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticketId}`,
+//           { withCredentials: true }
+//         );
+//         const updatedUsers = Array.isArray(updatedUsersResponse.data)
+//           ? updatedUsersResponse.data
+//           : [updatedUsersResponse.data];
+//         setAssignedUsers(updatedUsers);
+//         setSelectedUser(null); // Reset selection
+//       }
+//     } catch (err) {
+//       console.error("🚨 Error assigning user:", err);
+//       alert("❌ Failed to assign user.");
+//     }
+//   };
+
+//   if (loading)
+//     return (
+//       <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+//         <div className="text-center">
+//           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
+//           <p className="text-gray-700 font-medium">Loading task details...</p>
+//         </div>
+//       </div>
+//     );
+//   if (error)
+//     return (
+//       <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+//         <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl max-w-md w-full border border-gray-200">
+//           <h2 className="text-xl font-bold text-red-600 mb-4">Error</h2>
+//           <p className="text-gray-700 mb-4">Failed to load task details: {error}</p>
+//           <button
+//             onClick={() => router.back()}
+//             className="w-full py-2 px-4 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+//           >
+//             Go Back
+//           </button>
+//         </div>
+//       </div>
+//     );
+//   if (!ticketDetails)
+//     return (
+//       <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+//         <div className="text-center">
+//           <p className="text-gray-700 font-medium">No task details available.</p>
+//         </div>
+//       </div>
+//     );
+
+//   return (
+//     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+//       {/* Header */}
+//       <header className="bg-gradient-to-r from-indigo-600 to-indigo-700 shadow-lg">
+//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+//           <div className="flex justify-between items-center py-6">
+//             <div className="flex items-center space-x-4">
+//               <div className="p-2 bg-white/20 rounded-lg">
+//                 <FaTasks className="h-6 w-6 text-white" />
+//               </div>
+//               <div>
+//                 <h1 className="text-2xl font-bold text-white">Task Details</h1>
+//                 <p className="text-indigo-200 text-sm">#{ticketDetails.id} - {ticketDetails.title}</p>
+//               </div>
+//             </div>
+//             <div className="flex items-center space-x-4">
+//               {user && (
+//                 <span className="text-white font-medium hidden sm:block">
+//                   Welcome, {user.name}
+//                 </span>
+//               )}
+//               <img
+//                 src="/Kiotel_Logo_bg.PNG"
+//                 alt="Dashboard Logo"
+//                 className="h-10 w-auto rounded-md cursor-pointer hover:opacity-90 transition-opacity duration-200"
+//                 onClick={() => router.push("/TaskManager")}
+//               />
+//             </div>
+//           </div>
+//         </div>
+//       </header>
+
+//       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+//         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+//           {/* Main Content */}
+//           <div className="lg:col-span-2 space-y-8">
+//             {/* Task Information Card */}
+//             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+//               <div className="p-6">
+//                 <div className="flex justify-between items-start mb-6">
+//                   <div>
+//                     <h2 className="text-2xl font-bold text-gray-900">{ticketDetails.title}</h2>
+//                     <p className="text-gray-600 mt-1">Created on {new Date(ticketDetails.created_at).toLocaleString("en-US", {
+//                       weekday: "long",
+//                       year: "numeric",
+//                       month: "long",
+//                       day: "numeric",
+//                       hour: "2-digit",
+//                       minute: "2-digit",
+//                     })}</p>
+//                   </div>
+//                   <div className="flex space-x-3">
+//                     <button
+//                       onClick={() =>
+//                         router.push(
+//                           `/TaskManager/task/${ticketId}/replyTicket?title=${encodeURIComponent(
+//                             ticketDetails.title
+//                           )}`
+//                         )
+//                       }
+//                       className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5"
+//                     >
+//                       <FaCommentDots className="mr-2" />
+//                       Reply
+//                     </button>
+//                     <div className="relative" ref={assignDropdownRef}>
+//                       <button
+//                         type="button"
+//                         onClick={() => setIsAssignDropdownOpen(!isAssignDropdownOpen)}
+//                         className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5"
+//                       >
+//                         <FaUserPlus className="mr-2" />
+//                         Assign
+//                       </button>
+//                       {isAssignDropdownOpen && (
+//                         <div className="origin-top-right absolute right-0 mt-2 w-80 rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 p-4 border border-gray-200">
+//                           <h4 className="font-medium text-gray-800 mb-3">Assign to user</h4>
+//                           <Select
+//                             value={selectedUser}
+//                             onChange={setSelectedUser}
+//                             options={users}
+//                             placeholder="Search & select user..."
+//                             className="mb-3"
+//                           />
+//                           <button
+//                             onClick={handleAssignUser}
+//                             disabled={!selectedUser}
+//                             className={`w-full py-2 px-4 rounded-lg shadow transition ${
+//                               !selectedUser
+//                                 ? "bg-gray-400 cursor-not-allowed"
+//                                 : "bg-indigo-600 hover:bg-indigo-700 text-white transform hover:-translate-y-0.5 shadow-indigo-200/50"
+//                             }`}
+//                           >
+//                             Confirm Assignment
+//                           </button>
+//                         </div>
+//                       )}
+//                     </div>
+//                   </div>
+//                 </div>
+
+//                 {/* Status and Priority Badges */}
+//                 <div className="flex flex-wrap gap-4 mb-6">
+//                   <div className="flex items-center">
+//                     <span className="text-sm font-medium text-gray-700 mr-2">Status:</span>
+//                     <span
+//                       className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
+//                         taskState?.status_name?.toLowerCase() === "open"
+//                           ? "bg-green-100 text-green-800 border border-green-200"
+//                           : taskState?.status_name?.toLowerCase() === "in progress"
+//                           ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
+//                           : taskState?.status_name?.toLowerCase() === "resolved"
+//                           ? "bg-blue-100 text-blue-800 border border-blue-200"
+//                           : taskState?.status_name?.toLowerCase() === "closed"
+//                           ? "bg-red-100 text-red-800 border border-red-200"
+//                           : "bg-gray-100 text-gray-800 border border-gray-200"
+//                       }`}
+//                     >
+//                       <span className="w-2 h-2 rounded-full mr-2 bg-current"></span>
+//                       {taskState?.status_name || "Unknown"}
+//                     </span>
+//                   </div>
+//                   <div className="flex items-center">
+//                     <span className="text-sm font-medium text-gray-700 mr-2">Priority:</span>
+//                     <span
+//                       className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
+//                         taskPriority?.priority_name?.toLowerCase() === "low"
+//                           ? "bg-green-100 text-green-800 border border-green-200"
+//                           : taskPriority?.priority_name?.toLowerCase() === "medium"
+//                           ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
+//                           : taskPriority?.priority_name?.toLowerCase() === "important"
+//                           ? "bg-orange-100 text-orange-800 border border-orange-200"
+//                           : taskPriority?.priority_name?.toLowerCase() === "urgent"
+//                           ? "bg-red-100 text-red-800 border border-red-200"
+//                           : "bg-gray-100 text-gray-800 border border-gray-200"
+//                       }`}
+//                     >
+//                       <span className="w-2 h-2 rounded-full mr-2 bg-current"></span>
+//                       {taskPriority?.priority_name || "Not Set"}
+//                     </span>
+//                   </div>
+//                 </div>
+
+//                 {/* Description */}
+//                 <div className="mb-6">
+//                   <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
+//                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+//                     <p className="whitespace-pre-line text-gray-700">{ticketDetails.description}</p>
+//                   </div>
+//                 </div>
+
+//                 {/* Subtasks */}
+//                 {subtasks.length > 0 && (
+//                   <div className="mb-6">
+//                     <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
+//                       <FaTasks className="mr-2 text-indigo-500" />
+//                       Subtasks
+//                     </h3>
+//                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+//                       <ul className="space-y-2">
+//                         {subtasks.map((subtask) => (
+//                           <li key={subtask.id}>
+//                             <button
+//                               onClick={() => router.push(`/TaskManager/task/${subtask.id}`)}
+//                               className="text-blue-600 hover:text-blue-800 hover:underline font-medium text-left block"
+//                             >
+//                               #{subtask.id}: {subtask.title}
+//                             </button>
+//                           </li>
+//                         ))}
+//                       </ul>
+//                     </div>
+//                   </div>
+//                 )}
+
+//                 {/* Attachments */}
+//                 {(
+//                   (ticketDetails.unique_name && ticketDetails.unique_name !== "") ||
+//                   (Array.isArray(ticketDetails.unique_multi) && ticketDetails.unique_multi.length > 0)
+//                 ) && (
+//                   <div className="mb-6">
+//                     <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
+//                       <FaPaperclip className="mr-2 text-indigo-500" />
+//                       Attachments
+//                     </h3>
+//                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+//                       {/* Single File */}
+//                       {ticketDetails.unique_name && ticketDetails.unique_name !== "" && (
+//                         isImage(ticketDetails.unique_name) ? (
+//                           <div className="relative group overflow-hidden rounded-lg shadow-md">
+//                             <a
+//                               href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${ticketDetails.unique_name}`}
+//                               target="_blank"
+//                               rel="noopener noreferrer"
+//                               className="block"
+//                             >
+//                               <img
+//                                 src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${ticketDetails.unique_name}`}
+//                                 alt="Task Attachment"
+//                                 className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105"
+//                               />
+//                             </a>
+//                           </div>
+//                         ) : (
+//                           <button
+//                             onClick={() =>
+//                               handleDownload(
+//                                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${ticketDetails.unique_name}`,
+//                                 ticketDetails.unique_name
+//                               )
+//                             }
+//                             className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg shadow transition transform hover:-translate-y-0.5"
+//                           >
+//                             Download File
+//                           </button>
+//                         )
+//                       )}
+
+//                       {/* Multiple Files */}
+//                       {(!ticketDetails.unique_name || ticketDetails.unique_name === "") &&
+//                         Array.isArray(ticketDetails.unique_multi) &&
+//                         ticketDetails.unique_multi.length > 0 &&
+//                         ticketDetails.unique_multi.map((file, idx) => (
+//                           <div key={idx}>
+//                             {isImage(file) ? (
+//                               <div className="relative group overflow-hidden rounded-lg shadow-md">
+//                                 <a
+//                                   href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${file}`}
+//                                   target="_blank"
+//                                   rel="noopener noreferrer"
+//                                 >
+//                                   <img
+//                                     src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${file}`}
+//                                     alt={`Attachment ${idx}`}
+//                                     className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105"
+//                                   />
+//                                 </a>
+//                               </div>
+//                             ) : (
+//                               <button
+//                                 onClick={() =>
+//                                   handleDownload(
+//                                     `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${file}`,
+//                                     file
+//                                   )
+//                                 }
+//                                 className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg shadow transition transform hover:-translate-y-0.5"
+//                               >
+//                                 Download
+//                               </button>
+//                             )}
+//                           </div>
+//                         ))}
+//                     </div>
+//                   </div>
+//                 )}
+//               </div>
+//             </div>
+
+//             {/* Replies Section */}
+//             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+//               <div className="p-6">
+//                 <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+//                   <FaCommentDots className="mr-2 text-indigo-500" />
+//                   Conversation ({replies.length})
+//                 </h3>
+//                 {replies.length === 0 ? (
+//                   <div className="text-center py-8 text-gray-500">
+//                     <p>No replies yet. Be the first to comment!</p>
+//                   </div>
+//                 ) : (
+//                   <div className="space-y-6">
+//                     {replies.map((reply, index) => (
+//                       <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+//                         <div className="flex items-center justify-between mb-3">
+//                           <div className="flex items-center">
+//                             <div className="bg-indigo-100 text-indigo-800 rounded-full w-10 h-10 flex items-center justify-center font-semibold text-sm mr-3">
+//                               {reply.fname.charAt(0)}
+//                               {reply.lname?.charAt(0) || ""}
+//                             </div>
+//                             <div>
+//                               <h4 className="font-medium text-gray-900">{reply.fname} {reply.lname || ''}</h4>
+//                               <p className="text-xs text-gray-500">
+//                                 {new Date(reply.created_at).toLocaleString("en-US", {
+//                                   weekday: "short",
+//                                   year: "numeric",
+//                                   month: "short",
+//                                   day: "numeric",
+//                                   hour: "2-digit",
+//                                   minute: "2-digit",
+//                                 })}
+//                               </p>
+//                             </div>
+//                           </div>
+//                         </div>
+//                         <p className="text-gray-700 mb-4">{reply.reply_text}</p>
+                        
+//                         {/* Reply Attachments */}
+//                         {reply.unique_name && (
+//                           <div>
+//                             <h4 className="text-sm font-medium text-gray-700 mb-2">Attachments:</h4>
+//                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+//                               {isImage(reply.unique_name) ? (
+//                                 <div className="relative group overflow-hidden rounded-lg shadow-md">
+//                                   <a
+//                                     href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/replies/${reply.unique_name}`}
+//                                     target="_blank"
+//                                     rel="noopener noreferrer"
+//                                     className="block"
+//                                   >
+//                                     <img
+//                                       src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/replies/${reply.unique_name}`}
+//                                       alt={`Reply Attachment`}
+//                                       className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105"
+//                                     />
+//                                   </a>
+//                                 </div>
+//                               ) : (
+//                                 <button
+//                                   onClick={() =>
+//                                     handleDownload(
+//                                       `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/replies/${reply.unique_name}`,
+//                                       reply.unique_name
+//                                     )
+//                                   }
+//                                   className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg shadow transition transform hover:-translate-y-0.5"
+//                                 >
+//                                   Download Attachment
+//                                 </button>
+//                               )}
+//                             </div>
+//                           </div>
+//                         )}
+//                       </div>
+//                     ))}
+//                   </div>
+//                 )}
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Sidebar */}
+//           <div className="space-y-8">
+//             {/* Assignment Card */}
+//             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+//               <div className="p-6">
+//                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+//                   <FaUser className="mr-2 text-indigo-500" />
+//                   Assignment
+//                 </h3>
+//                 <div className="mb-4">
+//                   <h4 className="text-sm font-medium text-gray-700 mb-2">Assigned To</h4>
+//                   {assignedUsers.length > 0 ? (
+//                     <div className="flex flex-wrap gap-2">
+//                       {assignedUsers.map((user, index) => (
+//                         <span
+//                           key={index}
+//                           className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 border border-indigo-200"
+//                         >
+//                           <FaUser className="mr-1 text-indigo-500" size="0.8em" />
+//                           {user.fname} {user.lname?.charAt(0) || ''}
+//                         </span>
+//                       ))}
+//                     </div>
+//                   ) : (
+//                     <p className="text-gray-500 text-sm italic">Unassigned</p>
+//                   )}
+//                 </div>
+//               </div>
+//             </div>
+
+//             {/* Metadata Card */}
+//             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+//               <div className="p-6">
+//                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+//                   <FaTag className="mr-2 text-indigo-500" />
+//                   Metadata
+//                 </h3>
+//                 <div className="space-y-4">
+//                   <div>
+//                     <h4 className="text-sm font-medium text-gray-700 mb-1">Status</h4>
+//                     <div className="relative" ref={statusDropdownRef}>
+//                       <button
+//                         onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+//                         className="w-full px-4 py-2 text-left bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 hover:border-gray-400 flex justify-between items-center"
+//                       >
+//                         <span>{taskState?.status_name || "Select Status"}</span>
+//                         <div className="flex items-center">
+//                           {isStatusDropdownOpen ? <FaChevronUp className="text-gray-500" /> : <FaChevronDown className="text-gray-500" />}
+//                         </div>
+//                       </button>
+//                       {isStatusDropdownOpen && (
+//                         <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+//                           {statuses.map((status) => (
+//                             <div
+//                               key={status.Id}
+//                               onClick={() => {
+//                                 setSelectedStatus(status.Id.toString());
+//                                 setIsStatusDropdownOpen(false);
+//                               }}
+//                               className="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+//                             >
+//                               {status.status_name}
+//                             </div>
+//                           ))}
+//                         </div>
+//                       )}
+//                     </div>
+//                     <button
+//                       onClick={handleUpdateStatus}
+//                       disabled={!selectedStatus}
+//                       className={`mt-2 w-full py-2 px-4 rounded-lg shadow transition ${
+//                         !selectedStatus
+//                           ? "bg-gray-400 cursor-not-allowed"
+//                           : "bg-indigo-600 hover:bg-indigo-700 text-white transform hover:-translate-y-0.5 shadow-indigo-200/50"
+//                       }`}
+//                     >
+//                       <FaSave className="inline mr-2" />
+//                       Save Status
+//                     </button>
+//                   </div>
+
+//                   <div>
+//                     <h4 className="text-sm font-medium text-gray-700 mb-1">Priority</h4>
+//                     <div className="relative" ref={priorityDropdownRef}>
+//                       <button
+//                         onClick={() => setIsPriorityDropdownOpen(!isPriorityDropdownOpen)}
+//                         className="w-full px-4 py-2 text-left bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 hover:border-gray-400 flex justify-between items-center"
+//                       >
+//                         <span>{taskPriority?.priority_name || "Select Priority"}</span>
+//                         <div className="flex items-center">
+//                           {isPriorityDropdownOpen ? <FaChevronUp className="text-gray-500" /> : <FaChevronDown className="text-gray-500" />}
+//                         </div>
+//                       </button>
+//                       {isPriorityDropdownOpen && (
+//                         <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+//                           {priorities.map((priority) => (
+//                             <div
+//                               key={priority.Id}
+//                               onClick={() => {
+//                                 setSelectedPriority(priority.Id.toString());
+//                                 setIsPriorityDropdownOpen(false);
+//                               }}
+//                               className="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+//                             >
+//                               {priority.priority_name}
+//                             </div>
+//                           ))}
+//                         </div>
+//                       )}
+//                     </div>
+//                     <button
+//                       onClick={handleUpdatePriority}
+//                       disabled={!selectedPriority}
+//                       className={`mt-2 w-full py-2 px-4 rounded-lg shadow transition ${
+//                         !selectedPriority
+//                           ? "bg-gray-400 cursor-not-allowed"
+//                           : "bg-indigo-600 hover:bg-indigo-700 text-white transform hover:-translate-y-0.5 shadow-indigo-200/50"
+//                       }`}
+//                     >
+//                       <FaSave className="inline mr-2" />
+//                       Save Priority
+//                     </button>
+//                   </div>
+
+//                   <div>
+//                     <h4 className="text-sm font-medium text-gray-700 mb-1">Due Date</h4>
+//                     <div className="bg-gray-50 border border-gray-300 rounded-lg p-3 text-center">
+//                       {ticketDetails.due_date ? (
+//                         <p className="text-gray-900">
+//                           {new Date(ticketDetails.due_date).toLocaleDateString('en-US', {
+//                             year: 'numeric',
+//                             month: 'short',
+//                             day: 'numeric'
+//                           })}
+//                         </p>
+//                       ) : (
+//                         <p className="text-gray-500 italic">No due date set</p>
+//                       )}
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       </main>
+//     </div>
+//   );
+// }
+
+
 // components/TicketDetails.jsx
 "use client";
 import { useEffect, useState, useRef } from "react";
@@ -897,7 +1830,8 @@ import {
   FaEllipsisV,
   FaCommentDots,
   FaUserPlus,
-  FaSync
+  FaSync,
+  FaArrowLeft
 } from "react-icons/fa";
 
 export default function TicketDetails({ params }) {
@@ -919,9 +1853,7 @@ export default function TicketDetails({ params }) {
   const [isAssignDropdownOpen, setIsAssignDropdownOpen] = useState(false);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
-  // --- NEW STATE FOR SUBTASKS ---
   const [subtasks, setSubtasks] = useState([]); 
-  // --- END NEW STATE ---
 
   const statusDropdownRef = useRef(null);
   const priorityDropdownRef = useRef(null);
@@ -947,7 +1879,6 @@ export default function TicketDetails({ params }) {
     };
   }, []);
 
-  // Utility to check if a file is an image
   const isImage = (filename) => {
     if (!filename || typeof filename !== "string") {
       return false;
@@ -971,7 +1902,6 @@ export default function TicketDetails({ params }) {
     return imageExtensions.includes(ext);
   };
 
-  // Utility to check if a file exists on the server
   const checkFileExistence = async (filePath) => {
     try {
       const response = await axios.head(filePath);
@@ -981,7 +1911,6 @@ export default function TicketDetails({ params }) {
     }
   };
 
-  // Handle file download
   const handleDownload = async (filePath, filename) => {
     const fileExists = await checkFileExistence(filePath);
     if (fileExists) {
@@ -1015,7 +1944,6 @@ export default function TicketDetails({ params }) {
           ),
         ]);
         const ticketData = ticketResponse.data;
-        // --- SAFE PARSE unique_multi ---
         let multi = ticketData.unique_multi;
 
         if (!multi) {
@@ -1032,8 +1960,9 @@ export default function TicketDetails({ params }) {
         }
 
         setTicketDetails(ticketData);
-        setSelectedStatus(ticketData.status_id);
-        setSelectedPriority(ticketData.priority_id);
+        setSelectedStatus(ticketData.status_id?.toString() || "");
+        setSelectedPriority(ticketData.priority_id?.toString() || "");
+        
         const repliesWithAttachments = repliesResponse.data.map((reply) => ({
           ...reply,
           attachments: reply.unique_name,
@@ -1049,30 +1978,25 @@ export default function TicketDetails({ params }) {
     if (ticketId) fetchTicketDetails();
   }, [ticketId]);
 
-  // --- NEW: Fetch subtasks when ticketDetails.id is available ---
+  // Fetch subtasks when ticketDetails.id is available
   useEffect(() => {
     const fetchSubtasks = async () => {
-      if (!ticketDetails?.id) return; // Ensure we have the parent task ID
+      if (!ticketDetails?.id) return; 
 
       try {
-        // Call the new API endpoint for subtasks
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tasks/subtasks/${ticketId}`,
           { withCredentials: true }
         );
-        // console.log("Fetched subtasks:", response.data); // For debugging
-        setSubtasks(response.data || []); // Ensure it's an array
+        setSubtasks(response.data || []); 
       } catch (err) {
         console.error("Error fetching subtasks:", err);
-        // Optionally set an error state for subtasks if needed
-        // setErrorSubtasks("Failed to load subtasks");
-        setSubtasks([]); // Ensure subtasks is empty on error
+        setSubtasks([]); 
       }
     };
 
     fetchSubtasks();
-  }, [ticketDetails?.id]); // Depend on ticketDetails.id
-  // --- END NEW FETCH ---
+  }, [ticketDetails?.id]);
 
   // Fetch statuses and priorities
   useEffect(() => {
@@ -1187,67 +2111,57 @@ export default function TicketDetails({ params }) {
     fetchUsers();
   }, []);
 
-  // Save updated status
-  const handleUpdateStatus = async () => {
-    const confirmChange = window.confirm(
-      "Are you sure you want to update the status?"
-    );
-    if (!confirmChange) return;
-    if (!selectedStatus) {
-      alert("⚠️ Please select a status.");
-      return;
-    }
+  const handleStatusChange = async (statusId) => {
+    const statusName = statuses.find((s) => s.Id.toString() === statusId.toString())?.status_name;
+    
+    setSelectedStatus(statusId.toString());
+    setTaskState({ status_name: statusName });
+    setTicketDetails((prev) => ({ ...prev, status_id: statusId, status_name: statusName }));
+    setIsStatusDropdownOpen(false);
+
     try {
-      const response = await axios.post(
+      await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_state`,
-        { status_id: selectedStatus, ticketId },
+        { status_id: statusId, ticketId },
         { withCredentials: true }
       );
-      if (response.status === 200) {
-        alert("✅ Status updated successfully!");
-        setTicketDetails({
-          ...ticketDetails,
-          status_id: selectedStatus,
-          status_name:
-            statuses.find((s) => s.Id === selectedStatus)?.status_name ||
-            ticketDetails.status_name,
-        });
-      }
     } catch (err) {
       console.error("🚨 Error updating status:", err);
-      alert("❌ Failed to update status.");
     }
   };
 
-  // Save updated priority
-  const handleUpdatePriority = async () => {
-    const confirmChange = window.confirm(
-      "Are you sure you want to update the priority?"
-    );
-    if (!confirmChange) return;
-    if (!selectedPriority) {
-      alert("⚠️ Please select a priority.");
-      return;
-    }
+  const handlePriorityChange = async (priorityId) => {
+    const priorityName = priorities.find((p) => p.Id.toString() === priorityId.toString())?.priority_name;
+    
+    setSelectedPriority(priorityId.toString());
+    setTaskPriority({ priority_name: priorityName });
+    setTicketDetails((prev) => ({ ...prev, priority_id: priorityId, priority_name: priorityName }));
+    setIsPriorityDropdownOpen(false);
+
     try {
-      const response = await axios.post(
+      await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_priority`,
-        { priority_id: selectedPriority, ticketId },
+        { priority_id: priorityId, ticketId },
         { withCredentials: true }
       );
-      if (response.status === 200) {
-        alert("✅ Priority updated successfully!");
-        setTicketDetails({
-          ...ticketDetails,
-          priority_id: selectedPriority,
-          priority_name:
-            priorities.find((p) => p.Id === selectedPriority)?.priority_name ||
-            ticketDetails.priority_name,
-        });
-      }
     } catch (err) {
       console.error("🚨 Error updating priority:", err);
-      alert("❌ Failed to update priority.");
+    }
+  };
+
+  const handleDueDateChange = async (e) => {
+    const newDate = e.target.value || null;
+    
+    setTicketDetails((prev) => ({ ...prev, due_date: newDate }));
+
+    try {
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_due_date`,
+        { ticketId, due_date: newDate },
+        { withCredentials: true }
+      );
+    } catch (err) {
+      console.error("Error updating due date:", err);
     }
   };
 
@@ -1266,8 +2180,6 @@ export default function TicketDetails({ params }) {
         { withCredentials: true }
       );
       if (response.data.success) {
-        alert("✅ User assigned successfully!");
-        // Refresh assigned users
         const updatedUsersResponse = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticketId}`,
           { withCredentials: true }
@@ -1276,7 +2188,8 @@ export default function TicketDetails({ params }) {
           ? updatedUsersResponse.data
           : [updatedUsersResponse.data];
         setAssignedUsers(updatedUsers);
-        setSelectedUser(null); // Reset selection
+        setSelectedUser(null);
+        setIsAssignDropdownOpen(false);
       }
     } catch (err) {
       console.error("🚨 Error assigning user:", err);
@@ -1318,43 +2231,60 @@ export default function TicketDetails({ params }) {
     );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-indigo-600 to-indigo-700 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <FaTasks className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">Task Details</h1>
-                <p className="text-indigo-200 text-sm">#{ticketDetails.id} - {ticketDetails.title}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {user && (
-                <span className="text-white font-medium hidden sm:block">
-                  Welcome, {user.name}
-                </span>
+    <div className="min-h-screen bg-gray-50">
+      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* --- UNIFIED MODERN HEADER CARD --- */}
+        <header className="bg-white shadow-sm rounded-2xl mb-8 p-6 border border-gray-200">
+          {/* Top Row: Back Button & User/Logo */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b border-gray-100">
+            <button
+              onClick={() => router.push('/TaskManager/openTasks')}
+              className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 hover:text-indigo-600 rounded-lg transition-all duration-200 border border-gray-200 hover:border-indigo-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              <FaArrowLeft className="mr-2" /> Back to Tasks
+            </button>
+            <div className="flex items-center gap-4 mt-4 sm:mt-0">
+              {user && (user.name || user.fname) && (
+                <div className="hidden sm:flex items-center gap-4">
+                  <span className="text-gray-500 text-sm font-medium">
+                    Welcome, <span className="text-gray-900">{user.name || user.fname}</span>
+                  </span>
+                  <div className="h-6 w-px bg-gray-200"></div>
+                </div>
               )}
               <img
                 src="/Kiotel_Logo_bg.PNG"
-                alt="Dashboard Logo"
-                className="h-10 w-auto rounded-md cursor-pointer hover:opacity-90 transition-opacity duration-200"
+                alt="Kiotel Logo"
+                className="h-8 sm:h-10 w-auto object-contain cursor-pointer hover:opacity-80 transition-opacity duration-200"
                 onClick={() => router.push("/TaskManager")}
               />
             </div>
           </div>
-        </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Bottom Row: Page Title */}
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+              <FaTasks className="h-7 w-7 text-indigo-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Task Details</h1>
+              <div className="flex items-center mt-1 space-x-2 text-sm font-medium text-gray-500">
+                <span className="px-2.5 py-0.5 rounded-md bg-gray-100 text-gray-700 border border-gray-200">#{ticketDetails.id}</span>
+                <span>•</span>
+                <span className="text-gray-600">{ticketDetails.title}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+        {/* --- END UNIFIED MODERN HEADER CARD --- */}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Task Information Card */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden border border-gray-200">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div>
@@ -1377,7 +2307,7 @@ export default function TicketDetails({ params }) {
                           )}`
                         )
                       }
-                      className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5"
+                      className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-sm font-medium rounded-lg shadow-sm hover:shadow transition-all duration-300 transform hover:-translate-y-0.5"
                     >
                       <FaCommentDots className="mr-2" />
                       Reply
@@ -1386,7 +2316,7 @@ export default function TicketDetails({ params }) {
                       <button
                         type="button"
                         onClick={() => setIsAssignDropdownOpen(!isAssignDropdownOpen)}
-                        className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5"
+                        className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 text-white text-sm font-medium rounded-lg shadow-sm hover:shadow transition-all duration-300 transform hover:-translate-y-0.5"
                       >
                         <FaUserPlus className="mr-2" />
                         Assign
@@ -1577,7 +2507,7 @@ export default function TicketDetails({ params }) {
             </div>
 
             {/* Replies Section */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden border border-gray-200">
               <div className="p-6">
                 <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
                   <FaCommentDots className="mr-2 text-indigo-500" />
@@ -1661,7 +2591,7 @@ export default function TicketDetails({ params }) {
           {/* Sidebar */}
           <div className="space-y-8">
             {/* Assignment Card */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden border border-gray-200">
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                   <FaUser className="mr-2 text-indigo-500" />
@@ -1689,13 +2619,15 @@ export default function TicketDetails({ params }) {
             </div>
 
             {/* Metadata Card */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden border border-gray-200">
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                   <FaTag className="mr-2 text-indigo-500" />
                   Metadata
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-6">
+                  
+                  {/* Status Auto-Save Dropdown */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-1">Status</h4>
                     <div className="relative" ref={statusDropdownRef}>
@@ -1703,7 +2635,7 @@ export default function TicketDetails({ params }) {
                         onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                         className="w-full px-4 py-2 text-left bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 hover:border-gray-400 flex justify-between items-center"
                       >
-                        <span>{taskState?.status_name || "Select Status"}</span>
+                        <span className="font-medium text-gray-800">{taskState?.status_name || "Select Status"}</span>
                         <div className="flex items-center">
                           {isStatusDropdownOpen ? <FaChevronUp className="text-gray-500" /> : <FaChevronDown className="text-gray-500" />}
                         </div>
@@ -1713,11 +2645,8 @@ export default function TicketDetails({ params }) {
                           {statuses.map((status) => (
                             <div
                               key={status.Id}
-                              onClick={() => {
-                                setSelectedStatus(status.Id.toString());
-                                setIsStatusDropdownOpen(false);
-                              }}
-                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                              onClick={() => handleStatusChange(status.Id)}
+                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-gray-800"
                             >
                               {status.status_name}
                             </div>
@@ -1725,20 +2654,9 @@ export default function TicketDetails({ params }) {
                         </div>
                       )}
                     </div>
-                    <button
-                      onClick={handleUpdateStatus}
-                      disabled={!selectedStatus}
-                      className={`mt-2 w-full py-2 px-4 rounded-lg shadow transition ${
-                        !selectedStatus
-                          ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-indigo-600 hover:bg-indigo-700 text-white transform hover:-translate-y-0.5 shadow-indigo-200/50"
-                      }`}
-                    >
-                      <FaSave className="inline mr-2" />
-                      Save Status
-                    </button>
                   </div>
 
+                  {/* Priority Auto-Save Dropdown */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-1">Priority</h4>
                     <div className="relative" ref={priorityDropdownRef}>
@@ -1746,7 +2664,7 @@ export default function TicketDetails({ params }) {
                         onClick={() => setIsPriorityDropdownOpen(!isPriorityDropdownOpen)}
                         className="w-full px-4 py-2 text-left bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 hover:border-gray-400 flex justify-between items-center"
                       >
-                        <span>{taskPriority?.priority_name || "Select Priority"}</span>
+                        <span className="font-medium text-gray-800">{taskPriority?.priority_name || "Select Priority"}</span>
                         <div className="flex items-center">
                           {isPriorityDropdownOpen ? <FaChevronUp className="text-gray-500" /> : <FaChevronDown className="text-gray-500" />}
                         </div>
@@ -1756,11 +2674,8 @@ export default function TicketDetails({ params }) {
                           {priorities.map((priority) => (
                             <div
                               key={priority.Id}
-                              onClick={() => {
-                                setSelectedPriority(priority.Id.toString());
-                                setIsPriorityDropdownOpen(false);
-                              }}
-                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                              onClick={() => handlePriorityChange(priority.Id)}
+                              className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-gray-800"
                             >
                               {priority.priority_name}
                             </div>
@@ -1768,35 +2683,17 @@ export default function TicketDetails({ params }) {
                         </div>
                       )}
                     </div>
-                    <button
-                      onClick={handleUpdatePriority}
-                      disabled={!selectedPriority}
-                      className={`mt-2 w-full py-2 px-4 rounded-lg shadow transition ${
-                        !selectedPriority
-                          ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-indigo-600 hover:bg-indigo-700 text-white transform hover:-translate-y-0.5 shadow-indigo-200/50"
-                      }`}
-                    >
-                      <FaSave className="inline mr-2" />
-                      Save Priority
-                    </button>
                   </div>
 
+                  {/* Due Date Editable Input */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-1">Due Date</h4>
-                    <div className="bg-gray-50 border border-gray-300 rounded-lg p-3 text-center">
-                      {ticketDetails.due_date ? (
-                        <p className="text-gray-900">
-                          {new Date(ticketDetails.due_date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
-                        </p>
-                      ) : (
-                        <p className="text-gray-500 italic">No due date set</p>
-                      )}
-                    </div>
+                    <input
+                      type="date"
+                      value={ticketDetails.due_date ? new Date(ticketDetails.due_date).toISOString().split('T')[0] : ''}
+                      onChange={handleDueDateChange}
+                      className="w-full px-4 py-2 text-left bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 hover:border-gray-400 text-gray-800"
+                    />
                   </div>
                 </div>
               </div>
