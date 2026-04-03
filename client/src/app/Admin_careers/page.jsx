@@ -5,7 +5,7 @@
 // import {
 //   CheckCircle, Cancel, Download, Visibility, Add,
 //   Search, Work, People, TrendingUp, LocationOn, Business, Close,
-//   Phone, Email // <-- Added icons for better visibility
+//   Phone, Email, Delete, RestoreFromTrash
 // } from "@mui/icons-material";
 
 // const PAGE_SIZE = 8;
@@ -142,16 +142,21 @@
 
 //   const [activeTab, setActiveTab]     = useState(0);
 //   const [apps, setApps]               = useState([]);
+//   const [binApps, setBinApps]         = useState([]);
 //   const [positions, setPositions]     = useState([]);
+  
 //   const [appsPage, setAppsPage]       = useState(1);
 //   const [posPage, setPosPage]         = useState(1);
+//   const [binPage, setBinPage]         = useState(1);
+  
 //   const [appsSearch, setAppsSearch]   = useState("");
 //   const [posSearch, setPosSearch]     = useState("");
+//   const [binSearch, setBinSearch]     = useState("");
+  
 //   const [newPosition, setNewPosition] = useState({ title: "", department: "", location: "" });
 //   const [addingPos, setAddingPos]     = useState(false);
 //   const [updatingId, setUpdatingId]   = useState(null);
 
-//   // Load Google Font via DOM only on client
 //   useEffect(() => {
 //     const id = "dm-sans-font";
 //     if (!document.getElementById(id)) {
@@ -165,14 +170,18 @@
 
 //   const refresh = async () => {
 //     try {
-//       const [appsRes, posRes] = await Promise.all([
+//       const [appsRes, posRes, binRes] = await Promise.all([
 //         fetch(`${backend}/api/careers/admin/applications`),
 //         fetch(`${backend}/api/careers/positions`),
+//         fetch(`${backend}/api/careers/admin/applications/bin`)
 //       ]);
 //       const appsData = await appsRes.json();
 //       const posData = await posRes.json();
+//       const binData = await binRes.json();
+      
 //       setApps(Array.isArray(appsData) ? appsData : []);
 //       setPositions(Array.isArray(posData) ? posData : []);
+//       setBinApps(Array.isArray(binData) ? binData : []);
 //     } catch (e) { console.error(e); }
 //   };
 
@@ -184,6 +193,21 @@
 //       method: "PUT", headers: { "Content-Type": "application/json" },
 //       body: JSON.stringify({ status }),
 //     });
+//     await refresh();
+//     setUpdatingId(null);
+//   };
+
+//   const softDeleteApp = async (id) => {
+//     if (!window.confirm("Move this application to the bin?")) return;
+//     setUpdatingId(id);
+//     await fetch(`${backend}/api/careers/admin/applications/${id}/soft-delete`, { method: "PUT" });
+//     await refresh();
+//     setUpdatingId(null);
+//   };
+
+//   const restoreApp = async (id) => {
+//     setUpdatingId(id);
+//     await fetch(`${backend}/api/careers/admin/applications/${id}/restore`, { method: "PUT" });
 //     await refresh();
 //     setUpdatingId(null);
 //   };
@@ -215,10 +239,19 @@
 //     [positions, posSearch]
 //   );
 
+//   const filteredBinApps = useMemo(() =>
+//     binApps.filter(a => `${a.name} ${a.email} ${a.phone} ${a.title}`.toLowerCase().includes(binSearch.toLowerCase())),
+//     [binApps, binSearch]
+//   );
+
 //   const appsTotalPages = Math.ceil(filteredApps.length / PAGE_SIZE) || 1;
 //   const posTotalPages = Math.ceil(filteredPositions.length / PAGE_SIZE) || 1;
+//   const binTotalPages = Math.ceil(filteredBinApps.length / PAGE_SIZE) || 1;
+  
 //   const appsPageData = filteredApps.slice((appsPage - 1) * PAGE_SIZE, appsPage * PAGE_SIZE);
 //   const posPageData = filteredPositions.slice((posPage - 1) * PAGE_SIZE, posPage * PAGE_SIZE);
+//   const binPageData = filteredBinApps.slice((binPage - 1) * PAGE_SIZE, binPage * PAGE_SIZE);
+  
 //   const approvedCount = apps.filter(a => a.status === "approved").length;
 //   const pendingCount = apps.filter(a => a.status === "pending" || !a.status).length;
 
@@ -246,7 +279,6 @@
 //       fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif",
 //       padding: `${theme.spacing.xxl} ${theme.spacing.md}`,
 //     }}>
-//       {/* Scoped CSS Reset */}
 //       <style>{[
 //         "*{box-sizing:border-box}",
 //         "body{margin:0}",
@@ -256,8 +288,6 @@
 //       ].join("")}</style>
 
 //       <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-
-//         {/* Header Section */}
 //         <div style={{ marginBottom: theme.spacing.xxl }}>
 //           <div style={{ display: "flex", alignItems: "center", gap: theme.spacing.lg, marginBottom: theme.spacing.xl }}>
 //             <div style={{
@@ -278,7 +308,6 @@
 //             </div>
 //           </div>
           
-//           {/* Stats Row */}
 //           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: theme.spacing.lg }}>
 //             <StatCard icon={<People style={{ fontSize: 22 }} />} label="Total Applications" value={apps.length} accent="#2563EB" />
 //             <StatCard icon={<TrendingUp style={{ fontSize: 22 }} />} label="Approved" value={approvedCount} accent="#16A34A" />
@@ -287,13 +316,12 @@
 //           </div>
 //         </div>
 
-//         {/* Tab Navigation */}
 //         <div style={{
 //           display: "flex", gap: theme.spacing.sm, background: theme.colors.card, borderRadius: theme.radius.lg,
 //           padding: theme.spacing.sm, marginBottom: theme.spacing.xxl, border: `1px solid ${theme.colors.border}`,
 //           boxShadow: theme.shadows.md, width: "fit-content",
 //         }}>
-//           {["Applications", "Positions"].map((t, i) => (
+//           {["Applications", "Positions", "Bin"].map((t, i) => (
 //             <button key={t} onClick={() => setActiveTab(i)} style={{
 //               padding: `${theme.spacing.sm} ${theme.spacing.xl}`, borderRadius: theme.radius.md, border: "none",
 //               background: activeTab === i ? `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryHover})` : "transparent",
@@ -312,7 +340,6 @@
 //             background: theme.colors.card, borderRadius: theme.radius.xl, border: `1px solid ${theme.colors.border}`,
 //             boxShadow: theme.shadows.lg, overflow: "hidden",
 //           }}>
-//             {/* Table Header */}
 //             <div style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: theme.spacing.md }}>
 //               <div>
 //                 <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: theme.colors.textPrimary }}>Applications</h2>
@@ -327,7 +354,6 @@
 //               </div>
 //             </div>
 
-//             {/* Data Table */}
 //             <div style={{ overflowX: "auto" }}>
 //               <table style={{ width: "100%", borderCollapse: "collapse" }}>
 //                 <thead>
@@ -347,30 +373,21 @@
 //                       background: idx % 2 === 0 ? "#fff" : theme.colors.surface,
 //                       transition: "background 150ms",
 //                     }}>
-                      
-//                       {/* --- UPDATED CANDIDATE CELL --- */}
 //                       <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
-//                         <div style={{ fontWeight: 700, color: theme.colors.textPrimary, fontSize: 15, marginBottom: 8 }}>
-//                           {app.name}
-//                         </div>
+//                         <div style={{ fontWeight: 700, color: theme.colors.textPrimary, fontSize: 15, marginBottom: 8 }}>{app.name}</div>
 //                         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textSecondary, marginBottom: 6 }}>
-//                           <Email style={{ fontSize: 16, color: theme.colors.textTertiary }} /> 
-//                           {app.email}
+//                           <Email style={{ fontSize: 16, color: theme.colors.textTertiary }} /> {app.email}
 //                         </div>
 //                         {app.phone ? (
 //                           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textSecondary, fontWeight: 500 }}>
-//                             <Phone style={{ fontSize: 16, color: theme.colors.textTertiary }} /> 
-//                             {app.phone}
+//                             <Phone style={{ fontSize: 16, color: theme.colors.textTertiary }} /> {app.phone}
 //                           </div>
 //                         ) : (
 //                           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textTertiary, fontStyle: "italic" }}>
-//                             <Phone style={{ fontSize: 16, opacity: 0.5 }} /> 
-//                             Not provided
+//                             <Phone style={{ fontSize: 16, opacity: 0.5 }} /> Not provided
 //                           </div>
 //                         )}
 //                       </td>
-//                       {/* --- END UPDATED CANDIDATE CELL --- */}
-
 //                       <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
 //                         <span style={{ fontSize: 14, color: theme.colors.textPrimary, fontWeight: 500 }}>{app.title || "N/A"}</span>
 //                       </td>
@@ -421,6 +438,16 @@
 //                             }}>
 //                             <Cancel style={{ fontSize: 14 }} /> Reject
 //                           </button>
+//                           <button disabled={updatingId === app.id} onClick={() => softDeleteApp(app.id)}
+//                             style={{
+//                               padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
+//                               background: theme.colors.surface, color: theme.colors.textSecondary, 
+//                               border: `1px solid ${theme.colors.border}`,
+//                               fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+//                               opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
+//                             }}>
+//                             <Delete style={{ fontSize: 14 }} /> Bin
+//                           </button>
 //                         </div>
 //                       </td>
 //                     </tr>
@@ -445,9 +472,6 @@
 //         {/* Positions Tab */}
 //         {activeTab === 1 && (
 //           <div style={{ display: "flex", flexDirection: "column", gap: theme.spacing.xl }}>
-//             {/* ... Rest of the Positions code (unchanged) ... */}
-            
-//             {/* Active Positions Card */}
 //             <div style={{
 //               background: theme.colors.card, borderRadius: theme.radius.xl, border: `1px solid ${theme.colors.border}`,
 //               boxShadow: theme.shadows.lg, overflow: "hidden",
@@ -521,7 +545,6 @@
 //               </div>
 //             </div>
 
-//             {/* Add Position Card */}
 //             <div style={{
 //               background: theme.colors.card, borderRadius: theme.radius.xl, border: `1px solid ${theme.colors.border}`,
 //               boxShadow: theme.shadows.lg, padding: theme.spacing.xxl,
@@ -571,6 +594,87 @@
 //             </div>
 //           </div>
 //         )}
+
+//         {/* Bin Tab */}
+//         {activeTab === 2 && (
+//           <div style={{
+//             background: theme.colors.card, borderRadius: theme.radius.xl, border: `1px solid ${theme.colors.border}`,
+//             boxShadow: theme.shadows.lg, overflow: "hidden",
+//           }}>
+//             <div style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: theme.spacing.md }}>
+//               <div>
+//                 <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: theme.colors.textPrimary }}>Deleted Applications</h2>
+//                 <p style={{ margin: `${theme.spacing.xs} 0 0`, fontSize: 13, color: theme.colors.textTertiary }}>Applications here will be permanently deleted after 15 days.</p>
+//               </div>
+//               <div style={{ position: "relative", minWidth: 300 }}>
+//                 <Search style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: theme.colors.textTertiary, fontSize: 20 }} />
+//                 <input placeholder="Search bin..." value={binSearch}
+//                   onChange={e => { setBinSearch(e.target.value); setBinPage(1); }}
+//                   style={{ ...inputStyle, paddingLeft: 44 }}
+//                 />
+//               </div>
+//             </div>
+
+//             <div style={{ overflowX: "auto" }}>
+//               <table style={{ width: "100%", borderCollapse: "collapse" }}>
+//                 <thead>
+//                   <tr style={{ background: theme.colors.surface }}>
+//                     {[...["Candidate Details", "Position", "Deleted Date", "Actions"]].map(h => (
+//                       <th key={h} style={{
+//                         padding: `${theme.spacing.md} ${theme.spacing.xl}`, textAlign: h === "Actions" ? "right" : "left",
+//                         fontSize: 11, fontWeight: 700, color: theme.colors.textSecondary,
+//                         letterSpacing: "0.06em", textTransform: "uppercase", borderBottom: `1px solid ${theme.colors.border}`,
+//                       }}>{h}</th>
+//                     ))}
+//                   </tr>
+//                 </thead>
+//                 <tbody>
+//                   {binPageData.map((app, idx) => (
+//                     <tr key={app.id} className="ac-table-row" style={{
+//                       background: idx % 2 === 0 ? "#fff" : theme.colors.surface,
+//                       transition: "background 150ms", opacity: 0.8
+//                     }}>
+//                       <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+//                         <div style={{ fontWeight: 700, color: theme.colors.textPrimary, fontSize: 15 }}>{app.name}</div>
+//                         <div style={{ fontSize: 13, color: theme.colors.textSecondary }}>{app.email}</div>
+//                       </td>
+//                       <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+//                         <span style={{ fontSize: 14, color: theme.colors.textPrimary, fontWeight: 500 }}>{app.title || "N/A"}</span>
+//                       </td>
+//                       <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+//                         <span style={{ fontSize: 13, color: theme.colors.danger }}>
+//                           {new Date(app.deleted_at).toLocaleDateString()}
+//                         </span>
+//                       </td>
+//                       <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, textAlign: "right" }}>
+//                         <button disabled={updatingId === app.id} onClick={() => restoreApp(app.id)}
+//                           style={{
+//                             padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
+//                             background: theme.colors.primaryLight, color: theme.colors.primary,
+//                             fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+//                             opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
+//                           }}>
+//                           <RestoreFromTrash style={{ fontSize: 14 }} /> Restore
+//                         </button>
+//                       </td>
+//                     </tr>
+//                   ))}
+//                   {binPageData.length === 0 && (
+//                     <tr>
+//                       <td colSpan={4} style={{ padding: `${theme.spacing.xxl} 20px`, textAlign: "center", color: theme.colors.textTertiary, fontSize: 15 }}>
+//                         <div style={{ fontSize: 36, marginBottom: theme.spacing.md }}>🗑️</div>
+//                         Bin is empty
+//                       </td>
+//                     </tr>
+//                   )}
+//                 </tbody>
+//               </table>
+//             </div>
+//             <div style={{ padding: `${theme.spacing.md} ${theme.spacing.xl}`, borderTop: `1px solid ${theme.colors.border}` }}>
+//               <PaginationBar page={binPage} total={binTotalPages} onChange={setBinPage} />
+//             </div>
+//           </div>
+//         )}
 //       </div>
 //     </div>
 //   );
@@ -583,7 +687,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle, Cancel, Download, Visibility, Add,
   Search, Work, People, TrendingUp, LocationOn, Business, Close,
-  Phone, Email, Delete, RestoreFromTrash
+  Phone, Email, Delete, RestoreFromTrash, WarningAmber // <-- Added WarningAmber icon
 } from "@mui/icons-material";
 
 const PAGE_SIZE = 8;
@@ -734,6 +838,9 @@ export default function AdminCareers() {
   const [newPosition, setNewPosition] = useState({ title: "", department: "", location: "" });
   const [addingPos, setAddingPos]     = useState(false);
   const [updatingId, setUpdatingId]   = useState(null);
+  
+  // <-- NEW: State for Position Deletion Modal -->
+  const [positionToDelete, setPositionToDelete] = useState(null);
 
   useEffect(() => {
     const id = "dm-sans-font";
@@ -802,8 +909,10 @@ export default function AdminCareers() {
     setAddingPos(false);
   };
 
+  // <-- UPDATED: Now clears modal state after deactivating -->
   const deactivatePosition = async (id) => {
     await fetch(`${backend}/api/careers/admin/positions/${id}/deactivate`, { method: "PUT" });
+    setPositionToDelete(null); // Close modal
     refresh();
   };
 
@@ -864,6 +973,77 @@ export default function AdminCareers() {
         ".ac-table-row:hover td{background:#F8FAFC!important;}",
         ".ac-input:focus{border-color:#2563EB!important;background:#fff!important;box-shadow:0 0 0 3px rgba(37,99,235,0.2)!important;}",
       ].join("")}</style>
+
+      {/* <-- NEW: Position Deletion Modal --> */}
+      {positionToDelete && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(15, 23, 42, 0.6)", zIndex: 9999,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: theme.spacing.xl, backdropFilter: "blur(4px)"
+        }}>
+          <div style={{
+            background: theme.colors.card, borderRadius: theme.radius.xl,
+            padding: theme.spacing.xxl, maxWidth: 420, width: "100%",
+            boxShadow: theme.shadows.xl, border: `1px solid ${theme.colors.border}`,
+            animation: "fadeIn 0.2s ease-out"
+          }}>
+            <style>{`@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }`}</style>
+            
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <div style={{ background: theme.colors.dangerLight, color: theme.colors.danger, padding: 8, borderRadius: "50%", display: "flex" }}>
+                <Close style={{ fontSize: 24 }} />
+              </div>
+              <h3 style={{ margin: 0, color: theme.colors.textPrimary, fontSize: 20, fontWeight: 700 }}>Remove Position</h3>
+            </div>
+            
+            <p style={{ margin: "0 0 24px 0", color: theme.colors.textSecondary, fontSize: 14, lineHeight: 1.5 }}>
+              Are you sure you want to remove this open position? This action cannot be undone and it will no longer be visible to applicants.
+            </p>
+            
+            <div style={{ 
+              background: theme.colors.surface, padding: theme.spacing.lg, 
+              borderRadius: theme.radius.md, marginBottom: theme.spacing.xl, 
+              border: `1px solid ${theme.colors.border}` 
+            }}>
+              <div style={{ fontWeight: 700, color: theme.colors.textPrimary, marginBottom: 12, fontSize: 16 }}>
+                {positionToDelete.title}
+              </div>
+              <div style={{ display: "flex", gap: 20, flexWrap: "wrap", fontSize: 13, color: theme.colors.textSecondary }}>
+                {positionToDelete.department && (
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <Business style={{ fontSize: 16, color: theme.colors.textTertiary }} />
+                    {positionToDelete.department}
+                  </span>
+                )}
+                {positionToDelete.location && (
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <LocationOn style={{ fontSize: 16, color: theme.colors.textTertiary }} />
+                    {positionToDelete.location}
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: theme.spacing.md }}>
+              <button onClick={() => setPositionToDelete(null)} style={{
+                padding: "10px 20px", borderRadius: theme.radius.md, border: `1px solid ${theme.colors.border}`,
+                background: theme.colors.card, color: theme.colors.textPrimary, cursor: "pointer", 
+                fontWeight: 600, fontSize: 14, transition: theme.transitions.fast,
+                ":hover": { background: theme.colors.hover }
+              }}>No, Keep it</button>
+              
+              <button onClick={() => deactivatePosition(positionToDelete.id)} style={{
+                padding: "10px 20px", borderRadius: theme.radius.md, border: "none",
+                background: theme.colors.danger, color: "#fff", cursor: "pointer", 
+                fontWeight: 600, fontSize: 14, transition: theme.transitions.fast,
+                boxShadow: `0 4px 12px ${theme.colors.danger}40`,
+                ":hover": { background: "#B91C1C", transform: "translateY(-1px)" }
+              }}>Yes, Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ maxWidth: 1280, margin: "0 auto" }}>
         <div style={{ marginBottom: theme.spacing.xxl }}>
@@ -1100,7 +1280,8 @@ export default function AdminCareers() {
                         </div>
                       </div>
                     </div>
-                    <button onClick={() => deactivatePosition(p.id)} style={{
+                    {/* <-- UPDATED: Now triggers the modal by setting state --> */}
+                    <button onClick={() => setPositionToDelete(p)} style={{
                       padding: `${theme.spacing.sm} ${theme.spacing.lg}`, borderRadius: theme.radius.sm,
                       background: theme.colors.dangerLight, color: theme.colors.danger,
                       border: `1px solid #FECDD3`, fontSize: 13, fontWeight: 600,
