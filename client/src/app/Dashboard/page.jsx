@@ -1099,6 +1099,14 @@ function Dashboard() {
       description: "Monitor currently active agents",
       show: !isAttendanceOnlyUser && userRole === 1
     },
+    {
+      title: "Clockin Browser aproval",
+      href: "/browser_approval",
+      icon: FaUsersCog,
+      gradient: "from-cyan-500 to-blue-600",
+      description: "Monitor currently active agents",
+      show: !isAttendanceOnlyUser && userRole === 1
+    },
   ];
 
   return (
