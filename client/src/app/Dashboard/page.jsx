@@ -1091,6 +1091,14 @@ function Dashboard() {
       description: "Monitor currently active agents",
       show: !isAttendanceOnlyUser && userRole === 1
     },
+    {
+      title: "Deactivated Users",
+      href: "/deactivated_users",
+      icon: FaUsersCog,
+      gradient: "from-cyan-500 to-blue-600",
+      description: "Monitor currently active agents",
+      show: !isAttendanceOnlyUser && userRole === 1
+    },
   ];
 
   return (
