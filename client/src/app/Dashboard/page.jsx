@@ -876,11 +876,11 @@ const ATTENDANCE_ONLY_EMAILS = [
 const ATTENDANCE_WITH_OTHER_TABS_EMAILS = [
   "shuvam.r@kiotel.co",
   "bhuvnesh.s@kiotel.co",
-  "arbaz.p@valianthotels.com",
-  "Zeelshah1649@gmail.com",
-  "vikash@valianthotels.com",
-  "bhargavipuja13@gmail.com",
-  "m.dimple2506@gmail.com",
+  // "arbaz.p@valianthotels.com",
+  // "Zeelshah1649@gmail.com",
+  // "vikash@valianthotels.com",
+  // "bhargavipuja13@gmail.com",
+  // "m.dimple2506@gmail.com",
 
   // Add more emails here as needed
   // "another.email@kiotel.co",
