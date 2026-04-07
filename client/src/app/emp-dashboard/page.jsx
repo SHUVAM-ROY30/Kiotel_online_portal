@@ -603,6 +603,8 @@ import DashboardModule from "../../components/DashboardModule";
 import AttendanceRecords from "../../components/AttendanceRecords";
 import { FaCalendarCheck, FaCalendarAlt } from "react-icons/fa";
 import LeaveRequest from "../../components/LeaveRequestForm";
+import AvailableLeave from "../../components/AvailableLeave";
+// import { FaCalendarAlt } from "react-icons/fa";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
 
@@ -692,28 +694,16 @@ export default function EmployeeDashboard() {
           />
         </DashboardModule>
 
-        {/* ─── FUTURE MODULES ─── */}
-        
-        {/* <DashboardModule
-          title="Leave Requests"
-          description="Apply for and track your leave requests"
-          icon={FaCalendarAlt}
-          iconBgColor="bg-green-100"
-          iconColor="text-green-600"
-        >
-          <LeaveRequest uniqueId={employee?.unique_id || "Employee First Name"} />
-        </DashboardModule> */}
-
-        {/* <DashboardModule
-          title="Payslips"
-          description="View and download your monthly payslips"
-          icon={FaFileInvoice}
-          iconBgColor="bg-purple-100"
-          iconColor="text-purple-600"
-        >
-          <Payslips uniqueId={employee?.unique_id} />
-        </DashboardModule> */}
-       
+       <DashboardModule
+  title="Available Leave"
+  description="View your remaining paid leaves"
+  icon={FaCalendarAlt}
+  iconBgColor="bg-green-100"
+  iconColor="text-green-600"
+  defaultOpen={false}
+>
+  <AvailableLeave uniqueId={employee?.unique_id} />
+</DashboardModule>
 
         {/* Footer */}
         <div className="mt-8 text-center">
