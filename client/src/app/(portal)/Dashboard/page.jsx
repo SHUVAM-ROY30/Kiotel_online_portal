@@ -861,7 +861,7 @@ import Link from "next/link";
 import { FaBell, FaUserCircle, FaSignOutAlt, FaUsers, FaCalendarAlt, FaTasks, FaChartLine, FaUserShield, FaClipboardCheck, FaCog, FaBuilding, FaUserTie, FaMapMarkerAlt, FaUsersCog } from "react-icons/fa";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import ProtectedRoute from "../../context/ProtectedRoute";
+import ProtectedRoute from "../../../context/ProtectedRoute";
 
 /**
  * ONLY these emails can see Attendance (and NOTHING else)

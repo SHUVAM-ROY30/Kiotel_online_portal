@@ -1,6 +1,6 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
-
+import SocketProvider from "./(portal)/compo/SocketProvider"; 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
@@ -11,14 +11,39 @@ export const metadata = {
   },
 };
 
+// export default function RootLayout({ children }) {
+//   return (
+//     <html lang="en">
+//       <body className={inter.className}>{children}</body>
+//     </html>
+//   );
+// }
+// export default function RootLayout({ children }) {
+//   return (
+//     <html lang="en">
+//       <body className={inter.className}>
+//         <SocketProvider>
+//           {children}
+//         </SocketProvider>
+//       </body>
+//     </html>
+//   );
+// }
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        
+        {/* PUT IT HERE! This guarantees it never unmounts, 
+            no matter which module or folder you navigate to! */}
+        <SocketProvider>
+          {children}
+        </SocketProvider>
+
+      </body>
     </html>
   );
 }
-
 // import { Geist, Geist_Mono } from "next/font/google";
 // import "./globals.css";
 
