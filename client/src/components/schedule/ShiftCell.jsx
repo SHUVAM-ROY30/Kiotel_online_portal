@@ -174,6 +174,12 @@ const ShiftCell = ({
           borderColor = 'border-red-300';
           textColor = 'text-red-800';
           break;
+        case 'LLOP_EX':
+          statusText = 'LLOP_EX';
+          bgColor = 'bg-gray-800';
+          borderColor = 'border-gray-600';
+          textColor = 'text-red-400';
+          break;
         default:
           statusText = 'Off';
           bgColor = 'bg-slate-100';
@@ -229,6 +235,8 @@ const ShiftCell = ({
                 ? 'bg-gray-800 border border-gray-600 text-red-400'
                 : entry.assignment_status === 'PTO_APPROVED'
                 ? 'bg-purple-100 border border-purple-300 text-purple-800'
+                : entry.assignment_status === 'LLOP_EX'
+                ? 'bg-gray-800 border border-gray-600 text-red-400'
                 : entry.assignment_status === 'FESTIVE_LEAVE'
                 ? 'bg-pink-100 border border-pink-300 text-pink-800'
                 : entry.assignment_status === 'UNAVAILABLE'
@@ -243,6 +251,8 @@ const ShiftCell = ({
                 ? 'LLOP'
                 : entry.assignment_status === 'PTO_APPROVED'
                 ? 'Paid Leave'
+                : entry.assignment_status === 'LLOP_EX'
+                ? 'LLOP EX'
                 : entry.assignment_status === 'FESTIVE_LEAVE'
                 ? 'Festive leave'
                 : entry.assignment_status === 'UNAVAILABLE'

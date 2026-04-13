@@ -1245,6 +1245,7 @@ export default function SchedulePage() {
     { id: 'FESTIVE_LEAVE', name: 'Festive Leave', color: 'bg-pink-100 text-pink-800' },
     { id: 'UNAVAILABLE', name: 'Week OFF', color: 'bg-green-100 text-green-800' },
     { id: 'OFF', name: 'LOP', color: 'bg-red-100 text-red-800' },
+    { id: 'LLOP_EX', name: 'LLOP EX', color: 'bg-gray-800 text-red-400' },
   ];
 
   useEffect(() => {

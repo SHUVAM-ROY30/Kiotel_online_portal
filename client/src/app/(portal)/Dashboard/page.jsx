@@ -1015,11 +1015,11 @@ function Dashboard() {
       show: !isAttendanceOnlyUser
     },
     {
-      title: "Billing history",
+      title: "Invoices",
       href: "/Customer_Portal",
       icon: FaChartLine,
       gradient: "from-indigo-500 to-blue-600",
-      description: "Customer portal",
+      description: "",
       show: !isAttendanceOnlyUser && (userRole === 1 || userRole === 4)
     },
     {
@@ -1070,7 +1070,7 @@ function Dashboard() {
       href: "/customer",
       icon: FaBuilding,
       gradient: "from-blue-500 to-cyan-600",
-      description: "View your service plans & property",
+      description: "Service Plan, Agents, Shared Folder",
       show: !isAttendanceOnlyUser && userRole === 4
     },
     {
