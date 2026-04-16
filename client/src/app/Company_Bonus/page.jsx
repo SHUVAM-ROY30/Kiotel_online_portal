@@ -294,7 +294,6 @@ function AnnotationPanel({
                   key={h.id}
                   className="p-3 rounded-xl border"
                   style={{
-                    // FIX #3: DB columns are `color` and `bg_color` (snake_case from MySQL)
                     borderColor: h.color || "#EAB308",
                     backgroundColor: (h.bg_color || "#FEF08A") + "33",
                   }}
@@ -353,7 +352,7 @@ function AnnotationPanel({
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mb-1">
-                    <span className="font-semibold">Original:</span> {`"${cr.suggested_text}"`}
+                    <span className="font-semibold">Original:</span> {`"${cr.original_text}"`}
                   </p>
                   <p className="text-sm text-gray-800 mb-2">
                     <span className="font-semibold">Suggested:</span> {`"${cr.suggested_text}"`}
@@ -371,7 +370,6 @@ function AnnotationPanel({
                       {new Date(cr.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  {/* FIX #2: use cr.id (MySQL returns `id`, not `_id`) */}
                   {userRole === 1 && cr.status === "pending" && (
                     <div className="flex gap-2">
                       <button
@@ -454,7 +452,7 @@ function AnnotationPanel({
                         ? "bg-green-100 text-green-700"
                         : h.action === "change_rejected"
                         ? "bg-red-100 text-red-700"
-                        : h.action === "policy_updated"
+                        : h.action === "bonus_updated"
                         ? "bg-blue-100 text-blue-700"
                         : h.action === "comment_added"
                         ? "bg-teal-100 text-teal-700"
@@ -625,7 +623,7 @@ function ChangeRequestModal({ selectedText, onClose, onSubmit }) {
   );
 }
 
-/* ──────────── Comment Modal (NEW) ───────────────────────── */
+/* ──────────── Comment Modal ───────────────────────── */
 function CommentModal({ onClose, onSubmit }) {
   const [commentText, setCommentText] = useState("");
   const [visibleTo, setVisibleTo] = useState("all");
@@ -696,7 +694,7 @@ function CommentModal({ onClose, onSubmit }) {
 }
 
 /* ═══════════════════ MAIN PAGE ═══════════════════════════ */
-function CompanyPolicyPage() {
+function CompanyBonusPage() {
   const router = useRouter();
   const editorRef = useRef(null);
 
@@ -708,8 +706,8 @@ function CompanyPolicyPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [policyContent, setPolicyContent] = useState("");
-  const [policyId, setPolicyId] = useState(null);
+  const [bonusContent, setBonusContent] = useState("");
+  const [bonusId, setBonusId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
   const [highlights, setHighlights] = useState([]);
@@ -725,7 +723,7 @@ function CompanyPolicyPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [showSidePanel, setShowSidePanel] = useState(false);
 
-  const uniqueId = localStorage.getItem("uniqueId");
+  const uniqueId = typeof window !== 'undefined' ? localStorage.getItem("uniqueId") : null;
 
   /* ── fetch user ── */
   useEffect(() => {
@@ -747,27 +745,26 @@ function CompanyPolicyPage() {
     })();
   }, []);
 
-  /* ── fetch policy + annotations ── */
-  const fetchPolicy = useCallback(async () => {
+  /* ── fetch bonus + annotations ── */
+  const fetchBonus = useCallback(async () => {
     try {
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-policy?account_no=${uniqueId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-bonus?account_no=${uniqueId}`,
         { withCredentials: true }
       );
-      if (res.data.policy) {
-        setPolicyContent(res.data.policy.content || "");
-        // FIX #2: MySQL returns `id` not `_id`
-        setPolicyId(res.data.policy.id);
+      if (res.data.bonus) {
+        setBonusContent(res.data.bonus.content || "");
+        setBonusId(res.data.bonus.id);
       }
     } catch (err) {
-      console.error("Failed to fetch policy:", err);
+      console.error("Failed to fetch bonus:", err);
     }
   }, [uniqueId]);
 
   const fetchHighlights = useCallback(async () => {
     try {
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-policy/highlights?account_no=${uniqueId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-bonus/highlights?account_no=${uniqueId}`,
         { withCredentials: true }
       );
       setHighlights(res.data.highlights || []);
@@ -780,7 +777,7 @@ function CompanyPolicyPage() {
     if (userRole !== 1 && userRole !== 5) return;
     try {
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-policy/change-requests?account_no=${uniqueId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-bonus/change-requests?account_no=${uniqueId}`,
         { withCredentials: true }
       );
       setChangeRequests(res.data.changeRequests || []);
@@ -793,7 +790,7 @@ function CompanyPolicyPage() {
     if (userRole !== 1 && userRole !== 5) return;
     try {
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-policy/comments?account_no=${uniqueId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-bonus/comments?account_no=${uniqueId}`,
         { withCredentials: true }
       );
       setComments(res.data.comments || []);
@@ -805,7 +802,7 @@ function CompanyPolicyPage() {
   const fetchHistory = useCallback(async () => {
     try {
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-policy/history?account_no=${uniqueId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-bonus/history?account_no=${uniqueId}`,
         { withCredentials: true }
       );
       setHistory(res.data.history || []);
@@ -816,38 +813,38 @@ function CompanyPolicyPage() {
 
   useEffect(() => {
     if (userRole !== null) {
-      fetchPolicy();
+      fetchBonus();
       fetchHighlights();
       fetchChangeRequests();
       fetchComments();
       fetchHistory();
     }
-  }, [userRole, fetchPolicy, fetchHighlights, fetchChangeRequests, fetchComments, fetchHistory]);
+  }, [userRole, fetchBonus, fetchHighlights, fetchChangeRequests, fetchComments, fetchHistory]);
 
   /* ── set editor content when editing starts ── */
   useEffect(() => {
-    if (isEditing && editorRef.current && policyContent) {
-      editorRef.current.innerHTML = policyContent;
+    if (isEditing && editorRef.current && bonusContent) {
+      editorRef.current.innerHTML = bonusContent;
     }
-  }, [isEditing, policyContent]);
+  }, [isEditing, bonusContent]);
 
   /* ── handlers ── */
-  const handleSavePolicy = async () => {
+  const handleSaveBonus = async () => {
     if (userRole !== 1) return;
     setSaving(true);
     try {
       const content = editorRef.current?.innerHTML || "";
       await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-policy`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-bonus`,
         { content, account_no: uniqueId },
         { withCredentials: true }
       );
-      setPolicyContent(content);
+      setBonusContent(content);
       setIsEditing(false);
       fetchHistory();
     } catch (err) {
-      console.error("Failed to save policy:", err);
-      alert("Failed to save policy");
+      console.error("Failed to save bonus:", err);
+      alert("Failed to save bonus");
     } finally {
       setSaving(false);
     }
@@ -875,7 +872,7 @@ function CompanyPolicyPage() {
   const submitHighlight = async (color) => {
     try {
       await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-policy/highlights`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-bonus/highlights`,
         {
           text: selectedText,
           color: color.border,
@@ -898,7 +895,7 @@ function CompanyPolicyPage() {
   const submitChangeRequest = async (suggestedText, note) => {
     try {
       await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-policy/change-requests`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-bonus/change-requests`,
         {
           original_text: selectedText,
           suggested_text: suggestedText,
@@ -920,7 +917,7 @@ function CompanyPolicyPage() {
   const submitComment = async (commentText, visibleTo) => {
     try {
       await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-policy/comments`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-bonus/comments`,
         {
           comment_text: commentText,
           visible_to: visibleTo,
@@ -937,12 +934,11 @@ function CompanyPolicyPage() {
     }
   };
 
-  // FIX #2: id is now correctly passed as `h.id` (MySQL `id` column)
   const deleteHighlight = async (id) => {
     if (!confirm("Remove this highlight?")) return;
     try {
       await axios.delete(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-policy/highlights/${id}?account_no=${uniqueId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-bonus/highlights/${id}?account_no=${uniqueId}`,
         { withCredentials: true }
       );
       fetchHighlights();
@@ -952,11 +948,10 @@ function CompanyPolicyPage() {
     }
   };
 
-  // FIX #2: id is now correctly passed as `cr.id`
   const handleApproveChangeRequest = async (id, status) => {
     try {
       await axios.put(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-policy/change-requests/${id}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-bonus/change-requests/${id}`,
         { status, account_no: uniqueId },
         { withCredentials: true }
       );
@@ -971,7 +966,7 @@ function CompanyPolicyPage() {
     if (!confirm("Remove this comment?")) return;
     try {
       await axios.delete(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-policy/comments/${id}?account_no=${uniqueId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/company-bonus/comments/${id}?account_no=${uniqueId}`,
         { withCredentials: true }
       );
       fetchComments();
@@ -981,9 +976,8 @@ function CompanyPolicyPage() {
     }
   };
 
-  /* ── FIX #3: build highlighted content — use bg_color (snake_case from MySQL) ── */
   const getDisplayContent = () => {
-    let content = policyContent;
+    let content = bonusContent;
     if (!content) return "";
 
     const visibleHighlights = highlights.filter((h) => {
@@ -996,7 +990,6 @@ function CompanyPolicyPage() {
       if (h.text && content.includes(h.text)) {
         const escapedText = h.text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const regex = new RegExp(`(?!<[^>]*)(${escapedText})(?![^<]*>)`, "g");
-        // FIX #3: use h.bg_color (MySQL column name) instead of h.bgColor
         content = content.replace(
           regex,
           `<mark style="background-color:${h.bg_color || "#FEF08A"};border-bottom:2px solid ${h.color || "#EAB308"};padding:2px 4px;border-radius:4px;" title="Highlighted by ${h.created_by_name || "Unknown"}">$1</mark>`
@@ -1045,16 +1038,15 @@ function CompanyPolicyPage() {
                 </Link>
                 <div>
                   <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
-                    Company Policy
+                    Company Bonus
                   </h1>
                   <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-                    Official company guidelines and policies
+                    Official company bonus structure and guidelines
                   </p>
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                {/* FIX #1: Highlight — Admin & HR only */}
                 {isAdminOrHR && (
                   <button
                     onClick={handleHighlightClick}
@@ -1064,7 +1056,6 @@ function CompanyPolicyPage() {
                   </button>
                 )}
 
-                {/* Change-request button — HR only (role 5) */}
                 {userRole === 5 && (
                   <button
                     onClick={handleChangeRequestClick}
@@ -1074,7 +1065,6 @@ function CompanyPolicyPage() {
                   </button>
                 )}
 
-                {/* Comment button — Admin & HR only (NEW) */}
                 {isAdminOrHR && (
                   <button
                     onClick={() => setShowCommentModal(true)}
@@ -1084,7 +1074,6 @@ function CompanyPolicyPage() {
                   </button>
                 )}
 
-                {/* FIX #1: Show Panel — Admin & HR only */}
                 {isAdminOrHR && (
                   <button
                     onClick={() => setShowSidePanel(!showSidePanel)}
@@ -1094,7 +1083,6 @@ function CompanyPolicyPage() {
                   </button>
                 )}
 
-                {/* Edit / Save — Admin only */}
                 {userRole === 1 && (
                   <>
                     {isEditing ? (
@@ -1106,7 +1094,7 @@ function CompanyPolicyPage() {
                           <FaTimes /> Cancel
                         </button>
                         <button
-                          onClick={handleSavePolicy}
+                          onClick={handleSaveBonus}
                           disabled={saving}
                           className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg transition text-xs sm:text-sm font-semibold disabled:opacity-50"
                         >
@@ -1118,7 +1106,7 @@ function CompanyPolicyPage() {
                         onClick={() => setIsEditing(true)}
                         className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg transition text-xs sm:text-sm font-semibold"
                       >
-                        <FaEdit /> Edit Policy
+                        <FaEdit /> Edit Bonus
                       </button>
                     )}
                   </>
@@ -1130,7 +1118,7 @@ function CompanyPolicyPage() {
 
         {/* ── Main Content Area ── */}
         <div className={`grid gap-6 ${showSidePanel ? "lg:grid-cols-3" : "lg:grid-cols-1"}`}>
-          {/* Policy Content */}
+          {/* Bonus Content */}
           <div className={showSidePanel ? "lg:col-span-2" : ""}>
             <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200/50 overflow-hidden">
               {isEditing && userRole === 1 ? (
@@ -1146,7 +1134,7 @@ function CompanyPolicyPage() {
                 </>
               ) : (
                 <div className="p-4 sm:p-6 lg:p-8">
-                  {policyContent ? (
+                  {bonusContent ? (
                     <div
                       className="prose prose-sm sm:prose max-w-none"
                       style={{ lineHeight: "1.8" }}
@@ -1154,14 +1142,14 @@ function CompanyPolicyPage() {
                     />
                   ) : (
                     <div className="text-center py-16 sm:py-20">
-                      <div className="text-4xl sm:text-6xl mb-4">📄</div>
+                      <div className="text-4xl sm:text-6xl mb-4">💰</div>
                       <h3 className="text-lg sm:text-xl font-bold text-gray-700 mb-2">
-                        No Policy Published Yet
+                        No Bonus Structure Published Yet
                       </h3>
                       <p className="text-sm text-gray-500">
                         {userRole === 1
-                          ? 'Click "Edit Policy" to create the company policy.'
-                          : "The company policy has not been published yet."}
+                          ? 'Click "Edit Bonus" to create the company bonus structure.'
+                          : "The company bonus structure has not been published yet."}
                       </p>
                     </div>
                   )}
@@ -1238,10 +1226,10 @@ function CompanyPolicyPage() {
   );
 }
 
-export default function CompanyPolicyWrapper() {
+export default function CompanyBonusWrapper() {
   return (
     <ProtectedRoute>
-      <CompanyPolicyPage />
+      <CompanyBonusPage />
     </ProtectedRoute>
   );
 }

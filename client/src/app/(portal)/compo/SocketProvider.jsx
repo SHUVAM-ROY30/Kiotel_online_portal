@@ -290,12 +290,35 @@ export default function SocketProvider({ children }) {
 
     newSocket.on("online_users_update", (users) => setOnlineUsers(users || []));
 
-    newSocket.on("receive_ping", (data) => {
-      toast(`Ping from ${data.fromName}!`, {
-        icon: "👋", position: "top-right", duration: 5000,
-        style: { borderRadius: "10px", background: "#333", color: "#fff" },
+    // newSocket.on("receive_ping", (data) => {
+    //   toast(`Ping from ${data.fromName}!`, {
+    //     icon: "👋", position: "top-right", duration: 5000,
+    //     style: { borderRadius: "10px", background: "#333", color: "#fff" },
+    //   });
+    // });
+
+        newSocket.on("receive_ping", (data) => {
+      // 1. Play a professional notification sound
+      const audio = new Audio("https://actions.google.com/sounds/v1/alarms/pop_ding.ogg");
+      audio.volume = 0.7; // 70% volume so it's not too loud
+      audio.play().catch(e => console.log("Audio play blocked by browser:", e));
+
+      // 2. Show a high-priority, long-lasting toast (10 seconds)
+      toast(`🔔 PING from ${data.fromName}!`, {
+        icon: "🚨", 
+        position: "top-center", 
+        duration: 10000, // Stays for 10 seconds
+        style: { 
+          borderRadius: "10px", 
+          background: "#ef4444", // Red background to grab attention
+          color: "#fff",
+          fontWeight: "bold",
+          padding: "16px",
+          fontSize: "16px"
+        },
       });
     });
+
 
     newSocket.on("receive_message", (data) => {
       if (!activeChatUserRef.current || String(activeChatUserRef.current.userId) !== String(data.sender_id)) {

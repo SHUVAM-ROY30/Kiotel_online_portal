@@ -642,13 +642,37 @@ export default function AuthenticatedLayout({ children }) {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, userUniqueID, API_BASE_URL]);
 
-  const handlePing = (e, targetUserId) => {
-    e.stopPropagation(); // Prevent chat open
+  // const handlePing = (e, targetUserId) => {
+  //   e.stopPropagation(); // Prevent chat open
+  //   if (socket) {
+  //     socket.emit("send_ping", { targetUserId, fromName: userFname });
+  //     toast.success("Ping sent!", { position: "bottom-right", duration: 2000 });
+  //   }
+  // };
+/**Hello this is the way you should be haiving the same as its in the seen of the local securance of the ways in which they should do
+ * hello there it should be haivng in which they can, so you can 
+ * hey this is shuvam and you can have the local very own in the sequence of the way it should be having the same instinct
+ * so okay this is the way it should be having the long own very, hello this is the way it should be
+ * the same in hwich they can have 
+ * 
+ */
+    const handlePing = (e, targetUserId) => {
+    e.stopPropagation(); // Prevent chat from opening when clicking the button
     if (socket) {
+      // 1. Send the Ping alert (for sound and popup)
       socket.emit("send_ping", { targetUserId, fromName: userFname });
-      toast.success("Ping sent!", { position: "bottom-right", duration: 2000 });
+      
+      // 2. Save it in the chat history automatically!
+      socket.emit("send_message", { 
+        receiverId: targetUserId, 
+        message: "🔔 Pinged you!", 
+        senderName: userFname 
+      });
+
+      toast.success("Ping sent and saved in chat!", { position: "bottom-right", duration: 2000 });
     }
   };
+
 
   const handleHideChat = async (e, otherUserId) => {
     e.stopPropagation();
