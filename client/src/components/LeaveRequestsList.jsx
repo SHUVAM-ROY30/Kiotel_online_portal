@@ -1295,6 +1295,7 @@ export default function LeaveRequestsList() {
       request.leave_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
       request.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
       request.reason.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       formatDateAndTime(request.start_date).formattedDate.includes(searchTerm) ||
       formatDateAndTime(request.end_date).formattedDate.includes(searchTerm);
 

@@ -162,14 +162,18 @@ export default function LeaveRequestsViewer({ onClose }) {
                    Status: {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                 </p>
                 {/* Edit Button (only if Pending) */}
-                {request.status === "pending" && (
+                {/* {request.status === "pending" && (
                   <button
                     onClick={() => handleEditClick(request)}
                     className="mt-3 text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
                   >
                     Edit
                   </button>
-                )}
+                )} */}
+
+
+                {/* 
+                */}
               </div>
             ))
           ) : (
