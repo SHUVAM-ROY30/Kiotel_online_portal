@@ -5,56 +5,20 @@
 // import ExcelJS from 'exceljs';
 // import { saveAs } from 'file-saver';
 // import EmployeeAttendanceModal from './EmployeeAttendanceModal';
-// import EmployeeMonthlyPhotosModal from './EmployeeMonthlyPhotosModal'; // Added Import
+// import EmployeeMonthlyPhotosModal from './EmployeeMonthlyPhotosModal'; 
 // import { FaCalendarAlt, FaFileExport, FaCheckCircle, FaExclamationTriangle, FaClock, FaTimesCircle, FaBriefcase, FaChartLine } from 'react-icons/fa';
 
 // const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
 
-// // Status Badge Component
 // const StatusBadge = ({ status }) => {
 //   const config = {
-//     Present: {
-//       bg: 'bg-emerald-50',
-//       text: 'text-emerald-700',
-//       border: 'border-emerald-200',
-//       icon: <FaCheckCircle className="text-emerald-600" />
-//     },
-//     Late: {
-//       bg: 'bg-amber-50',
-//       text: 'text-amber-700',
-//       border: 'border-amber-200',
-//       icon: <FaExclamationTriangle className="text-amber-600" />
-//     },
-//     'Early Clock Out': {
-//       bg: 'bg-orange-50',
-//       text: 'text-orange-700',
-//       border: 'border-orange-200',
-//       icon: <FaClock className="text-orange-600" />
-//     },
-//     'Late & Early': {
-//       bg: 'bg-purple-50',
-//       text: 'text-purple-700',
-//       border: 'border-purple-200',
-//       icon: <FaExclamationTriangle className="text-purple-600" />
-//     },
-//     Missed: {
-//       bg: 'bg-red-50',
-//       text: 'text-red-700',
-//       border: 'border-red-200',
-//       icon: <FaTimesCircle className="text-red-600" />
-//     },
-//     Absent: {
-//       bg: 'bg-rose-50',
-//       text: 'text-rose-700',
-//       border: 'border-rose-200',
-//       icon: <FaTimesCircle className="text-rose-600" />
-//     },
-//   }[status] || {
-//     bg: 'bg-gray-50',
-//     text: 'text-gray-600',
-//     border: 'border-gray-200',
-//     icon: <span className="text-gray-400">–</span>
-//   };
+//     Present: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: <FaCheckCircle className="text-emerald-600" /> },
+//     Late: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', icon: <FaExclamationTriangle className="text-amber-600" /> },
+//     'Early Clock Out': { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', icon: <FaClock className="text-orange-600" /> },
+//     'Late & Early': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', icon: <FaExclamationTriangle className="text-purple-600" /> },
+//     Missed: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', icon: <FaTimesCircle className="text-red-600" /> },
+//     Absent: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', icon: <FaTimesCircle className="text-rose-600" /> },
+//   }[status] || { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200', icon: <span className="text-gray-400">–</span> };
 
 //   return (
 //     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium text-xs border ${config.bg} ${config.text} ${config.border} shadow-sm`}>
@@ -64,7 +28,6 @@
 //   );
 // };
 
-// // Skeleton Loader
 // const TableSkeleton = () => (
 //   <div className="animate-pulse">
 //     {[...Array(6)].map((_, i) => (
@@ -79,14 +42,11 @@
 //   </div>
 // );
 
-// // Helper function to calculate attendance details
 // function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, graceMinutes = 0, earlyGraceMinutes = 15) {
 //   const details = { status: 'Absent', late_minutes: 0, early_clock_out_minutes: 0, overtime_minutes: 0 };
-
 //   if (!clockIn) return details;
 
 //   const isVersion2 = typeof clockIn === 'string' && clockIn.length <= 20 && !clockIn.includes('T') && !clockIn.includes('Z');
-  
 //   let clockInDate, clockOutDate;
   
 //   if (isVersion2) {
@@ -233,10 +193,9 @@
 //   const [loadingMonthly, setLoadingMonthly] = useState(false);
 //   const [activeTab, setActiveTab] = useState('daily');
   
-//   // Modals state
 //   const [modalOpen, setModalOpen] = useState(false);
 //   const [modalData, setModalData] = useState(null);
-//   const [monthlyPhotoEmployee, setMonthlyPhotoEmployee] = useState(null); // Added State
+//   const [monthlyPhotoEmployee, setMonthlyPhotoEmployee] = useState(null);
 
 //   const fetchDaily = useCallback(async () => {
 //     setLoadingDaily(true);
@@ -249,30 +208,24 @@
 //         const isFlexible = employee.shift_name === 'ADMIN';
 
 //         let { status, late_minutes, early_clock_out_minutes, overtime_minutes } = calculateAttendanceDetails(
-//           employee.clock_in, 
-//           employee.clock_out, 
-//           shiftStart, 
-//           shiftEnd, 
-//           0, 
-//           15 
+//           employee.clock_in, employee.clock_out, shiftStart, shiftEnd, 0, 15 
 //         );
-
-//         // --- ADMIN Shift and MISSED Overrides ---
+        
 //         if (employee.is_missed) {
 //           status = 'Missed';
 //         } else if (isFlexible && employee.clock_in) {
-//           status = 'Present'; // Override late/early flags for flexible
+//           status = 'Present'; 
 //           late_minutes = 0;
 //           early_clock_out_minutes = 0;
 //           overtime_minutes = 0;
 //         }
-//         // --- OVERRIDES ---
-// if (employee.is_late_waived) {
-//   late_minutes = 0;
-//   // If they were "Late & Early", they are now just "Early Clock Out". If "Late", they are "Present".
-//   if (status === 'Late') status = 'Present';
-//   if (status === 'Late & Early') status = 'Early Clock Out';
-// }
+
+//         if (employee.is_late_waived) {
+//           late_minutes = '0';
+//           if (status === 'Late') status = 'Present';
+//           if (status === 'Late & Early') status = 'Early Clock Out';
+//         }
+
 //         return { 
 //           ...employee,
 //           status,
@@ -291,6 +244,23 @@
 //     }
 //   }, [date]);
 
+//   const handleToggleWaiveLate = async (id, currentStatus) => {
+//     if (!id || String(id).startsWith('absent')) return;
+//     try {
+//       const res = await fetch(`${API_BASE}/clockin/admin/daily/waive-late`, {
+//         method: 'PUT',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ id, is_waived: !currentStatus })
+//       });
+//       const result = await res.json();
+//       if (result.success) {
+//         fetchDaily();
+//       }
+//     } catch (err) {
+//       console.error(err);
+//     }
+//   };
+
 //   const fetchMonthly = useCallback(async () => {
 //     setLoadingMonthly(true);
 //     try {
@@ -308,11 +278,8 @@
 //   useEffect(() => { fetchDaily(); }, [fetchDaily]);
 //   useEffect(() => { fetchMonthly(); }, [fetchMonthly]);
 
-//   // --- NEW: Memoized list purely for the UI table so it stays 1 per employee ---
 //   const uiDailyData = useMemo(() => {
 //     const map = new Map();
-//     // By looping and mapping by unique_id, we naturally keep the last shift of the day per user 
-//     // exactly replicating how it previously looked in the UI.
 //     dailyData.forEach(row => {
 //       map.set(row.unique_id, row);
 //     });
@@ -320,53 +287,26 @@
 //   }, [dailyData]);
 
 //   const handleExport = async (type) => {
-//     if (type === 'daily') {
-//       await exportDailyStyled();
-//     } else if (type === 'monthly') {
-//       await exportMonthlyStyled();
-//     }
+//     if (type === 'daily') await exportDailyStyled();
+//     else if (type === 'monthly') await exportMonthlyStyled();
 //   };
 
-//   // COLOR PALETTE
 //   const COLORS = {
-//     primary: 'FF2563EB',      
-//     primaryDark: 'FF1D4ED8',  
-//     primaryLight: 'FFDBEAFE', 
-//     white: 'FFFFFFFF',
-//     black: 'FF111827',
-//     gray50: 'FFF9FAFB',
-//     gray100: 'FFF3F4F6',
-//     gray200: 'FFE5E7EB',
-//     gray500: 'FF6B7280',
-//     gray700: 'FF374151',
-//     gray900: 'FF111827',
-//     green: 'FF16A34A',
-//     greenLight: 'FFF0FDF4',
-//     greenBorder: 'FFBBF7D0',
-//     red: 'FFDC2626',
-//     redLight: 'FFFEF2F2',
-//     redBorder: 'FFFECACA',
-//     orange: 'FFEA580C',
-//     orangeLight: 'FFFFF7ED',
-//     orangeBorder: 'FFFED7AA',
-//     amber: 'FFD97706',
-//     amberLight: 'FFFFFBEB',
-//     purple: 'FF7C3AED',
-//     sundayBg: 'FFFFF1F2',
+//     primary: 'FF2563EB', primaryDark: 'FF1D4ED8', primaryLight: 'FFDBEAFE', 
+//     white: 'FFFFFFFF', black: 'FF111827', gray50: 'FFF9FAFB', gray100: 'FFF3F4F6',
+//     gray200: 'FFE5E7EB', gray500: 'FF6B7280', gray700: 'FF374151', gray900: 'FF111827',
+//     green: 'FF16A34A', greenLight: 'FFF0FDF4', red: 'FFDC2626', redLight: 'FFFEF2F2',
+//     orange: 'FFEA580C', orangeLight: 'FFFFF7ED', amber: 'FFD97706', amberLight: 'FFFFFBEB',
+//     purple: 'FF7C3AED', sundayBg: 'FFFFF1F2',
 //   };
 
 //   const thinBorder = (color = COLORS.gray200) => ({
-//     top: { style: 'thin', color: { argb: color } },
-//     bottom: { style: 'thin', color: { argb: color } },
-//     left: { style: 'thin', color: { argb: color } },
-//     right: { style: 'thin', color: { argb: color } },
+//     top: { style: 'thin', color: { argb: color } }, bottom: { style: 'thin', color: { argb: color } },
+//     left: { style: 'thin', color: { argb: color } }, right: { style: 'thin', color: { argb: color } },
 //   });
 
-//   const solidFill = (color) => ({
-//     type: 'pattern', pattern: 'solid', fgColor: { argb: color },
-//   });
+//   const solidFill = (color) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: color } });
 
-//   // DAILY EXPORT
 //   const exportDailyStyled = async () => {
 //     const wb = new ExcelJS.Workbook();
 //     wb.creator = 'KIOTEL Attendance System';
@@ -432,7 +372,6 @@
 //     });
 //     ws.getRow(headerRow.number).height = 30;
 
-//     // --- NOTICE: Uses raw `dailyData` here so the EXCEL export contains ALL shifts ---
 //     dailyData.forEach((row, index) => {
 //       let workingHours = '—';
 //       if (row.clock_in && row.clock_out && row.clock_out !== 'Missed') {
@@ -449,6 +388,8 @@
 //       const isFlexible = row.shift_name === 'ADMIN';
 //       const outText = row.is_missed ? 'Missed' : formatTime(row.clock_out);
 
+//       const lateValue = row.is_late_waived ? '0' : (row.late_minutes > 0 ? row.late_minutes : '');
+
 //       const dataRow = ws.addRow([
 //         row.unique_id, 
 //         row.name, 
@@ -458,7 +399,7 @@
 //         formatTime(row.clock_in), 
 //         outText,
 //         row.status || '—',
-//         row.late_minutes || '', 
+//         lateValue, 
 //         row.early_clock_out_minutes || '',
 //         row.overtime_minutes || '', 
 //         workingHours,
@@ -476,7 +417,7 @@
 //       dataRow.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
 //       dataRow.getCell(2).font = { size: 10, bold: true };
 
-//       if (row.late_minutes > 0) {
+//       if (lateValue !== '' && lateValue !== '0') {
 //         dataRow.getCell(9).font = { bold: true, color: { argb: COLORS.red }, size: 10 };
 //         dataRow.getCell(9).fill = solidFill(COLORS.redLight);
 //       }
@@ -490,44 +431,26 @@
 //       }
 
 //       const statusCell = dataRow.getCell(8);
-//       if (row.status === 'Present') {
-//         statusCell.font = { bold: true, color: { argb: COLORS.green }, size: 10 };
-//       } else if (row.status === 'Late' || row.status === 'Late & Early') {
-//         statusCell.font = { bold: true, color: { argb: COLORS.red }, size: 10 };
-//       } else if (row.status === 'Early Clock Out') {
-//         statusCell.font = { bold: true, color: { argb: COLORS.orange }, size: 10 };
-//       } else if (row.status === 'Missed' || row.status === 'Absent') {
-//         statusCell.font = { bold: true, color: { argb: COLORS.red }, size: 10 };
-//       }
+//       if (row.status === 'Present') statusCell.font = { bold: true, color: { argb: COLORS.green }, size: 10 };
+//       else if (row.status === 'Late' || row.status === 'Late & Early') statusCell.font = { bold: true, color: { argb: COLORS.red }, size: 10 };
+//       else if (row.status === 'Early Clock Out') statusCell.font = { bold: true, color: { argb: COLORS.orange }, size: 10 };
+//       else if (row.status === 'Missed' || row.status === 'Absent') statusCell.font = { bold: true, color: { argb: COLORS.red }, size: 10 };
 //     });
 
-//     ws.getColumn(1).width = 14;
-//     ws.getColumn(2).width = 24;
-//     ws.getColumn(3).width = 20;
-//     ws.getColumn(4).width = 12;
-//     ws.getColumn(5).width = 12;
-//     ws.getColumn(6).width = 12;
-//     ws.getColumn(7).width = 12;
-//     ws.getColumn(8).width = 16;
-//     ws.getColumn(9).width = 12;
-//     ws.getColumn(10).width = 14;
-//     ws.getColumn(11).width = 12;
-//     ws.getColumn(12).width = 14;
+//     ws.getColumn(1).width = 14; ws.getColumn(2).width = 24; ws.getColumn(3).width = 20;
+//     ws.getColumn(4).width = 12; ws.getColumn(5).width = 12; ws.getColumn(6).width = 12;
+//     ws.getColumn(7).width = 12; ws.getColumn(8).width = 16; ws.getColumn(9).width = 12;
+//     ws.getColumn(10).width = 14; ws.getColumn(11).width = 12; ws.getColumn(12).width = 14;
 //     ws.getColumn(13).width = 8;
 
 //     const buffer = await wb.xlsx.writeBuffer();
 //     saveAs(new Blob([buffer]), `Attendance_Daily_${date}.xlsx`);
 //   };
 
-
-//   // MONTHLY EXPORT
 //   const exportMonthlyStyled = async () => {
 //     try {
-//       const res = await fetch(
-//         `${API_BASE}/clockin/admin/monthly-detailed?year=${monthlyYear}&month=${monthlyMonth}`
-//       );
+//       const res = await fetch(`${API_BASE}/clockin/admin/monthly-detailed?year=${monthlyYear}&month=${monthlyMonth}`);
 //       const result = await res.json();
-
 //       if (!result.success || !result.data) {
 //         alert('Failed to fetch detailed report. Check backend API.');
 //         return;
@@ -545,11 +468,7 @@
 //       const wb = new ExcelJS.Workbook();
 //       wb.creator = 'KIOTEL Attendance System';
 
-//       // ─── SHEET 1: Monthly Overview Grid ───
-//       const ws = wb.addWorksheet('Monthly Overview', {
-//         views: [{ state: 'frozen', xSplit: 2, ySplit: 5 }] 
-//       });
-
+//       const ws = wb.addWorksheet('Monthly Overview', { views: [{ state: 'frozen', xSplit: 2, ySplit: 5 }] });
 //       const totalCols = 2 + dates.length + 5; 
 
 //       ws.mergeCells(1, 1, 1, totalCols);
@@ -583,9 +502,7 @@
 
 //       dates.forEach((d, i) => {
 //         const dateObj = new Date(d + 'T00:00:00');
-//         const dayNum = dateObj.getDate();
-//         const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-//         headerRow.getCell(3 + i).value = `${dayNum}\n${dayName}`;
+//         headerRow.getCell(3 + i).value = `${dateObj.getDate()}\n${dateObj.toLocaleDateString('en-US', { weekday: 'short' })}`;
 //       });
 
 //       const totalsStartCol = 3 + dates.length;
@@ -605,10 +522,7 @@
 //       }
 
 //       dates.forEach((d, i) => {
-//         const dateObj = new Date(d + 'T00:00:00');
-//         if (dateObj.getDay() === 0) {
-//           headerRow.getCell(3 + i).fill = solidFill(COLORS.red);
-//         }
+//         if (new Date(d + 'T00:00:00').getDay() === 0) headerRow.getCell(3 + i).fill = solidFill(COLORS.red);
 //       });
 
 //       employees.forEach((emp, empIndex) => {
@@ -621,21 +535,14 @@
 //         const metricsRowData = ['', ''];
 //         const shiftRowData = ['', ''];
 
-//         let maxShiftsInDay = 1; // Track the maximum number of shifts this employee worked on a single day to adjust row height
+//         let maxShiftsInDay = 1;
 
 //         dates.forEach(d => {
 //           const dayRecords = emp.dates[d];
 //           if (dayRecords && dayRecords.length > 0) {
-            
-//             if (dayRecords.length > maxShiftsInDay) {
-//               maxShiftsInDay = dayRecords.length;
-//             }
+//             if (dayRecords.length > maxShiftsInDay) maxShiftsInDay = dayRecords.length;
 
-//             // Arrays to hold stacked values for multiple shifts
-//             const ins = [];
-//             const outs = [];
-//             const metrics = [];
-//             const shifts = [];
+//             const ins = [], outs = [], metrics = [], shifts = [];
 
 //             dayRecords.forEach(rec => {
 //               const isFlexible = rec.shift_name === 'ADMIN';
@@ -655,7 +562,6 @@
 //               shifts.push(isFlexible ? 'Flexible' : (rec.shift_name || '—'));
 //             });
 
-//             // Join multiple shifts with newline character so they stack in the cell
 //             inRowData.push(ins.join('\n'));
 //             outRowData.push(outs.join('\n'));
 //             metricsRowData.push(metrics.join('\n'));
@@ -670,14 +576,10 @@
 //           emp.totals.total_late_min || '',
 //           emp.totals.total_early_min || '',
 //           emp.totals.total_ot_min || '',
-//           emp.totals.total_working_min > 0
-//             ? `${Math.floor(emp.totals.total_working_min / 60)}h ${emp.totals.total_working_min % 60}m`
-//             : '—',
+//           emp.totals.total_working_min > 0 ? `${Math.floor(emp.totals.total_working_min / 60)}h ${emp.totals.total_working_min % 60}m` : '—',
 //           emp.totals.present
 //         );
-//         for (let i = 0; i < 5; i++) {
-//           outRowData.push(''); metricsRowData.push(''); shiftRowData.push('');
-//         }
+//         for (let i = 0; i < 5; i++) { outRowData.push(''); metricsRowData.push(''); shiftRowData.push(''); }
 
 //         const rowIn = ws.addRow(inRowData);
 //         const rowOut = ws.addRow(outRowData);
@@ -699,7 +601,6 @@
 //         idCell.fill = solidFill(COLORS.primaryLight);
 //         idCell.border = thinBorder(COLORS.gray200);
 
-//         // Adjust row heights dynamically based on how many shifts were worked that day
 //         const baseHeight = 18;
 //         rowIn.height = baseHeight * maxShiftsInDay;
 //         rowOut.height = baseHeight * maxShiftsInDay;
@@ -718,29 +619,18 @@
 
 //             cell.fill = solidFill(bg);
 //             cell.border = thinBorder(COLORS.gray200);
-//             // wrapText: true is crucial here so the \n characters break to the next line
 //             cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
 
-//             if (subIdx === 0) {
-//               cell.font = { size: 9, color: { argb: cell.value ? COLORS.green : COLORS.gray200 } };
-//             } else if (subIdx === 1) {
-//               cell.font = { size: 9, color: { argb: String(cell.value).includes('Missed') ? COLORS.orange : (cell.value ? COLORS.red : COLORS.gray200) } };
-//             } else if (subIdx === 2) {
+//             if (subIdx === 0) cell.font = { size: 9, color: { argb: cell.value ? COLORS.green : COLORS.gray200 } };
+//             else if (subIdx === 1) cell.font = { size: 9, color: { argb: String(cell.value).includes('Missed') ? COLORS.orange : (cell.value ? COLORS.red : COLORS.gray200) } };
+//             else if (subIdx === 2) {
 //               const val = String(cell.value || '');
-//               if (val.includes('L:') && val.includes('E:')) {
-//                 cell.font = { size: 8, bold: true, color: { argb: COLORS.purple } };
-//               } else if (val.includes('L:')) {
-//                 cell.font = { size: 8, bold: true, color: { argb: COLORS.red } };
-//               } else if (val.includes('E:')) {
-//                 cell.font = { size: 8, bold: true, color: { argb: COLORS.orange } };
-//               } else if (val.includes('O:')) {
-//                 cell.font = { size: 8, bold: true, color: { argb: COLORS.green } };
-//               } else {
-//                 cell.font = { size: 8, color: { argb: COLORS.gray200 } };
-//               }
-//             } else {
-//               cell.font = { size: 7, italic: true, color: { argb: COLORS.gray500 } };
-//             }
+//               if (val.includes('L:') && val.includes('E:')) cell.font = { size: 8, bold: true, color: { argb: COLORS.purple } };
+//               else if (val.includes('L:')) cell.font = { size: 8, bold: true, color: { argb: COLORS.red } };
+//               else if (val.includes('E:')) cell.font = { size: 8, bold: true, color: { argb: COLORS.orange } };
+//               else if (val.includes('O:')) cell.font = { size: 8, bold: true, color: { argb: COLORS.green } };
+//               else cell.font = { size: 8, color: { argb: COLORS.gray200 } };
+//             } else cell.font = { size: 7, italic: true, color: { argb: COLORS.gray500 } };
 //           }
 //         });
 
@@ -767,23 +657,16 @@
 
 //         const sepRow = ws.addRow([]);
 //         sepRow.height = 4;
-//         for (let c = 1; c <= totalCols; c++) {
-//           sepRow.getCell(c).fill = solidFill(COLORS.gray200);
-//         }
+//         for (let c = 1; c <= totalCols; c++) sepRow.getCell(c).fill = solidFill(COLORS.gray200);
 //       });
 
-//       ws.getColumn(1).width = 22;
-//       ws.getColumn(2).width = 14;
+//       ws.getColumn(1).width = 22; ws.getColumn(2).width = 14;
 //       dates.forEach((_, i) => { ws.getColumn(3 + i).width = 12; });
-//       ws.getColumn(totalsStartCol).width = 12;
-//       ws.getColumn(totalsStartCol + 1).width = 12;
-//       ws.getColumn(totalsStartCol + 2).width = 10;
-//       ws.getColumn(totalsStartCol + 3).width = 13;
+//       ws.getColumn(totalsStartCol).width = 12; ws.getColumn(totalsStartCol + 1).width = 12;
+//       ws.getColumn(totalsStartCol + 2).width = 10; ws.getColumn(totalsStartCol + 3).width = 13;
 //       ws.getColumn(totalsStartCol + 4).width = 11;
 
-//       // ─── SHEET 2: Detailed List ───
 //       const ws2 = wb.addWorksheet('Detailed Report');
-
 //       ws2.mergeCells('A1:L1');
 //       const dt1 = ws2.getCell('A1');
 //       dt1.value = 'KIOTEL — Detailed Attendance Report';
@@ -819,13 +702,10 @@
 //         dates.forEach(d => {
 //           const dayRecords = emp.dates[d];
 //           if (dayRecords && dayRecords.length > 0) {
-            
-//             // This loop naturally outputs multiple rows if the user had multiple shifts that day
 //             dayRecords.forEach(rec => {
 //               const dateObj = new Date(d + 'T00:00:00');
 //               const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
 //               const isSunday = dateObj.getDay() === 0;
-
 //               const isFlexible = rec.shift_name === 'ADMIN';
 
 //               const row = ws2.addRow([
@@ -884,15 +764,10 @@
 //         rowIdx = 0;
 //       });
 
-//       [22, 14, 12, 8, 20, 12, 12, 13, 11, 11, 11, 10].forEach((w, i) => {
-//         ws2.getColumn(i + 1).width = w;
-//       });
+//       [22, 14, 12, 8, 20, 12, 12, 13, 11, 11, 11, 10].forEach((w, i) => { ws2.getColumn(i + 1).width = w; });
 
 //       const buffer = await wb.xlsx.writeBuffer();
-//       saveAs(
-//         new Blob([buffer]),
-//         `Attendance_Monthly_${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}.xlsx`
-//       );
+//       saveAs(new Blob([buffer]), `Attendance_Monthly_${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}.xlsx`);
 
 //     } catch (err) {
 //       console.error('Monthly export failed:', err);
@@ -900,23 +775,15 @@
 //     }
 //   };
 
-
 //   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 //   const formatTime = (value) => {
 //     if (!value) return '—';
 //     if (value === 'Missed') return 'Missed';
-//     if (typeof value === 'string' && value.length <= 8) {
-//       return value;
-//     }
-//     try {
-//       return format(new Date(value), 'h:mm a');
-//     } catch {
-//       return '—';
-//     }
+//     if (typeof value === 'string' && value.length <= 8) return value;
+//     try { return format(new Date(value), 'h:mm a'); } catch { return '—'; }
 //   };
 
-//   // --- NOTICE: UI Summary blocks also use `uiDailyData` ---
 //   const dailySummary = {
 //     present: uiDailyData.filter(e => e.status === 'Present').length,
 //     late: uiDailyData.filter(e => e.status === 'Late' || e.status === 'Late & Early').length,
@@ -933,22 +800,6 @@
 //     acc.totalOt += Number(emp.total_ot_minutes) || 0;
 //     return acc;
 //   }, { present: 0, late: 0, earlyClockOut: 0, absent: 0, totalOt: 0 });
-
-//   const handleToggleWaiveLate = async (id, currentStatus) => {
-//   try {
-//     const res = await fetch(`${API_BASE}/clockin/admin/daily/waive-late`, {
-//       method: 'PUT',
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify({ id, is_waived: !currentStatus })
-//     });
-//     const result = await res.json();
-//     if (result.success) {
-//       fetchDaily(); // Refresh the table
-//     }
-//   } catch (err) {
-//     console.error(err);
-//   }
-// };
 
 //   const handleViewEmployee = async (accountId) => {
 //     try {
@@ -974,22 +825,17 @@
 
 //   return (
 //     <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 via-white to-blue-50 relative overflow-hidden">
-//       {/* Animated background */}
 //       <div className="absolute inset-0 overflow-hidden pointer-events-none">
 //         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
 //         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
 //       </div>
 
 //       <div className="relative z-10 flex-1 flex flex-col overflow-hidden">
-//         {/* Header */}
 //         <div className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6">
 //           <div className="text-center mb-3">
-//             <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400">
-//               KIOTEL
-//             </h1>
+//             <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400">KIOTEL</h1>
 //             <div className="h-1 w-20 bg-gradient-to-r from-blue-600 to-blue-400 mx-auto rounded-full mt-1"></div>
 //           </div>
-
 //           <div className="flex items-center gap-2 sm:gap-3 mb-4">
 //             <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
 //               <FaChartLine className="text-white text-lg sm:text-xl" />
@@ -1001,7 +847,6 @@
 //           </div>
 //         </div>
 
-//         {/* Summary Cards */}
 //         <div className="flex-shrink-0 px-4 sm:px-6">
 //           <div className="grid grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-3 mb-4">
 //             <div className="bg-white/80 backdrop-blur-xl rounded-lg shadow-lg border border-gray-200/50 p-2 sm:p-3 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
@@ -1015,7 +860,6 @@
 //                 </div>
 //               </div>
 //             </div>
-
 //             <div className="bg-white/80 backdrop-blur-xl rounded-lg shadow-lg border border-gray-200/50 p-2 sm:p-3 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
 //               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
 //                 <div className="h-9 w-9 sm:h-10 sm:w-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
@@ -1027,7 +871,6 @@
 //                 </div>
 //               </div>
 //             </div>
-
 //             <div className="bg-white/80 backdrop-blur-xl rounded-lg shadow-lg border border-gray-200/50 p-2 sm:p-3 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
 //               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
 //                 <div className="h-9 w-9 sm:h-10 sm:w-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
@@ -1039,7 +882,6 @@
 //                 </div>
 //               </div>
 //             </div>
-
 //             <div className="bg-white/80 backdrop-blur-xl rounded-lg shadow-lg border border-gray-200/50 p-2 sm:p-3 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
 //               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
 //                 <div className="h-9 w-9 sm:h-10 sm:w-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
@@ -1051,7 +893,6 @@
 //                 </div>
 //               </div>
 //             </div>
-
 //             <div className="bg-white/80 backdrop-blur-xl rounded-lg shadow-lg border border-gray-200/50 p-2 sm:p-3 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
 //               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
 //                 <div className="h-9 w-9 sm:h-10 sm:w-10 bg-gradient-to-br from-gray-500 to-gray-600 rounded-lg flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
@@ -1063,7 +904,6 @@
 //                 </div>
 //               </div>
 //             </div>
-
 //             <div className="bg-white/80 backdrop-blur-xl rounded-lg shadow-lg border border-gray-200/50 p-2 sm:p-3 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group col-span-2 lg:col-span-1">
 //               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
 //                 <div className="h-9 w-9 sm:h-10 sm:w-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
@@ -1080,23 +920,18 @@
 //           </div>
 //         </div>
 
-//         {/* Tabs and Content */}
 //         <div className="flex-1 flex flex-col px-4 sm:px-6 pb-4 sm:pb-6 min-h-0">
 //           <div className="flex-shrink-0 bg-white/80 backdrop-blur-xl rounded-t-xl border border-gray-200/50 shadow-lg overflow-hidden">
 //             <div className="flex border-b border-gray-200">
 //               <button
-//                 className={`flex-1 px-4 py-2.5 sm:py-3 font-semibold text-xs sm:text-sm transition-all duration-300 relative ${
-//                   activeTab === 'daily' ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-//                 }`}
+//                 className={`flex-1 px-4 py-2.5 sm:py-3 font-semibold text-xs sm:text-sm transition-all duration-300 relative ${activeTab === 'daily' ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
 //                 onClick={() => setActiveTab('daily')}
 //               >
 //                 {activeTab === 'daily' && <div className="absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r from-blue-600 to-blue-500"></div>}
 //                 Daily Attendance
 //               </button>
 //               <button
-//                 className={`flex-1 px-4 py-2.5 sm:py-3 font-semibold text-xs sm:text-sm transition-all duration-300 relative ${
-//                   activeTab === 'monthly' ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-//                 }`}
+//                 className={`flex-1 px-4 py-2.5 sm:py-3 font-semibold text-xs sm:text-sm transition-all duration-300 relative ${activeTab === 'monthly' ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
 //                 onClick={() => setActiveTab('monthly')}
 //               >
 //                 {activeTab === 'monthly' && <div className="absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r from-blue-600 to-blue-500"></div>}
@@ -1116,17 +951,14 @@
 //                     </div>
 //                     <div className="flex items-center gap-2 w-full sm:w-auto">
 //                       <input
-//                         type="date"
-//                         value={date}
-//                         onChange={(e) => setDate(e.target.value)}
+//                         type="date" value={date} onChange={(e) => setDate(e.target.value)}
 //                         className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none flex-1 sm:flex-none"
 //                       />
 //                       <button
 //                         onClick={() => handleExport('daily')}
 //                         className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg transition text-xs sm:text-sm whitespace-nowrap"
 //                       >
-//                         <FaFileExport className="text-xs" />
-//                         <span>Export</span>
+//                         <FaFileExport className="text-xs" /><span>Export</span>
 //                       </button>
 //                     </div>
 //                   </div>
@@ -1152,15 +984,10 @@
 //                           </tr>
 //                         </thead>
 //                         <tbody className="divide-y divide-gray-100 bg-white">
-//                           {/* --- NOTICE: Uses uiDailyData here to ensure only 1 row per employee --- */}
 //                           {uiDailyData.map((row, index) => (
 //                             <tr key={row.id || `${row.unique_id}-${index}`} className="hover:bg-blue-50 transition-colors">
 //                               <td className="px-2 sm:px-3 py-2">
-//                                 <button
-//                                   type="button"
-//                                   onClick={() => handleViewEmployee(row.unique_id)}
-//                                   className="font-semibold text-gray-900 hover:text-blue-600 hover:underline text-xs sm:text-sm text-left"
-//                                 >
+//                                 <button type="button" onClick={() => handleViewEmployee(row.unique_id)} className="font-semibold text-gray-900 hover:text-blue-600 hover:underline text-xs sm:text-sm text-left">
 //                                   {row.name}
 //                                 </button>
 //                                 <div className="text-[10px] sm:text-xs text-gray-500">{row.unique_id}</div>
@@ -1170,9 +997,7 @@
 //                                   {row.shift_name === 'ADMIN' ? 'Flexible 8-Hour' : row.shift_name}
 //                                 </div>
 //                                 {row.shift_name !== 'ADMIN' && row.shift_name !== '—' && (
-//                                   <div className="text-[10px] text-gray-500">
-//                                     {row.shift_start} - {row.shift_end}
-//                                   </div>
+//                                   <div className="text-[10px] text-gray-500">{row.shift_start} - {row.shift_end}</div>
 //                                 )}
 //                               </td>
 //                               <td className="px-2 sm:px-3 py-2">
@@ -1186,27 +1011,22 @@
 //                                 </span>
 //                               </td>
 //                               <td className="px-2 sm:px-3 py-2"><StatusBadge status={row.status} /></td>
-//                               {/* <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-amber-700">{row.late_minutes || '—'}</td> */}
+                              
 //                               <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-amber-700">
-//   <div className="flex items-center justify-end gap-2">
-//     {row.late_minutes > 0 || row.is_late_waived ? (
-//       <>
-//         <span className={row.is_late_waived ? "line-through text-gray-400" : ""}>
-//           {row.is_late_waived ? 0 : (row.late_minutes || '—')}
-//         </span>
-//         <button 
-//           onClick={() => handleToggleWaiveLate(row.id, row.is_late_waived)}
-//           className="text-[10px] bg-gray-100 hover:bg-gray-200 px-1 rounded text-gray-600"
-//           title={row.is_late_waived ? "Restore Late Minutes" : "Waive Late Minutes"}
-//         >
-//           {row.is_late_waived ? "Restore" : "Waive"}
-//         </button>
-//       </>
-//     ) : (
-//       '—'
-//     )}
-//   </div>
-// </td>
+//                                 <div className="flex items-center justify-end gap-2">
+//                                   {row.is_late_waived ? '0' : (row.late_minutes > 0 ? row.late_minutes : '—')}
+//                                   {row.status !== 'Absent' && (row.late_minutes > 0 || row.is_late_waived) && (
+//                                     <button 
+//                                       onClick={() => handleToggleWaiveLate(row.id, row.is_late_waived)}
+//                                       className={`text-[10px] px-1 rounded transition-colors ${row.is_late_waived ? 'bg-blue-100 hover:bg-blue-200 text-blue-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+//                                       title={row.is_late_waived ? "Restore Late Minutes" : "Waive Late Minutes"}
+//                                     >
+//                                       {row.is_late_waived ? "Restore" : "Waive"}
+//                                     </button>
+//                                   )}
+//                                 </div>
+//                               </td>
+
 //                               <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-orange-700">{row.early_clock_out_minutes || '—'}</td>
 //                               <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-blue-700">{row.overtime_minutes || 0}</td>
 //                               <td className="px-2 sm:px-3 py-2 text-center">
@@ -1219,9 +1039,7 @@
 //                     </div>
 //                   ) : (
 //                     <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-//                       <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-3">
-//                         <FaCalendarAlt className="text-blue-400 text-2xl" />
-//                       </div>
+//                       <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-3"><FaCalendarAlt className="text-blue-400 text-2xl" /></div>
 //                       <h3 className="text-base font-bold text-gray-900 mb-1">No Records</h3>
 //                       <p className="text-sm text-gray-500">No attendance data for this date</p>
 //                     </div>
@@ -1246,8 +1064,7 @@
 //                         {monthNames.map((name, idx) => <option key={idx} value={idx + 1}>{name}</option>)}
 //                       </select>
 //                       <button onClick={() => handleExport('monthly')} className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg transition text-xs sm:text-sm whitespace-nowrap">
-//                         <FaFileExport className="text-xs" />
-//                         <span>Export</span>
+//                         <FaFileExport className="text-xs" /><span>Export</span>
 //                       </button>
 //                     </div>
 //                   </div>
@@ -1275,12 +1092,7 @@
 //                           {monthlyData.map((row) => (
 //                             <tr key={row.unique_id} className="hover:bg-blue-50 transition-colors">
 //                               <td className="px-2 sm:px-3 py-2">
-//                                 {/* Made Name Clickable to open the monthly photo view */}
-//                                 <button
-//                                   type="button"
-//                                   onClick={() => setMonthlyPhotoEmployee({ unique_id: row.unique_id, name: row.name })}
-//                                   className="font-semibold text-gray-900 hover:text-blue-600 hover:underline text-xs sm:text-sm text-left block w-full"
-//                                 >
+//                                 <button type="button" onClick={() => setMonthlyPhotoEmployee({ unique_id: row.unique_id, name: row.name })} className="font-semibold text-gray-900 hover:text-blue-600 hover:underline text-xs sm:text-sm text-left block w-full">
 //                                   {row.name}
 //                                 </button>
 //                                 <div className="text-[10px] sm:text-xs text-gray-500">{row.unique_id}</div>
@@ -1299,9 +1111,7 @@
 //                     </div>
 //                   ) : (
 //                     <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-//                       <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-3">
-//                         <FaChartLine className="text-blue-400 text-2xl" />
-//                       </div>
+//                       <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-3"><FaChartLine className="text-blue-400 text-2xl" /></div>
 //                       <h3 className="text-base font-bold text-gray-900 mb-1">No Data</h3>
 //                       <p className="text-sm text-gray-500">No monthly data available</p>
 //                     </div>
@@ -1315,7 +1125,6 @@
 
 //       {modalOpen && <EmployeeAttendanceModal employeeData={modalData} onClose={closeModal} />}
 
-//       {/* Monthly Photos Modal */}
 //       {monthlyPhotoEmployee && (
 //         <EmployeeMonthlyPhotosModal
 //           employeeId={monthlyPhotoEmployee.unique_id}  
@@ -1340,6 +1149,7 @@
 // }
 
 
+
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
@@ -1348,7 +1158,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import EmployeeAttendanceModal from './EmployeeAttendanceModal';
 import EmployeeMonthlyPhotosModal from './EmployeeMonthlyPhotosModal'; 
-import { FaCalendarAlt, FaFileExport, FaCheckCircle, FaExclamationTriangle, FaClock, FaTimesCircle, FaBriefcase, FaChartLine } from 'react-icons/fa';
+import { FaCalendarAlt, FaFileExport, FaCheckCircle, FaExclamationTriangle, FaClock, FaTimesCircle, FaBriefcase, FaChartLine, FaSearch } from 'react-icons/fa';
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
 
@@ -1535,6 +1345,9 @@ export default function AdminDashboard() {
   const [loadingMonthly, setLoadingMonthly] = useState(false);
   const [activeTab, setActiveTab] = useState('daily');
   
+  // ✅ Added Search Query State
+  const [searchQuery, setSearchQuery] = useState('');
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [modalData, setModalData] = useState(null);
   const [monthlyPhotoEmployee, setMonthlyPhotoEmployee] = useState(null);
@@ -1627,6 +1440,25 @@ export default function AdminDashboard() {
     });
     return Array.from(map.values());
   }, [dailyData]);
+
+  // ✅ Added Filtering Logic for Search Bar
+  const filteredDailyData = useMemo(() => {
+    if (!searchQuery.trim()) return uiDailyData;
+    const q = searchQuery.toLowerCase();
+    return uiDailyData.filter(row => 
+      (row.name && row.name.toLowerCase().includes(q)) || 
+      (row.unique_id && String(row.unique_id).toLowerCase().includes(q))
+    );
+  }, [uiDailyData, searchQuery]);
+
+  const filteredMonthlyData = useMemo(() => {
+    if (!searchQuery.trim()) return monthlyData;
+    const q = searchQuery.toLowerCase();
+    return monthlyData.filter(row => 
+      (row.name && row.name.toLowerCase().includes(q)) || 
+      (row.unique_id && String(row.unique_id).toLowerCase().includes(q))
+    );
+  }, [monthlyData, searchQuery]);
 
   const handleExport = async (type) => {
     if (type === 'daily') await exportDailyStyled();
@@ -2262,6 +2094,22 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* ✅ Search Bar Section */}
+        <div className="flex-shrink-0 px-4 sm:px-6 mb-4">
+          <div className="relative w-full sm:max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FaSearch className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search by Employee Name or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 sm:py-2.5 border border-gray-200 rounded-xl leading-5 bg-white/80 backdrop-blur-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base transition-all"
+            />
+          </div>
+        </div>
+
         <div className="flex-1 flex flex-col px-4 sm:px-6 pb-4 sm:pb-6 min-h-0">
           <div className="flex-shrink-0 bg-white/80 backdrop-blur-xl rounded-t-xl border border-gray-200/50 shadow-lg overflow-hidden">
             <div className="flex border-b border-gray-200">
@@ -2309,7 +2157,7 @@ export default function AdminDashboard() {
                 <div className="flex-1 overflow-auto min-h-0">
                   {loadingDaily ? (
                     <div className="p-4"><TableSkeleton /></div>
-                  ) : uiDailyData && uiDailyData.length > 0 ? (
+                  ) : filteredDailyData && filteredDailyData.length > 0 ? (
                     <div className="overflow-x-auto h-full">
                       <table className="w-full min-w-[900px]">
                         <thead className="sticky top-0 z-10">
@@ -2326,7 +2174,7 @@ export default function AdminDashboard() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 bg-white">
-                          {uiDailyData.map((row, index) => (
+                          {filteredDailyData.map((row, index) => (
                             <tr key={row.id || `${row.unique_id}-${index}`} className="hover:bg-blue-50 transition-colors">
                               <td className="px-2 sm:px-3 py-2">
                                 <button type="button" onClick={() => handleViewEmployee(row.unique_id)} className="font-semibold text-gray-900 hover:text-blue-600 hover:underline text-xs sm:text-sm text-left">
@@ -2381,9 +2229,9 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-                      <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-3"><FaCalendarAlt className="text-blue-400 text-2xl" /></div>
-                      <h3 className="text-base font-bold text-gray-900 mb-1">No Records</h3>
-                      <p className="text-sm text-gray-500">No attendance data for this date</p>
+                      <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-3"><FaSearch className="text-blue-400 text-2xl" /></div>
+                      <h3 className="text-base font-bold text-gray-900 mb-1">No Records Found</h3>
+                      <p className="text-sm text-gray-500">Try adjusting your search criteria</p>
                     </div>
                   )}
                 </div>
@@ -2415,7 +2263,7 @@ export default function AdminDashboard() {
                 <div className="flex-1 overflow-auto min-h-0">
                   {loadingMonthly ? (
                     <div className="p-4"><TableSkeleton /></div>
-                  ) : monthlyData && monthlyData.length > 0 ? (
+                  ) : filteredMonthlyData && filteredMonthlyData.length > 0 ? (
                     <div className="overflow-x-auto h-full">
                       <table className="w-full min-w-[800px]">
                         <thead className="sticky top-0 z-10">
@@ -2431,7 +2279,7 @@ export default function AdminDashboard() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 bg-white">
-                          {monthlyData.map((row) => (
+                          {filteredMonthlyData.map((row) => (
                             <tr key={row.unique_id} className="hover:bg-blue-50 transition-colors">
                               <td className="px-2 sm:px-3 py-2">
                                 <button type="button" onClick={() => setMonthlyPhotoEmployee({ unique_id: row.unique_id, name: row.name })} className="font-semibold text-gray-900 hover:text-blue-600 hover:underline text-xs sm:text-sm text-left block w-full">
@@ -2453,9 +2301,9 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-                      <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-3"><FaChartLine className="text-blue-400 text-2xl" /></div>
-                      <h3 className="text-base font-bold text-gray-900 mb-1">No Data</h3>
-                      <p className="text-sm text-gray-500">No monthly data available</p>
+                      <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-3"><FaSearch className="text-blue-400 text-2xl" /></div>
+                      <h3 className="text-base font-bold text-gray-900 mb-1">No Records Found</h3>
+                      <p className="text-sm text-gray-500">Try adjusting your search criteria</p>
                     </div>
                   )}
                 </div>
