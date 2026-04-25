@@ -229,19 +229,21 @@ const SortableEmployeeRow = ({
   applyTemplateToAllDaysForEmployee, isDragging, handleDragStart,
   employees, leaveTypes,
   isSeparator, toggleSeparator,
-  employeeSearch // ✅ NEW: Receiving the search string
+  employeeSearch // Received from highlightSearch
 }) => {
+  
+  // Highlight logic based on local search text
+  const searchLower = employeeSearch ? employeeSearch.toLowerCase() : '';
+  const isMatch = searchLower.trim() !== '' && (
+    emp.first_name.toLowerCase().includes(searchLower) ||
+    emp.last_name.toLowerCase().includes(searchLower)
+  );
+
+  // ✅ Dragging is always enabled now because array is full!
   const {
     attributes, listeners, setNodeRef, transform, transition,
     isDragging: sortableIsDragging,
   } = useSortable({ id: emp.id });
-
-  // ✅ Check if this row matches the search query to apply highlight
-  const searchLower = employeeSearch ? employeeSearch.toLowerCase() : '';
-  const isMatch = searchLower && searchLower.trim() !== '' && (
-    emp.first_name.toLowerCase().includes(searchLower) ||
-    emp.last_name.toLowerCase().includes(searchLower)
-  );
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -293,22 +295,18 @@ const SortableEmployeeRow = ({
       }`}
       data-employee-id={emp.id}
     >
-      {/* ── Employee cell ── */}
       <td
-        // ✅ Add shadow and border ring if matched
         className={`border-r border-slate-200 ${isMatch ? 'ring-2 ring-blue-500 shadow-lg' : ''}`}
         style={{
           position: 'sticky',
           left: 0,
-          // Pop to front if matched
           zIndex: isMatch ? 20 : 10,
           width: '130px',
           minWidth: '130px',
           maxWidth: '130px',
           padding: '8px',
-          // ✅ Bright blue if searched, Trainee yellow, or white
           backgroundColor: isMatch ? '#bae6fd' : (isEmployeeNameYellow ? '#fef08a' : '#ffffff'),
-          cursor: canEdit ? 'grab' : 'default',
+          cursor: canEdit ? 'grab' : 'default', // Cursor always grab
         }}
         {...listeners}
         {...attributes}
@@ -332,6 +330,7 @@ const SortableEmployeeRow = ({
             )}
           </div>
 
+          {/* ✅ Buttons always visible */}
           {canEdit && (
             <div className="hidden sm:flex flex-col items-center gap-1 w-full mt-1">
               {!isDayView && (
@@ -391,7 +390,6 @@ const SortableEmployeeRow = ({
         </div>
       </td>
 
-      {/* ── Shift cells ── */}
       {weekDays.map(d => {
         const utcDateStr = format(d, 'yyyy-MM-dd');
         const cellBgClass = isDateYellow(utcDateStr) ? 'bg-yellow-100' : '';
