@@ -391,7 +391,32 @@ const orderedEmployees = useMemo(() => {
 
   const weekDays = useMemo(() => getDaysOfWeek(isDayView ? selectedDate : selectedWeekStart), [isDayView, selectedDate, selectedWeekStart]);
 
-  const openEditModal = (employeeId, dateStr, entry) => {
+  // const openEditModal = (employeeId, dateStr, entry) => {
+  //   // if (![1, 5].includes(userRole)) return;
+  //   if (!(userRole === 1 || (userRole === 5 && currentSchedule.status === 'DRAFT'))) return;
+  
+  //   let validDateStr = dateStr;
+  //   if (!validDateStr || validDateStr === 'Invalid Date') {
+  //     validDateStr = format(new Date(), 'yyyy-MM-dd');
+  //   }
+  //   const parsedDate = new Date(validDateStr);
+  //   if (isNaN(parsedDate.getTime())) {
+  //     validDateStr = format(new Date(), 'yyyy-MM-dd');
+  //   }
+  //   const utcDateStr = format(parsedDate, 'yyyy-MM-dd');
+  //   const initialData = entry
+  //     ? {
+  //         assignment_status: entry.assignment_status || 'ASSIGNED',
+  //         shift_type_id: entry.shift_type_id?.toString() || '',
+  //         property_name: entry.property_name || ''
+  //       }
+  //     : { assignment_status: 'ASSIGNED', shift_type_id: '', property_name: '' };
+  //   setEditTarget({ employeeId, dateStr: utcDateStr, entry });
+  //   setEditFormData(initialData);
+  //   setShowEditModal(true);
+  // };
+
+    const openEditModal = (employeeId, dateStr, entry) => {
     // if (![1, 5].includes(userRole)) return;
     if (!(userRole === 1 || (userRole === 5 && currentSchedule.status === 'DRAFT'))) return;
   
@@ -404,21 +429,80 @@ const orderedEmployees = useMemo(() => {
       validDateStr = format(new Date(), 'yyyy-MM-dd');
     }
     const utcDateStr = format(parsedDate, 'yyyy-MM-dd');
+    
+    // ✅ Added is_halfday_approved to the initial form data state
     const initialData = entry
       ? {
           assignment_status: entry.assignment_status || 'ASSIGNED',
           shift_type_id: entry.shift_type_id?.toString() || '',
-          property_name: entry.property_name || ''
+          property_name: entry.property_name || '',
+          is_halfday_approved: entry.is_halfday_approved || 0 // Loads existing status
         }
-      : { assignment_status: 'ASSIGNED', shift_type_id: '', property_name: '' };
+      : { 
+          assignment_status: 'ASSIGNED', 
+          shift_type_id: '', 
+          property_name: '',
+          is_halfday_approved: 0 // Defaults to 0 for new shifts
+        };
+        
     setEditTarget({ employeeId, dateStr: utcDateStr, entry });
     setEditFormData(initialData);
     setShowEditModal(true);
   };
 
-  const handleShiftEdit = async () => {
+
+  // const handleShiftEdit = async () => {
+  //   const { employeeId, dateStr, entry } = editTarget;
+  //   const { assignment_status, shift_type_id, property_name } = editFormData;
+  //   const entryDate = dateStr;
+  //   const payload = {
+  //     schedule_id: currentSchedule.id,
+  //     employee_unique_id: employees.find(e => e.id == employeeId)?.unique_id,
+  //     entry_date: entryDate,
+  //     assignment_status,
+  //     property_name: assignment_status === 'ASSIGNED' ? property_name : null,
+  //     shift_type_id: assignment_status === 'ASSIGNED' ? (shift_type_id || null) : null
+  //   };
+  //   try {
+  //     if (entry) {
+  //       await axios.put(`${API}/api/schedule-entries/${entry.id}`, payload, {
+  //         headers: { 'X-Unique-ID': uniqueId },
+  //         withCredentials: true
+  //       });
+  //     } else {
+  //       await axios.post(`${API}/api/schedule-entries`, payload, {
+  //         headers: { 'X-Unique-ID': uniqueId },
+  //         withCredentials: true
+  //       });
+  //     }
+  //     await loadScheduleEntries(currentSchedule.id);
+  //     if (isMonthView) {
+  //       const entriesRes = await axios.get(`${API}/api/schedules/my-entries-past-3-months`, {
+  //         headers: { 'X-Unique-ID': uniqueId }
+  //       });
+  //       const normalized = entriesRes.data.map(e => ({
+  //         ...e,
+  //         entry_date: e.entry_date.split('T')[0]
+  //       }));
+  //       setMyPastEntries(normalized);
+  //     }
+  //     setShowEditModal(false);
+  //   } catch (err) {
+  //     const errorMessage = err.response?.data?.message || "Invalid data";
+  //     if (errorMessage.includes("Employee already scheduled")) {
+  //       alert(`Failed to save shift: Employee is already scheduled on ${format(new Date(dateStr), 'MMM d, yyyy')}`);
+  //     } else {
+  //       alert(`Failed to save shift: ${errorMessage}`);
+  //     }
+  //   }
+  // };
+
+    const handleShiftEdit = async () => {
     const { employeeId, dateStr, entry } = editTarget;
-    const { assignment_status, shift_type_id, property_name } = editFormData;
+    
+    // ✅ Extract is_halfday_approved
+    const { assignment_status, shift_type_id, property_name, is_halfday_approved } = editFormData; 
+    
     const entryDate = dateStr;
     const payload = {
       schedule_id: currentSchedule.id,
@@ -426,8 +510,12 @@ const orderedEmployees = useMemo(() => {
       entry_date: entryDate,
       assignment_status,
       property_name: assignment_status === 'ASSIGNED' ? property_name : null,
-      shift_type_id: assignment_status === 'ASSIGNED' ? (shift_type_id || null) : null
+      shift_type_id: assignment_status === 'ASSIGNED' ? (shift_type_id || null) : null,
+      
+      // ✅ Pass is_halfday_approved (only true if it's an ASSIGNED shift)
+      is_halfday_approved: assignment_status === 'ASSIGNED' ? (is_halfday_approved ? 1 : 0) : 0
     };
+    
     try {
       if (entry) {
         await axios.put(`${API}/api/schedule-entries/${entry.id}`, payload, {
@@ -441,6 +529,7 @@ const orderedEmployees = useMemo(() => {
         });
       }
       await loadScheduleEntries(currentSchedule.id);
+      
       if (isMonthView) {
         const entriesRes = await axios.get(`${API}/api/schedules/my-entries-past-3-months`, {
           headers: { 'X-Unique-ID': uniqueId }
@@ -461,6 +550,8 @@ const orderedEmployees = useMemo(() => {
       }
     }
   };
+
+
 
   const handleClearShift = async () => {
     const { entry } = editTarget;
@@ -1097,7 +1188,7 @@ return (
         API={API}
       />
 
-      <ScheduleModals
+      {/* <ScheduleModals
         showEditModal={showEditModal}
         setShowEditModal={setShowEditModal}
         editFormData={editFormData}
@@ -1109,6 +1200,20 @@ return (
         shiftTypes={shiftTypes}
         employees={employees}
         uniqueId={uniqueId}
+      /> */}
+            <ScheduleModals
+        showEditModal={showEditModal}
+        setShowEditModal={setShowEditModal}
+        editFormData={editFormData}
+        setEditFormData={setEditFormData}
+        editTarget={editTarget}
+        handleShiftEdit={handleShiftEdit}
+        handleClearShift={handleClearShift}
+        currentSchedule={currentSchedule}
+        shiftTypes={shiftTypes}
+        employees={employees}
+        uniqueId={uniqueId}
+        userRole={userRole} // ✅ ADD THIS LINE!
       />
 
       {/* Create Schedule Modal */}
