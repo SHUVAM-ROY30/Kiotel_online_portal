@@ -1,3 +1,4 @@
+
 // // src/components/schedule/ScheduleMainView.jsx
 // import React, { useMemo, useRef, useEffect, useState } from 'react';
 // import { format, isToday, subDays, addDays, subWeeks, addWeeks, startOfWeek, startOfDay, subMonths, eachDayOfInterval, parseISO } from 'date-fns';
@@ -34,8 +35,8 @@
 //   setSelectedWeekStart,
 //   selectedMonth,
 //   setSelectedMonth,
-//   employeeSearch, // We ignore the parent's search to prevent DB truncation
-//   setEmployeeSearch, // We ignore this to prevent parent filtering
+//   employeeSearch,
+//   setEmployeeSearch,
 //   orderedEmployees,
 //   filteredEmployees,
 //   scheduleEntries,
@@ -78,15 +79,12 @@
 //   const [dragStartCell, setDragStartCell] = useState(null);
 //   const tableBodyRef = useRef(null);
 
-//   // ✅ LOCAL SEARCH STATE: This highlights/scrolls WITHOUT truncating the DB array
 //   const [highlightSearch, setHighlightSearch] = useState('');
 //   const isSearchActive = highlightSearch && highlightSearch.trim() !== '';
 
-//   // ✅ Auto-scroll to the highlighted employee
 //   useEffect(() => {
 //     if (isSearchActive && !isMonthView && !isThreeMonthView) {
 //       const searchLower = highlightSearch.toLowerCase();
-//       // Look through the full, unfiltered list
 //       const firstMatch = filteredEmployees.find(emp =>
 //         emp.first_name.toLowerCase().includes(searchLower) ||
 //         emp.last_name.toLowerCase().includes(searchLower)
@@ -213,7 +211,6 @@
 //   const weekDays = useMemo(() => getDaysOfWeek(isDayView ? selectedDate : selectedWeekStart), [isDayView, selectedDate, selectedWeekStart, currentSchedule]);
 
 //   const handleDragEnd = (event) => {
-//     // ✅ Re-enabled drag and drop perfectly. Array is full, so DB will save correctly.
 //     const { active, over } = event;
 //     if (active && over && active.id !== over.id) {
 //       const oldIndex = filteredEmployees.findIndex(emp => emp.id === active.id);
@@ -450,7 +447,7 @@
 //           <input
 //             type="text"
 //             placeholder="Search to highlight & find employee instantly..."
-//             value={highlightSearch} // ✅ Linked to local highlight search
+//             value={highlightSearch}
 //             onChange={(e) => setHighlightSearch(e.target.value)}
 //             className="w-full p-2 sm:p-3 border border-slate-300 rounded-xl text-sm sm:text-base text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
 //           />
@@ -494,6 +491,9 @@
 //           leaveTypes={leaveTypes}
 //           loading={threeMonthLoading}
 //           employeeRoles={employeeRoles}
+//           openEditModal={openEditModal}
+//           userRole={userRole}
+//           currentSchedule={currentSchedule}
 //         />
 //       ) : isMonthView ? (
 //         <MonthView
@@ -502,6 +502,10 @@
 //           myPastEntries={myPastEntries}
 //           shiftTypes={shiftTypes}
 //           uniqueId={uniqueId}
+//           // ✅ NEW PROPS PASSED TO MONTH VIEW FOR EDITING
+//           openEditModal={openEditModal}
+//           userRole={userRole}
+//           currentSchedule={currentSchedule}
 //         />
 //       ) : (
 // <>
@@ -564,7 +568,6 @@
 //                 emp={emp}
 //                 idx={idx}
 //                 orderedEmployees={filteredEmployees}
-//                 // ✅ Passes the local highlight text down
 //                 employeeSearch={highlightSearch}
 //                 userRole={userRole}
 //                 currentSchedule={currentSchedule}
@@ -684,25 +687,58 @@ const ScheduleMainView = ({
   const [dragStartCell, setDragStartCell] = useState(null);
   const tableBodyRef = useRef(null);
 
+  // Search enhancements
   const [highlightSearch, setHighlightSearch] = useState('');
-  const isSearchActive = highlightSearch && highlightSearch.trim() !== '';
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+
+  const searchMatches = useMemo(() => {
+    if (!highlightSearch || highlightSearch.trim() === '') return [];
+    const searchLower = highlightSearch.toLowerCase();
+    return filteredEmployees.filter(emp =>
+      emp.first_name.toLowerCase().includes(searchLower) ||
+      emp.last_name.toLowerCase().includes(searchLower)
+    );
+  }, [highlightSearch, filteredEmployees]);
+
+  const handleSearchChange = (e) => {
+    setHighlightSearch(e.target.value);
+    setCurrentSearchIndex(0); // Reset index when search changes
+  };
+
+  const handleNextMatch = () => {
+    if (searchMatches.length > 0) {
+      setCurrentSearchIndex((prev) => (prev + 1) % searchMatches.length);
+    }
+  };
+
+  const handlePrevMatch = () => {
+    if (searchMatches.length > 0) {
+      setCurrentSearchIndex((prev) => (prev - 1 + searchMatches.length) % searchMatches.length);
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        handlePrevMatch();
+      } else {
+        handleNextMatch();
+      }
+    }
+  };
 
   useEffect(() => {
-    if (isSearchActive && !isMonthView && !isThreeMonthView) {
-      const searchLower = highlightSearch.toLowerCase();
-      const firstMatch = filteredEmployees.find(emp =>
-        emp.first_name.toLowerCase().includes(searchLower) ||
-        emp.last_name.toLowerCase().includes(searchLower)
-      );
-      
-      if (firstMatch && tableBodyRef.current) {
-        const row = tableBodyRef.current.querySelector(`tr[data-employee-id="${firstMatch.id}"]`);
+    if (searchMatches.length > 0 && !isMonthView && !isThreeMonthView && tableBodyRef.current) {
+      const targetMatch = searchMatches[currentSearchIndex];
+      if (targetMatch) {
+        const row = tableBodyRef.current.querySelector(`tr[data-employee-id="${targetMatch.id}"]`);
         if (row) {
           row.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }
     }
-  }, [highlightSearch, filteredEmployees, isMonthView, isThreeMonthView]);
+  }, [currentSearchIndex, searchMatches, isMonthView, isThreeMonthView]);
 
   const downloadScheduleData = async () => {
     if (!currentSchedule || !scheduleEntries || !employees || !shiftTypes || !leaveTypes) {
@@ -1048,14 +1084,42 @@ const ScheduleMainView = ({
       </div>
 
       {!isMonthView && !isThreeMonthView && (
-        <div className="mb-4 sm:mb-6">
+        <div className="mb-4 sm:mb-6 relative flex items-center">
           <input
             type="text"
-            placeholder="Search to highlight & find employee instantly..."
+            placeholder="Search to highlight & find employee instantly (Press Enter for next)..."
             value={highlightSearch}
-            onChange={(e) => setHighlightSearch(e.target.value)}
-            className="w-full p-2 sm:p-3 border border-slate-300 rounded-xl text-sm sm:text-base text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+            onChange={handleSearchChange}
+            onKeyDown={handleSearchKeyDown}
+            className="w-full p-2 sm:p-3 pr-32 border border-slate-300 rounded-xl text-sm sm:text-base text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
           />
+          {searchMatches.length > 0 && (
+            <div className="absolute right-3 flex items-center gap-3 text-sm font-medium text-slate-600">
+              <span>{currentSearchIndex + 1} / {searchMatches.length}</span>
+              <div className="flex bg-slate-100 rounded-md border border-slate-200 overflow-hidden">
+                <button 
+                  onClick={handlePrevMatch} 
+                  title="Previous match (Shift + Enter)"
+                  className="px-2 py-1 hover:bg-slate-200 hover:text-blue-600 transition-colors focus:outline-none"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+                </button>
+                <div className="w-px bg-slate-300"></div>
+                <button 
+                  onClick={handleNextMatch} 
+                  title="Next match (Enter)"
+                  className="px-2 py-1 hover:bg-slate-200 hover:text-blue-600 transition-colors focus:outline-none"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+              </div>
+            </div>
+          )}
+          {highlightSearch && searchMatches.length === 0 && (
+            <div className="absolute right-3 text-sm text-slate-500">
+              0 / 0
+            </div>
+          )}
         </div>
       )}
 
@@ -1107,7 +1171,6 @@ const ScheduleMainView = ({
           myPastEntries={myPastEntries}
           shiftTypes={shiftTypes}
           uniqueId={uniqueId}
-          // ✅ NEW PROPS PASSED TO MONTH VIEW FOR EDITING
           openEditModal={openEditModal}
           userRole={userRole}
           currentSchedule={currentSchedule}

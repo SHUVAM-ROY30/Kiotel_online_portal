@@ -318,7 +318,7 @@ export default function Newsfeed() {
         formData.append("file", file);
 
         try {
-            const res = await axios.post(`${API_BASE_URL}/api/upload-media`, formData, {
+            const res = await axios.post(`${API_BASE_URL}/api/posts/upload-media`, formData, {
                 headers: { "Content-Type": "multipart/form-data" },
                 withCredentials: true
             });
