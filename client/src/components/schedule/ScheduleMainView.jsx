@@ -1169,6 +1169,7 @@ const ScheduleMainView = ({
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
           myPastEntries={myPastEntries}
+          scheduleEntries={scheduleEntries}
           shiftTypes={shiftTypes}
           uniqueId={uniqueId}
           openEditModal={openEditModal}
