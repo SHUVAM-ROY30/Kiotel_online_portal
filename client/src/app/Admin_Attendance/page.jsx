@@ -1,3 +1,4 @@
+
 // 'use client';
 // import { useState, useEffect, useCallback, useMemo } from 'react';
 // import { format, parseISO } from 'date-fns';
@@ -6,7 +7,7 @@
 // import { saveAs } from 'file-saver';
 // import EmployeeAttendanceModal from './EmployeeAttendanceModal';
 // import EmployeeMonthlyPhotosModal from './EmployeeMonthlyPhotosModal'; 
-// import { FaCalendarAlt, FaFileExport, FaCheckCircle, FaExclamationTriangle, FaClock, FaTimesCircle, FaBriefcase, FaChartLine, FaSearch } from 'react-icons/fa';
+// import { FaCalendarAlt, FaFileExport, FaCheckCircle, FaExclamationTriangle, FaClock, FaTimesCircle, FaBriefcase, FaChartLine, FaSearch, FaEdit } from 'react-icons/fa';
 
 // const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
 
@@ -42,6 +43,64 @@
 //   </div>
 // );
 
+// // // Helper to extract HH:mm for the time input from DB strings
+// // function formatHHMMForInput(timeRaw) {
+// //   if (!timeRaw) return '';
+// //   if (typeof timeRaw === 'string' && timeRaw.length >= 16) {
+// //     return timeRaw.substring(11, 16);
+// //   }
+// //   const d = new Date(timeRaw);
+// //   if (!isNaN(d.getTime())) {
+// //     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+// //   }
+// //   return '';
+// // }
+// // 1. Replace the existing formatHHMMForInput function with this improved version
+// function formatHHMMForInput(timeRaw) {
+//   if (!timeRaw || timeRaw === 'Missed') return '';
+  
+//   // If it's already HH:MM format
+//   if (/^\d{2}:\d{2}$/.test(timeRaw)) return timeRaw;
+  
+//   // If it's HH:MM:SS format
+//   if (/^\d{2}:\d{2}:\d{2}/.test(timeRaw)) return timeRaw.substring(0, 5);
+
+//   // If it's 12-hour format like "9:30 AM" or "02:15 PM"
+//   if (typeof timeRaw === 'string' && /AM|PM/i.test(timeRaw)) {
+//     const isPM = /PM/i.test(timeRaw);
+//     const timeOnly = timeRaw.replace(/AM|PM/i, '').trim();
+//     const parts = timeOnly.split(':').map(Number);
+//     if (parts.length >= 2) {
+//       let hours = parts[0];
+//       if (isPM && hours !== 12) hours += 12;
+//       if (!isPM && hours === 12) hours = 0;
+//       return `${String(hours).padStart(2, '0')}:${String(parts[1]).padStart(2, '0')}`;
+//     }
+//   }
+
+//   // Handle ISO strings (e.g., 2023-10-10T10:30:00Z)
+//   if (typeof timeRaw === 'string' && timeRaw.includes('T')) {
+//     const d = new Date(timeRaw);
+//     if (!isNaN(d.getTime())) {
+//       return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+//     }
+//     if (timeRaw.length >= 16) {
+//       return timeRaw.substring(11, 16);
+//     }
+//   }
+
+//   // Native Date object fallback
+//   const d = new Date(timeRaw);
+//   if (!isNaN(d.getTime())) {
+//     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+//   }
+
+//   return '';
+// }
+
+
+// // 2. Replace the openEditModal function
+  
 // function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, graceMinutes = 0, earlyGraceMinutes = 15) {
 //   const details = { status: 'Absent', late_minutes: 0, early_clock_out_minutes: 0, overtime_minutes: 0 };
 //   if (!clockIn) return details;
@@ -211,6 +270,17 @@
 //   });
 //   const [isAdding, setIsAdding] = useState(false);
 
+//   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+//   const [editFormData, setEditFormData] = useState({
+//     attendance_id: '',
+//     employee_name: '',
+//     unique_id: '',
+//     shift_id: '',
+//     clock_in_time: '',
+//     clock_out_time: ''
+//   });
+//   const [isEditing, setIsEditing] = useState(false);
+
 //   const fetchShifts = useCallback(async () => {
 //     try {
 //       const res = await fetch(`${API_BASE}/clockin/shifts`);
@@ -361,7 +431,27 @@
 //     if (type === 'daily') await exportDailyStyled();
 //     else if (type === 'monthly') await exportMonthlyStyled();
 //   };
+// const openEditModal = (row) => {
+//     // If shift_id is missing but we have the shift_name, try to match it
+//     let targetShiftId = row.shift_id;
+//     if (!targetShiftId && row.shift_name) {
+//       const matchingShift = availableShifts.find(s => 
+//         s.shift_name === row.shift_name || 
+//         (row.shift_name === 'ADMIN' && s.shift_name === 'ADMIN')
+//       );
+//       if (matchingShift) targetShiftId = matchingShift.id;
+//     }
 
+//     setEditFormData({
+//       attendance_id: row.id,
+//       employee_name: row.name,
+//       unique_id: row.unique_id,
+//       shift_id: targetShiftId || '',
+//       clock_in_time: formatHHMMForInput(row.raw_clock_in || row.clock_in),
+//       clock_out_time: row.clock_out === 'Missed' ? '' : formatHHMMForInput(row.raw_clock_out || row.clock_out)
+//     });
+//     setIsEditModalOpen(true);
+//   };
 //   const openManualAdd = (row) => {
 //     setAddFormData({
 //       employee_id: row.unique_id,
@@ -401,6 +491,38 @@
 //       alert('Error adding manual record.');
 //     } finally {
 //       setIsAdding(false);
+//     }
+//   };
+
+
+
+//   const handleEditSubmit = async (e) => {
+//     e.preventDefault();
+//     setIsEditing(true);
+//     try {
+//       const res = await fetch(`${API_BASE}/clockin/admin/manual-edit`, {
+//         method: 'PUT',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({
+//           attendance_id: editFormData.attendance_id,
+//           shift_id: editFormData.shift_id,
+//           attendance_date: date,
+//           clock_in_time: editFormData.clock_in_time,
+//           clock_out_time: editFormData.clock_out_time || null
+//         })
+//       });
+//       const result = await res.json();
+//       if (result.success) {
+//         setIsEditModalOpen(false);
+//         fetchDaily();
+//       } else {
+//         alert(result.message || 'Failed to update record');
+//       }
+//     } catch (err) {
+//       console.error(err);
+//       alert('Error updating manual record.');
+//     } finally {
+//       setIsEditing(false);
 //     }
 //   };
 
@@ -1115,6 +1237,7 @@
 //                             <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">Early</th>
 //                             <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">OT</th>
 //                             <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-semibold text-white uppercase">Photo</th>
+//                             <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-semibold text-white uppercase">Actions</th>
 //                           </tr>
 //                         </thead>
 //                         <tbody className="bg-white">
@@ -1207,6 +1330,18 @@
 //                                   <FaCheckCircle className="inline text-emerald-600" />
 //                                 ) : (
 //                                   <span className="text-gray-300">—</span>
+//                                 )}
+//                               </td>
+                              
+//                               <td className="px-2 sm:px-3 py-2 text-center">
+//                                 {row.clock_in && !String(row.id).startsWith('absent') && (
+//                                   <button 
+//                                     onClick={() => openEditModal(row)}
+//                                     className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
+//                                     title="Edit Times"
+//                                   >
+//                                     <FaEdit />
+//                                   </button>
 //                                 )}
 //                               </td>
 //                             </tr>
@@ -1380,6 +1515,86 @@
 //         </div>
 //       )}
 
+//       {isEditModalOpen && (
+//         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+//           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+//             <div className="px-6 py-4 border-b border-gray-200 bg-white flex justify-between items-center">
+//               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+//                 <FaEdit className="text-purple-600" /> Edit Attendance Record
+//               </h3>
+//               <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+//                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+//               </button>
+//             </div>
+            
+//             <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-1">Employee</label>
+//                 <div className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600">
+//                   {editFormData.employee_name} ({editFormData.unique_id})
+//                 </div>
+//               </div>
+
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-1">Shift</label>
+//                 <select 
+//                   required
+//                   value={editFormData.shift_id}
+//                   onChange={(e) => setEditFormData({...editFormData, shift_id: e.target.value})}
+//                   className="w-full border-2 border-purple-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm transition-all"
+//                 >
+//                   <option value="">Select Shift...</option>
+//                   {availableShifts.map(shift => (
+//                     <option key={shift.id} value={shift.id}>
+//                       {shift.shift_name} ({shift.start_time} - {shift.end_time})
+//                     </option>
+//                   ))}
+//                 </select>
+//               </div>
+
+//               <div className="grid grid-cols-2 gap-4">
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 mb-1">Clock In Time</label>
+//                   <input 
+//                     type="time" 
+//                     required
+//                     value={editFormData.clock_in_time}
+//                     onChange={(e) => setEditFormData({...editFormData, clock_in_time: e.target.value})}
+//                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 outline-none text-sm"
+//                   />
+//                 </div>
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 mb-1">Clock Out Time (Optional)</label>
+//                   <input 
+//                     type="time" 
+//                     value={editFormData.clock_out_time}
+//                     onChange={(e) => setEditFormData({...editFormData, clock_out_time: e.target.value})}
+//                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 outline-none text-sm"
+//                   />
+//                 </div>
+//               </div>
+
+//               <div className="pt-4 flex gap-3 justify-end border-t border-gray-100 mt-6">
+//                 <button 
+//                   type="button" 
+//                   onClick={() => setIsEditModalOpen(false)}
+//                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+//                 >
+//                   Cancel
+//                 </button>
+//                 <button 
+//                   type="submit" 
+//                   disabled={isEditing}
+//                   className="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors flex items-center gap-2"
+//                 >
+//                   {isEditing ? 'Updating...' : 'Update Record'}
+//                 </button>
+//               </div>
+//             </form>
+//           </div>
+//         </div>
+//       )}
+
 //       {modalOpen && <EmployeeAttendanceModal employeeData={modalData} onClose={closeModal} />}
 
 //       {monthlyPhotoEmployee && (
@@ -1412,6 +1627,7 @@ import { format, parseISO } from 'date-fns';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import axios from 'axios';
 import EmployeeAttendanceModal from './EmployeeAttendanceModal';
 import EmployeeMonthlyPhotosModal from './EmployeeMonthlyPhotosModal'; 
 import { FaCalendarAlt, FaFileExport, FaCheckCircle, FaExclamationTriangle, FaClock, FaTimesCircle, FaBriefcase, FaChartLine, FaSearch, FaEdit } from 'react-icons/fa';
@@ -1450,19 +1666,6 @@ const TableSkeleton = () => (
   </div>
 );
 
-// // Helper to extract HH:mm for the time input from DB strings
-// function formatHHMMForInput(timeRaw) {
-//   if (!timeRaw) return '';
-//   if (typeof timeRaw === 'string' && timeRaw.length >= 16) {
-//     return timeRaw.substring(11, 16);
-//   }
-//   const d = new Date(timeRaw);
-//   if (!isNaN(d.getTime())) {
-//     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-//   }
-//   return '';
-// }
-// 1. Replace the existing formatHHMMForInput function with this improved version
 function formatHHMMForInput(timeRaw) {
   if (!timeRaw || timeRaw === 'Missed') return '';
   
@@ -1505,9 +1708,6 @@ function formatHHMMForInput(timeRaw) {
   return '';
 }
 
-
-// 2. Replace the openEditModal function
-  
 function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, graceMinutes = 0, earlyGraceMinutes = 15) {
   const details = { status: 'Absent', late_minutes: 0, early_clock_out_minutes: 0, overtime_minutes: 0 };
   if (!clockIn) return details;
@@ -1666,6 +1866,7 @@ export default function AdminDashboard() {
   const [monthlyPhotoEmployee, setMonthlyPhotoEmployee] = useState(null);
 
   const [availableShifts, setAvailableShifts] = useState([]);
+  const [userEmail, setUserEmail] = useState('');
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addFormData, setAddFormData] = useState({
@@ -1687,6 +1888,22 @@ export default function AdminDashboard() {
     clock_out_time: ''
   });
   const [isEditing, setIsEditing] = useState(false);
+
+  // Fetch logged in user email to determine permissions
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || API_BASE.replace('/api', '');
+        const res = await axios.get(`${baseUrl}/api/user-email`, { withCredentials: true });
+        setUserEmail(res.data.email);
+      } catch (err) {
+        console.error('Failed to fetch user data:', err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const isReadOnly = userEmail === 'kioteltrainer@kiotel.co' || userEmail === 'qateam@kiotel.co';
 
   const fetchShifts = useCallback(async () => {
     try {
@@ -1752,7 +1969,7 @@ export default function AdminDashboard() {
   }, [date]);
 
   const handleToggleWaiveLate = async (id, currentStatus) => {
-    if (!id || String(id).startsWith('absent')) return;
+    if (!id || String(id).startsWith('absent') || isReadOnly) return;
     try {
       const res = await fetch(`${API_BASE}/clockin/admin/daily/waive-late`, {
         method: 'PUT',
@@ -1838,8 +2055,9 @@ export default function AdminDashboard() {
     if (type === 'daily') await exportDailyStyled();
     else if (type === 'monthly') await exportMonthlyStyled();
   };
-const openEditModal = (row) => {
-    // If shift_id is missing but we have the shift_name, try to match it
+
+  const openEditModal = (row) => {
+    if (isReadOnly) return;
     let targetShiftId = row.shift_id;
     if (!targetShiftId && row.shift_name) {
       const matchingShift = availableShifts.find(s => 
@@ -1859,7 +2077,9 @@ const openEditModal = (row) => {
     });
     setIsEditModalOpen(true);
   };
+
   const openManualAdd = (row) => {
+    if (isReadOnly) return;
     setAddFormData({
       employee_id: row.unique_id,
       employee_name: row.name,
@@ -1900,8 +2120,6 @@ const openEditModal = (row) => {
       setIsAdding(false);
     }
   };
-
-
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
@@ -2680,6 +2898,8 @@ const openEditModal = (row) => {
                                   <span className={`inline-flex px-1.5 py-0.5 rounded bg-green-50 text-green-700 text-[10px] sm:text-xs font-medium`}>
                                     {formatTime(row.clock_in)}
                                   </span>
+                                ) : isReadOnly ? (
+                                  <span className="text-gray-400">—</span>
                                 ) : (
                                   <button 
                                     onClick={() => openManualAdd(row)} 
@@ -2699,6 +2919,8 @@ const openEditModal = (row) => {
                                   <span className={`inline-flex px-1.5 py-0.5 rounded ${row.is_missed ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-500'} text-[10px] sm:text-xs font-medium`}>
                                     {row.is_missed ? 'Missed' : '—'}
                                   </span>
+                                ) : isReadOnly ? (
+                                  <span className="text-gray-400">—</span>
                                 ) : (
                                   <button 
                                     onClick={() => openManualAdd(row)} 
@@ -2714,7 +2936,7 @@ const openEditModal = (row) => {
                               <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-amber-700">
                                 <div className="flex items-center justify-end gap-2">
                                   {row.is_late_waived ? '0' : (row.late_minutes > 0 ? row.late_minutes : '—')}
-                                  {row.status !== 'Absent' && (row.late_minutes > 0 || row.is_late_waived) && (
+                                  {row.status !== 'Absent' && (row.late_minutes > 0 || row.is_late_waived) && !isReadOnly && (
                                     <button 
                                       onClick={() => handleToggleWaiveLate(row.id, row.is_late_waived)}
                                       className={`text-[10px] px-1 rounded transition-colors ${row.is_late_waived ? 'bg-blue-100 hover:bg-blue-200 text-blue-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
@@ -2741,7 +2963,7 @@ const openEditModal = (row) => {
                               </td>
                               
                               <td className="px-2 sm:px-3 py-2 text-center">
-                                {row.clock_in && !String(row.id).startsWith('absent') && (
+                                {row.clock_in && !String(row.id).startsWith('absent') && !isReadOnly && (
                                   <button 
                                     onClick={() => openEditModal(row)}
                                     className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
@@ -2842,7 +3064,7 @@ const openEditModal = (row) => {
         </div>
       </div>
 
-      {isAddModalOpen && (
+      {isAddModalOpen && !isReadOnly && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white flex justify-between items-center">
@@ -2922,7 +3144,7 @@ const openEditModal = (row) => {
         </div>
       )}
 
-      {isEditModalOpen && (
+      {isEditModalOpen && !isReadOnly && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-white flex justify-between items-center">

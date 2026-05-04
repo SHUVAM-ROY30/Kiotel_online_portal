@@ -1,6 +1,4 @@
 
-
-
 // // src/components/schedule/ShiftCell.jsx
 
 // import React, { useEffect } from 'react';
@@ -38,6 +36,24 @@
 //   const isSelectedForAnyTemplate = Object.values(multiTemplateSelections || {}).some((set) =>
 //     set.has(cellKey)
 //   );
+
+//   // ==========================================================
+//   // ✅ Blue Shift Color Logic
+//   // ==========================================================
+//   let assignedShiftType = null;
+//   let shiftColor = { bg: 'bg-white', border: 'border-gray-300', text: 'text-black' };
+
+//   if (entry && entry.assignment_status === 'ASSIGNED') {
+//     assignedShiftType = shiftTypes.find((st) => st.id == entry.shift_type_id);
+//     const shiftName = assignedShiftType?.name || '';
+    
+//     // Check if it's an "EX" shift, "Double", or contains an underscore
+//     const isBlueShift = shiftName.includes('EX') || shiftName.includes('Double') || shiftName.includes('_');
+    
+//     if (isBlueShift) {
+//       shiftColor = { bg: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-800' };
+//     }
+//   }
 
 //   // ✅ Click to edit (only if no template selected)
 //   const handleCellClick = (e) => {
@@ -132,15 +148,16 @@
 //       textColor = 'text-black';
 
 //     if (entry.assignment_status === 'ASSIGNED') {
-//       const shiftType = shiftTypes.find((st) => st.id == entry.shift_type_id);
 //       content = (
 //         <>
-//           <div className="font-semibold text-sm">{shiftType?.name}</div>
+//           <div className="font-semibold text-sm">{assignedShiftType?.name}</div>
 //           <div className="text-xs truncate mt-1">{entry.property_name}</div>
 //         </>
 //       );
-//       bgColor = 'bg-white';
-//       borderColor = 'border-gray-300';
+//       // Apply our determined shift colors here
+//       bgColor = shiftColor.bg;
+//       borderColor = shiftColor.border;
+//       textColor = shiftColor.text;
 //     } else {
 //       let statusText = '';
 //       switch (entry.assignment_status) {
@@ -217,14 +234,14 @@
 //           <div
 //             className={`p-3 rounded-xl w-full h-full flex flex-col justify-center ${
 //               isSelectedForCurrentTemplate
-//                 ? 'bg-white border border-blue-300 text-black'
+//                 ? 'bg-white border border-blue-400 text-black shadow-inner'
 //                 : isSelectedForAnyTemplate
-//                 ? 'bg-white border border-green-300 text-black'
-//                 : 'bg-white border border-gray-300 text-black'
+//                 ? 'bg-white border border-green-400 text-black shadow-inner'
+//                 : `${shiftColor.bg} border ${shiftColor.border} ${shiftColor.text}` // <-- Added dynamic shift color here!
 //             } shadow-sm group-hover:shadow-md transition-shadow`}
 //           >
 //             <div className="font-semibold text-sm">
-//               {shiftTypes.find((st) => st.id == entry.shift_type_id)?.name}
+//               {assignedShiftType?.name}
 //             </div>
 //             <div className="text-xs truncate mt-1">{entry.property_name}</div>
 //           </div>
@@ -287,14 +304,10 @@
 // export default ShiftCell;
 
 
-
 // src/components/schedule/ShiftCell.jsx
 
 import React, { useEffect } from 'react';
 import { format } from 'date-fns';
-import axios from 'axios';
-
-const API = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const ShiftCell = ({
   employeeId,
@@ -327,19 +340,29 @@ const ShiftCell = ({
   );
 
   // ==========================================================
-  // ✅ Blue Shift Color Logic
+  // ✅ Blue & Yellow Shift Color Logic
   // ==========================================================
   let assignedShiftType = null;
   let shiftColor = { bg: 'bg-white', border: 'border-gray-300', text: 'text-black' };
 
-  if (entry && entry.assignment_status === 'ASSIGNED') {
+  // if (entry && entry.assignment_status === 'ASSIGNED') {
+  //   assignedShiftType = shiftTypes.find((st) => st.id == entry.shift_type_id);
+  //   const shiftName = assignedShiftType?.name || '';
+    
+  //   // Check if it's a Half Day shift
+  //   const isHalfDay = shiftName.toLowerCase().includes('half');
+    if (entry && entry.assignment_status === 'ASSIGNED') {
     assignedShiftType = shiftTypes.find((st) => st.id == entry.shift_type_id);
     const shiftName = assignedShiftType?.name || '';
     
+    // Check if it's a Half Day shift OR marked as approved in DB
+    const isHalfDay = shiftName.toLowerCase().includes('half') || entry.is_halfday_approved === 1 || entry.is_halfday_approved === true;
     // Check if it's an "EX" shift, "Double", or contains an underscore
     const isBlueShift = shiftName.includes('EX') || shiftName.includes('Double') || shiftName.includes('_');
     
-    if (isBlueShift) {
+    if (isHalfDay) {
+      shiftColor = { bg: 'bg-yellow-100', border: 'border-yellow-400', text: 'text-yellow-900' };
+    } else if (isBlueShift) {
       shiftColor = { bg: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-800' };
     }
   }
@@ -372,8 +395,8 @@ const ShiftCell = ({
     let isDragging = false;
     let scrollFrame;
 
-    const scrollMargin = 80; // px from edge where scroll starts
-    const maxScrollSpeed = 30; // px per frame
+    const scrollMargin = 80;
+    const maxScrollSpeed = 30;
 
     const handleMouseDown = () => {
       isDragging = true;
@@ -394,11 +417,9 @@ const ShiftCell = ({
 
       let scrollDelta = 0;
 
-      // Scroll up
       if (distanceTop < scrollMargin && container.scrollTop > 0) {
         scrollDelta = -((scrollMargin - distanceTop) / scrollMargin) * maxScrollSpeed;
       }
-      // Scroll down
       else if (distanceBottom < scrollMargin && container.scrollTop < container.scrollHeight) {
         scrollDelta = ((scrollMargin - distanceBottom) / scrollMargin) * maxScrollSpeed;
       }
@@ -431,10 +452,7 @@ const ShiftCell = ({
   if (!isEditable) {
     if (!entry) return <div className="h-20"></div>;
 
-    let content,
-      bgColor,
-      borderColor,
-      textColor = 'text-black';
+    let content, bgColor, borderColor, textColor = 'text-black';
 
     if (entry.assignment_status === 'ASSIGNED') {
       content = (
@@ -443,13 +461,18 @@ const ShiftCell = ({
           <div className="text-xs truncate mt-1">{entry.property_name}</div>
         </>
       );
-      // Apply our determined shift colors here
       bgColor = shiftColor.bg;
       borderColor = shiftColor.border;
       textColor = shiftColor.text;
     } else {
       let statusText = '';
       switch (entry.assignment_status) {
+        case 'HALF_DAY': // Fallback if half day is saved as a status
+          statusText = 'Half Day';
+          bgColor = 'bg-yellow-100';
+          borderColor = 'border-yellow-400';
+          textColor = 'text-yellow-900';
+          break;
         case 'PTO_REQUESTED':
           statusText = 'LLOP';
           bgColor = 'bg-gray-800';
@@ -526,7 +549,7 @@ const ShiftCell = ({
                 ? 'bg-white border border-blue-400 text-black shadow-inner'
                 : isSelectedForAnyTemplate
                 ? 'bg-white border border-green-400 text-black shadow-inner'
-                : `${shiftColor.bg} border ${shiftColor.border} ${shiftColor.text}` // <-- Added dynamic shift color here!
+                : `${shiftColor.bg} border ${shiftColor.border} ${shiftColor.text}`
             } shadow-sm group-hover:shadow-md transition-shadow`}
           >
             <div className="font-semibold text-sm">
@@ -537,7 +560,9 @@ const ShiftCell = ({
         ) : (
           <div
             className={`p-3 rounded-xl w-full h-full flex flex-col justify-center shadow-sm group-hover:shadow-md transition-shadow ${
-              entry.assignment_status === 'PTO_REQUESTED'
+              entry.assignment_status === 'HALF_DAY'
+                ? 'bg-yellow-100 border border-yellow-400 text-yellow-900'
+                : entry.assignment_status === 'PTO_REQUESTED'
                 ? 'bg-gray-800 border border-gray-600 text-red-400'
                 : entry.assignment_status === 'PTO_APPROVED'
                 ? 'bg-purple-100 border border-purple-300 text-purple-800'
@@ -553,7 +578,9 @@ const ShiftCell = ({
             } ${isSelectedForCurrentTemplate ? 'text-white' : ''}`}
           >
             <div className="font-semibold text-sm">
-              {entry.assignment_status === 'PTO_REQUESTED'
+              {entry.assignment_status === 'HALF_DAY'
+                ? 'Half Day'
+                : entry.assignment_status === 'PTO_REQUESTED'
                 ? 'LLOP'
                 : entry.assignment_status === 'PTO_APPROVED'
                 ? 'Paid Leave'
