@@ -446,7 +446,7 @@ export default function ActiveAgentsPage() {
           { withCredentials: true }
         );
         if (res.data.role !== 1) {
-          router.push("/dashboard");
+          router.push("/Dashboard");
           return;
         }
         setUser(res.data);
@@ -573,7 +573,12 @@ export default function ActiveAgentsPage() {
       </div>
     );
   }
-
+/**
+ * Hello this the way you should be having the same as this is the world of the local code in which you are having the same in the sequence for the local trading in the seen of the 
+ * as they are the local helling of the itmes.forEach(second => {third})
+ * Hell no this is the way its shoudl be having the same of the local seen in the timings of the local saviour of the falling out.
+ * so this is the way it shoudl be having all the timings of th
+ */
   if (error) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
@@ -624,14 +629,14 @@ export default function ActiveAgentsPage() {
             <div className="fade-up">
               <div className="flex items-center gap-2.5 mb-1">
                 <button
-                  onClick={() => router.push("/dashboard")}
+                  onClick={() => router.push("/Dashboard")}
                   className="text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
                   </svg>
                 </button>
-                <h1 className="text-xl font-bold text-slate-900">Active Agents</h1>
+                <h1 className="text-xl font-bold text-slate-900">Active In Office</h1>
                 {/* Live indicator */}
                 <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 border border-emerald-200 rounded-full ml-1">
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full live-blink"></span>
