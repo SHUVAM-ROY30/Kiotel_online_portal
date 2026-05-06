@@ -1838,28 +1838,50 @@ export default function AdminDashboard() {
     if (type === 'daily') await exportDailyStyled();
     else if (type === 'monthly') await exportMonthlyStyled();
   };
-const openEditModal = (row) => {
-    // If shift_id is missing but we have the shift_name, try to match it
-    let targetShiftId = row.shift_id;
-    if (!targetShiftId && row.shift_name) {
-      const matchingShift = availableShifts.find(s => 
-        s.shift_name === row.shift_name || 
-        (row.shift_name === 'ADMIN' && s.shift_name === 'ADMIN')
-      );
-      if (matchingShift) targetShiftId = matchingShift.id;
-    }
+// const openEditModal = (row) => {
+//     // If shift_id is missing but we have the shift_name, try to match it
+//     let targetShiftId = row.shift_id;
+//     if (!targetShiftId && row.shift_name) {
+//       const matchingShift = availableShifts.find(s => 
+//         s.shift_name === row.shift_name || 
+//         (row.shift_name === 'ADMIN' && s.shift_name === 'ADMIN')
+//       );
+//       if (matchingShift) targetShiftId = matchingShift.id;
+//     }
 
-    setEditFormData({
-      attendance_id: row.id,
-      employee_name: row.name,
-      unique_id: row.unique_id,
-      shift_id: targetShiftId || '',
-      clock_in_time: formatHHMMForInput(row.raw_clock_in || row.clock_in),
-      clock_out_time: row.clock_out === 'Missed' ? '' : formatHHMMForInput(row.raw_clock_out || row.clock_out)
-    });
-    setIsEditModalOpen(true);
-  };
-  const openManualAdd = (row) => {
+//     setEditFormData({
+//       attendance_id: row.id,
+//       employee_name: row.name,
+//       unique_id: row.unique_id,
+//       shift_id: targetShiftId || '',
+//       clock_in_time: formatHHMMForInput(row.raw_clock_in || row.clock_in),
+//       clock_out_time: row.clock_out === 'Missed' ? '' : formatHHMMForInput(row.raw_clock_out || row.clock_out)
+//     });
+//     setIsEditModalOpen(true);
+//   };
+
+const openEditModal = (row) => {
+  const hasClockIn = !!row.clock_in;
+  const hasClockOut = !!row.clock_out && row.clock_out !== 'Missed';
+
+  setEditFormData({
+    attendance_id: row.id,
+    employee_name: row.name,
+    unique_id: row.unique_id,
+      shift_id: row.shift_id ? String(row.shift_id) : '',
+    clock_in_time: formatHHMMForInput(row.raw_clock_in || row.clock_in),
+    clock_out_time: hasClockOut ? formatHHMMForInput(row.raw_clock_out || row.clock_out) : '',
+    
+    // 🔥 ADD THIS
+    mode: !hasClockIn ? 'full-add'
+         : hasClockIn && !hasClockOut ? 'add-out'
+         : 'locked'
+  });
+
+  setIsEditModalOpen(true);
+};
+
+const openManualAdd = (row) => {
     setAddFormData({
       employee_id: row.unique_id,
       employee_name: row.name,
@@ -1903,35 +1925,87 @@ const openEditModal = (row) => {
 
 
 
+  // const handleEditSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setIsEditing(true);
+  //   try {
+  //     const res = await fetch(`${API_BASE}/clockin/admin/manual-edit`, {
+  //       method: 'PUT',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         attendance_id: editFormData.attendance_id,
+  //         shift_id: editFormData.shift_id,
+  //         attendance_date: date,
+  //         clock_in_time: editFormData.clock_in_time,
+  //         clock_out_time: editFormData.clock_out_time || null
+  //       })
+  //     });
+  //     const result = await res.json();
+  //     if (result.success) {
+  //       setIsEditModalOpen(false);
+  //       fetchDaily();
+  //     } else {
+  //       alert(result.message || 'Failed to update record');
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert('Error updating manual record.');
+  //   } finally {
+  //     setIsEditing(false);
+  //   }
+  // };
+
   const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    setIsEditing(true);
-    try {
-      const res = await fetch(`${API_BASE}/clockin/admin/manual-edit`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          attendance_id: editFormData.attendance_id,
-          shift_id: editFormData.shift_id,
-          attendance_date: date,
-          clock_in_time: editFormData.clock_in_time,
-          clock_out_time: editFormData.clock_out_time || null
-        })
-      });
-      const result = await res.json();
-      if (result.success) {
-        setIsEditModalOpen(false);
-        fetchDaily();
-      } else {
-        alert(result.message || 'Failed to update record');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Error updating manual record.');
-    } finally {
-      setIsEditing(false);
+  e.preventDefault();
+  setIsEditing(true);
+
+  try {
+
+    // 🔥 Build payload safely
+    const payload = {
+      attendance_id: editFormData.attendance_id,
+      shift_id: editFormData.shift_id,
+      attendance_date: date,
+    };
+
+    // ✅ Only send clock_in for full add
+    if (
+      !editFormData.mode ||
+      editFormData.mode === 'full-add'
+    ) {
+      payload.clock_in_time = editFormData.clock_in_time;
     }
-  };
+
+    // ✅ Send clock_out only if entered
+    if (editFormData.clock_out_time) {
+      payload.clock_out_time = editFormData.clock_out_time;
+    }
+
+    const res = await fetch(`${API_BASE}/clockin/admin/manual-edit`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await res.json();
+
+    if (result.success) {
+      setIsEditModalOpen(false);
+      fetchDaily();
+    } else {
+      alert(result.message || 'Failed to update record');
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert('Error updating manual record.');
+  } finally {
+    setIsEditing(false);
+  }
+};
+
 
   const COLORS = {
     primary: 'FF2563EB', primaryDark: 'FF1D4ED8', primaryLight: 'FFDBEAFE', 
@@ -2866,13 +2940,18 @@ const openEditModal = (row) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Shift</label>
                 <select 
                   required
-                  value={addFormData.shift_id}
-                  onChange={(e) => setAddFormData({...addFormData, shift_id: e.target.value})}
+                    value={editFormData.shift_id}
+  onChange={(e) =>
+    setEditFormData(prev => ({
+      ...prev,
+      shift_id: e.target.value
+    }))
+  }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                 >
                   <option value="">Select Shift...</option>
                   {availableShifts.map(shift => (
-                    <option key={shift.id} value={shift.id}>
+                    <option key={shift.id} value={String(shift.id)}>
                       {shift.shift_name} ({shift.start_time} - {shift.end_time})
                     </option>
                   ))}
@@ -2966,6 +3045,7 @@ const openEditModal = (row) => {
                     type="time" 
                     required
                     value={editFormData.clock_in_time}
+                    disabled={editFormData.mode !== 'full-add'}
                     onChange={(e) => setEditFormData({...editFormData, clock_in_time: e.target.value})}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 outline-none text-sm"
                   />
@@ -2975,6 +3055,7 @@ const openEditModal = (row) => {
                   <input 
                     type="time" 
                     value={editFormData.clock_out_time}
+                    disabled={editFormData.mode === 'locked'}
                     onChange={(e) => setEditFormData({...editFormData, clock_out_time: e.target.value})}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 outline-none text-sm"
                   />
