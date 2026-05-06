@@ -1708,28 +1708,175 @@ function formatHHMMForInput(timeRaw) {
   return '';
 }
 
+// function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, graceMinutes = 0, earlyGraceMinutes = 15) {
+//   const details = { status: 'Absent', late_minutes: 0, early_clock_out_minutes: 0, overtime_minutes: 0 };
+//   if (!clockIn) return details;
+
+//   const isVersion2 = typeof clockIn === 'string' && clockIn.length <= 20 && !clockIn.includes('T') && !clockIn.includes('Z');
+//   let clockInDate, clockOutDate;
+  
+//   if (isVersion2) {
+//     const today = new Date();
+//     today.setSeconds(0);
+//     today.setMilliseconds(0);
+    
+//     const parseTimeString = (timeStr) => {
+//       if (!timeStr || timeStr === 'Missed') return null;
+//       timeStr = timeStr.trim();
+//       const hasAMPM = /AM|PM/i.test(timeStr);
+      
+//       if (hasAMPM) {
+//         const isPM = /PM/i.test(timeStr);
+//         const timeOnly = timeStr.replace(/AM|PM/i, '').trim();
+//         const parts = timeOnly.split(':').map(p => parseInt(p));
+        
+//         if (parts.length >= 2) {
+//           let hours = parts[0];
+//           const minutes = parts[1];
+//           if (isPM && hours !== 12) hours += 12;
+//           if (!isPM && hours === 12) hours = 0;
+//           return { hour: hours, minute: minutes, second: parts[2] || 0 };
+//         }
+//       } else {
+//         const parts = timeStr.split(':').map(p => parseInt(p));
+//         if (parts.length >= 2) {
+//           return { hour: parts[0], minute: parts[1], second: parts[2] || 0 };
+//         }
+//       }
+//       return null;
+//     };
+    
+//     const clockInParsed = parseTimeString(clockIn);
+//     if (clockInParsed) {
+//       clockInDate = new Date(today);
+//       clockInDate.setHours(clockInParsed.hour, clockInParsed.minute, clockInParsed.second, 0);
+//     }
+    
+//     if (clockOut && clockOut !== 'Missed') {
+//       const clockOutParsed = parseTimeString(clockOut);
+//       if (clockOutParsed) {
+//         clockOutDate = new Date(today);
+//         clockOutDate.setHours(clockOutParsed.hour, clockOutParsed.minute, clockOutParsed.second, 0);
+//         if (clockOutDate < clockInDate) {
+//           clockOutDate.setDate(clockOutDate.getDate() + 1);
+//         }
+//       }
+//     }
+//   } else {
+//     clockInDate = new Date(clockIn);
+//     clockOutDate = (clockOut && clockOut !== 'Missed') ? new Date(clockOut) : null;
+//   }
+  
+//   if (!clockInDate || isNaN(clockInDate.getTime())) {
+//     details.status = 'Present';
+//     return details;
+//   }
+  
+//   let parsedShiftStart = null;
+//   let parsedShiftEnd = null;
+
+//   if (shiftStart && typeof shiftStart === 'string') {
+//     const parts = shiftStart.split(':').map(Number);
+//     if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+//       parsedShiftStart = { hour: parts[0], minute: parts[1], second: parts[2] || 0 };
+//     }
+//   }
+
+//   if (shiftEnd && typeof shiftEnd === 'string') {
+//     const parts = shiftEnd.split(':').map(Number);
+//     if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+//       parsedShiftEnd = { hour: parts[0], minute: parts[1], second: parts[2] || 0 };
+//     }
+//   }
+
+//   if (!parsedShiftStart || !parsedShiftEnd) {
+//     details.status = 'Present';
+//     return details;
+//   }
+
+//   const shiftStartHour = parsedShiftStart.hour;
+//   const shiftStartMin = parsedShiftStart.minute;
+//   const shiftStartSec = parsedShiftStart.second;
+
+//   const shiftEndHour = parsedShiftEnd.hour;
+//   const shiftEndMin = parsedShiftEnd.minute;
+//   const shiftEndSec = parsedShiftEnd.second;
+
+//   const isOvernightShift = shiftEndHour < shiftStartHour || 
+//                            (shiftEndHour === shiftStartHour && shiftEndMin < shiftStartMin);
+
+//   const shiftStartDate = new Date(clockInDate);
+//   shiftStartDate.setHours(shiftStartHour, shiftStartMin, shiftStartSec, 0);
+  
+//   if (isOvernightShift && clockInDate.getHours() < 12 && shiftStartHour >= 12) {
+//     shiftStartDate.setDate(shiftStartDate.getDate() - 1);
+//   }
+
+//   const timeDiffStart = clockInDate - shiftStartDate;
+//   const minutesDiffStart = Math.floor(timeDiffStart / 60000);
+  
+//   if (minutesDiffStart > graceMinutes) {
+//     details.late_minutes = minutesDiffStart - graceMinutes;
+//     details.status = 'Late';
+//   } else {
+//     details.status = 'Present';
+//   }
+
+//   if (clockOutDate) {
+//     const shiftEndDate = new Date(clockInDate);
+//     shiftEndDate.setHours(shiftEndHour, shiftEndMin, shiftEndSec, 0);
+    
+//     if (isOvernightShift) {
+//       shiftEndDate.setDate(shiftEndDate.getDate() + 1);
+//     }
+    
+//     const timeDiffEnd = clockOutDate - shiftEndDate;
+//     const minutesDiffEnd = Math.floor(timeDiffEnd / 60000);
+    
+//     if (minutesDiffEnd < -earlyGraceMinutes) {
+//       details.early_clock_out_minutes = Math.abs(minutesDiffEnd + earlyGraceMinutes);
+//       details.status = details.status === 'Late' ? 'Late & Early' : 'Early Clock Out';
+//       details.overtime_minutes = 0;
+//     } else if (minutesDiffEnd > 0) {
+//       details.overtime_minutes = minutesDiffEnd;
+//       details.early_clock_out_minutes = 0;
+//     } else {
+//       details.overtime_minutes = 0;
+//       details.early_clock_out_minutes = 0;
+//     }
+//   }
+
+//   return details;
+// }
+
 function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, graceMinutes = 0, earlyGraceMinutes = 15) {
   const details = { status: 'Absent', late_minutes: 0, early_clock_out_minutes: 0, overtime_minutes: 0 };
   if (!clockIn) return details;
 
-  const isVersion2 = typeof clockIn === 'string' && clockIn.length <= 20 && !clockIn.includes('T') && !clockIn.includes('Z');
+  const isTimeOnlyString = (val) => {
+    if (typeof val !== 'string') return false;
+    if (val.includes('-') || val.includes('T') || val.includes('Z')) return false;
+    return /AM|PM/i.test(val) || /^\d{1,2}:\d{2}(:\d{2})?$/.test(val);
+  };
+
+  const isVersion2 = isTimeOnlyString(clockIn);
+
   let clockInDate, clockOutDate;
-  
+
   if (isVersion2) {
     const today = new Date();
     today.setSeconds(0);
     today.setMilliseconds(0);
-    
+
     const parseTimeString = (timeStr) => {
       if (!timeStr || timeStr === 'Missed') return null;
       timeStr = timeStr.trim();
       const hasAMPM = /AM|PM/i.test(timeStr);
-      
+
       if (hasAMPM) {
         const isPM = /PM/i.test(timeStr);
         const timeOnly = timeStr.replace(/AM|PM/i, '').trim();
         const parts = timeOnly.split(':').map(p => parseInt(p));
-        
         if (parts.length >= 2) {
           let hours = parts[0];
           const minutes = parts[1];
@@ -1745,13 +1892,13 @@ function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, gra
       }
       return null;
     };
-    
+
     const clockInParsed = parseTimeString(clockIn);
     if (clockInParsed) {
       clockInDate = new Date(today);
       clockInDate.setHours(clockInParsed.hour, clockInParsed.minute, clockInParsed.second, 0);
     }
-    
+
     if (clockOut && clockOut !== 'Missed') {
       const clockOutParsed = parseTimeString(clockOut);
       if (clockOutParsed) {
@@ -1766,12 +1913,12 @@ function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, gra
     clockInDate = new Date(clockIn);
     clockOutDate = (clockOut && clockOut !== 'Missed') ? new Date(clockOut) : null;
   }
-  
+
   if (!clockInDate || isNaN(clockInDate.getTime())) {
     details.status = 'Present';
     return details;
   }
-  
+
   let parsedShiftStart = null;
   let parsedShiftEnd = null;
 
@@ -1802,19 +1949,19 @@ function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, gra
   const shiftEndMin = parsedShiftEnd.minute;
   const shiftEndSec = parsedShiftEnd.second;
 
-  const isOvernightShift = shiftEndHour < shiftStartHour || 
-                           (shiftEndHour === shiftStartHour && shiftEndMin < shiftStartMin);
+  const isOvernightShift = shiftEndHour < shiftStartHour ||
+    (shiftEndHour === shiftStartHour && shiftEndMin < shiftStartMin);
 
   const shiftStartDate = new Date(clockInDate);
   shiftStartDate.setHours(shiftStartHour, shiftStartMin, shiftStartSec, 0);
-  
+
   if (isOvernightShift && clockInDate.getHours() < 12 && shiftStartHour >= 12) {
     shiftStartDate.setDate(shiftStartDate.getDate() - 1);
   }
 
   const timeDiffStart = clockInDate - shiftStartDate;
   const minutesDiffStart = Math.floor(timeDiffStart / 60000);
-  
+
   if (minutesDiffStart > graceMinutes) {
     details.late_minutes = minutesDiffStart - graceMinutes;
     details.status = 'Late';
@@ -1823,16 +1970,16 @@ function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, gra
   }
 
   if (clockOutDate) {
-    const shiftEndDate = new Date(clockInDate);
+    const shiftEndDate = new Date(shiftStartDate);
     shiftEndDate.setHours(shiftEndHour, shiftEndMin, shiftEndSec, 0);
-    
+
     if (isOvernightShift) {
       shiftEndDate.setDate(shiftEndDate.getDate() + 1);
     }
-    
+
     const timeDiffEnd = clockOutDate - shiftEndDate;
     const minutesDiffEnd = Math.floor(timeDiffEnd / 60000);
-    
+
     if (minutesDiffEnd < -earlyGraceMinutes) {
       details.early_clock_out_minutes = Math.abs(minutesDiffEnd + earlyGraceMinutes);
       details.status = details.status === 'Late' ? 'Late & Early' : 'Early Clock Out';
@@ -1931,9 +2078,17 @@ export default function AdminDashboard() {
         const shiftEnd = employee.shift_end || '18:00:00';
         const isFlexible = employee.shift_name === 'ADMIN';
 
+        // let { status, late_minutes, early_clock_out_minutes, overtime_minutes } = calculateAttendanceDetails(
+        //   employee.clock_in, employee.clock_out, shiftStart, shiftEnd, 0, 15 
+        // );
         let { status, late_minutes, early_clock_out_minutes, overtime_minutes } = calculateAttendanceDetails(
-          employee.clock_in, employee.clock_out, shiftStart, shiftEnd, 0, 15 
-        );
+  employee.raw_clock_in || employee.clock_in,
+  employee.raw_clock_out || employee.clock_out,
+  shiftStart,
+  shiftEnd,
+  0,
+  15
+);
         
         if (employee.is_missed) {
           status = 'Missed';
