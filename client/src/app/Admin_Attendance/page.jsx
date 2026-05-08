@@ -1,3 +1,4 @@
+
 // 'use client';
 // import { useState, useEffect, useCallback, useMemo } from 'react';
 // import { format, parseISO } from 'date-fns';
@@ -6,7 +7,7 @@
 // import { saveAs } from 'file-saver';
 // import EmployeeAttendanceModal from './EmployeeAttendanceModal';
 // import EmployeeMonthlyPhotosModal from './EmployeeMonthlyPhotosModal'; 
-// import { FaCalendarAlt, FaFileExport, FaCheckCircle, FaExclamationTriangle, FaClock, FaTimesCircle, FaBriefcase, FaChartLine, FaSearch } from 'react-icons/fa';
+// import { FaCalendarAlt, FaFileExport, FaCheckCircle, FaExclamationTriangle, FaClock, FaTimesCircle, FaBriefcase, FaChartLine, FaSearch, FaEdit } from 'react-icons/fa';
 
 // const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
 
@@ -42,6 +43,53 @@
 //   </div>
 // );
 
+
+// // 1. Replace the existing formatHHMMForInput function with this improved version
+// function formatHHMMForInput(timeRaw) {
+//   if (!timeRaw || timeRaw === 'Missed') return '';
+  
+//   // If it's already HH:MM format
+//   if (/^\d{2}:\d{2}$/.test(timeRaw)) return timeRaw;
+  
+//   // If it's HH:MM:SS format
+//   if (/^\d{2}:\d{2}:\d{2}/.test(timeRaw)) return timeRaw.substring(0, 5);
+
+//   // If it's 12-hour format like "9:30 AM" or "02:15 PM"
+//   if (typeof timeRaw === 'string' && /AM|PM/i.test(timeRaw)) {
+//     const isPM = /PM/i.test(timeRaw);
+//     const timeOnly = timeRaw.replace(/AM|PM/i, '').trim();
+//     const parts = timeOnly.split(':').map(Number);
+//     if (parts.length >= 2) {
+//       let hours = parts[0];
+//       if (isPM && hours !== 12) hours += 12;
+//       if (!isPM && hours === 12) hours = 0;
+//       return `${String(hours).padStart(2, '0')}:${String(parts[1]).padStart(2, '0')}`;
+//     }
+//   }
+
+//   // Handle ISO strings (e.g., 2023-10-10T10:30:00Z)
+//   if (typeof timeRaw === 'string' && timeRaw.includes('T')) {
+//     const d = new Date(timeRaw);
+//     if (!isNaN(d.getTime())) {
+//       return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+//     }
+//     if (timeRaw.length >= 16) {
+//       return timeRaw.substring(11, 16);
+//     }
+//   }
+
+//   // Native Date object fallback
+//   const d = new Date(timeRaw);
+//   if (!isNaN(d.getTime())) {
+//     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+//   }
+
+//   return '';
+// }
+
+
+// // 2. Replace the openEditModal function
+  
 // function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, graceMinutes = 0, earlyGraceMinutes = 15) {
 //   const details = { status: 'Absent', late_minutes: 0, early_clock_out_minutes: 0, overtime_minutes: 0 };
 //   if (!clockIn) return details;
@@ -211,6 +259,17 @@
 //   });
 //   const [isAdding, setIsAdding] = useState(false);
 
+//   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+//   const [editFormData, setEditFormData] = useState({
+//     attendance_id: '',
+//     employee_name: '',
+//     unique_id: '',
+//     shift_id: '',
+//     clock_in_time: '',
+//     clock_out_time: ''
+//   });
+//   const [isEditing, setIsEditing] = useState(false);
+
 //   const fetchShifts = useCallback(async () => {
 //     try {
 //       const res = await fetch(`${API_BASE}/clockin/shifts`);
@@ -361,8 +420,50 @@
 //     if (type === 'daily') await exportDailyStyled();
 //     else if (type === 'monthly') await exportMonthlyStyled();
 //   };
+// // const openEditModal = (row) => {
+// //     // If shift_id is missing but we have the shift_name, try to match it
+// //     let targetShiftId = row.shift_id;
+// //     if (!targetShiftId && row.shift_name) {
+// //       const matchingShift = availableShifts.find(s => 
+// //         s.shift_name === row.shift_name || 
+// //         (row.shift_name === 'ADMIN' && s.shift_name === 'ADMIN')
+// //       );
+// //       if (matchingShift) targetShiftId = matchingShift.id;
+// //     }
 
-//   const openManualAdd = (row) => {
+// //     setEditFormData({
+// //       attendance_id: row.id,
+// //       employee_name: row.name,
+// //       unique_id: row.unique_id,
+// //       shift_id: targetShiftId || '',
+// //       clock_in_time: formatHHMMForInput(row.raw_clock_in || row.clock_in),
+// //       clock_out_time: row.clock_out === 'Missed' ? '' : formatHHMMForInput(row.raw_clock_out || row.clock_out)
+// //     });
+// //     setIsEditModalOpen(true);
+// //   };
+
+// const openEditModal = (row) => {
+//   const hasClockIn = !!row.clock_in;
+//   const hasClockOut = !!row.clock_out && row.clock_out !== 'Missed';
+
+//   setEditFormData({
+//     attendance_id: row.id,
+//     employee_name: row.name,
+//     unique_id: row.unique_id,
+//       shift_id: row.shift_id ? String(row.shift_id) : '',
+//     clock_in_time: formatHHMMForInput(row.raw_clock_in || row.clock_in),
+//     clock_out_time: hasClockOut ? formatHHMMForInput(row.raw_clock_out || row.clock_out) : '',
+    
+//     // 🔥 ADD THIS
+//     mode: !hasClockIn ? 'full-add'
+//          : hasClockIn && !hasClockOut ? 'add-out'
+//          : 'locked'
+//   });
+
+//   setIsEditModalOpen(true);
+// };
+
+// const openManualAdd = (row) => {
 //     setAddFormData({
 //       employee_id: row.unique_id,
 //       employee_name: row.name,
@@ -403,6 +504,90 @@
 //       setIsAdding(false);
 //     }
 //   };
+
+
+
+//   // const handleEditSubmit = async (e) => {
+//   //   e.preventDefault();
+//   //   setIsEditing(true);
+//   //   try {
+//   //     const res = await fetch(`${API_BASE}/clockin/admin/manual-edit`, {
+//   //       method: 'PUT',
+//   //       headers: { 'Content-Type': 'application/json' },
+//   //       body: JSON.stringify({
+//   //         attendance_id: editFormData.attendance_id,
+//   //         shift_id: editFormData.shift_id,
+//   //         attendance_date: date,
+//   //         clock_in_time: editFormData.clock_in_time,
+//   //         clock_out_time: editFormData.clock_out_time || null
+//   //       })
+//   //     });
+//   //     const result = await res.json();
+//   //     if (result.success) {
+//   //       setIsEditModalOpen(false);
+//   //       fetchDaily();
+//   //     } else {
+//   //       alert(result.message || 'Failed to update record');
+//   //     }
+//   //   } catch (err) {
+//   //     console.error(err);
+//   //     alert('Error updating manual record.');
+//   //   } finally {
+//   //     setIsEditing(false);
+//   //   }
+//   // };
+
+//   const handleEditSubmit = async (e) => {
+//   e.preventDefault();
+//   setIsEditing(true);
+
+//   try {
+
+//     // 🔥 Build payload safely
+//     const payload = {
+//       attendance_id: editFormData.attendance_id,
+//       shift_id: editFormData.shift_id,
+//       attendance_date: date,
+//     };
+
+//     // ✅ Only send clock_in for full add
+//     if (
+//       !editFormData.mode ||
+//       editFormData.mode === 'full-add'
+//     ) {
+//       payload.clock_in_time = editFormData.clock_in_time;
+//     }
+
+//     // ✅ Send clock_out only if entered
+//     if (editFormData.clock_out_time) {
+//       payload.clock_out_time = editFormData.clock_out_time;
+//     }
+
+//     const res = await fetch(`${API_BASE}/clockin/admin/manual-edit`, {
+//       method: 'PUT',
+//       headers: {
+//         'Content-Type': 'application/json'
+//       },
+//       body: JSON.stringify(payload)
+//     });
+
+//     const result = await res.json();
+
+//     if (result.success) {
+//       setIsEditModalOpen(false);
+//       fetchDaily();
+//     } else {
+//       alert(result.message || 'Failed to update record');
+//     }
+
+//   } catch (err) {
+//     console.error(err);
+//     alert('Error updating manual record.');
+//   } finally {
+//     setIsEditing(false);
+//   }
+// };
+
 
 //   const COLORS = {
 //     primary: 'FF2563EB', primaryDark: 'FF1D4ED8', primaryLight: 'FFDBEAFE', 
@@ -1115,6 +1300,7 @@
 //                             <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">Early</th>
 //                             <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">OT</th>
 //                             <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-semibold text-white uppercase">Photo</th>
+//                             <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-semibold text-white uppercase">Actions</th>
 //                           </tr>
 //                         </thead>
 //                         <tbody className="bg-white">
@@ -1207,6 +1393,18 @@
 //                                   <FaCheckCircle className="inline text-emerald-600" />
 //                                 ) : (
 //                                   <span className="text-gray-300">—</span>
+//                                 )}
+//                               </td>
+                              
+//                               <td className="px-2 sm:px-3 py-2 text-center">
+//                                 {row.clock_in && !String(row.id).startsWith('absent') && (
+//                                   <button 
+//                                     onClick={() => openEditModal(row)}
+//                                     className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
+//                                     title="Edit Times"
+//                                   >
+//                                     <FaEdit />
+//                                   </button>
 //                                 )}
 //                               </td>
 //                             </tr>
@@ -1324,13 +1522,18 @@
 //                 <label className="block text-sm font-medium text-gray-700 mb-1">Shift</label>
 //                 <select 
 //                   required
-//                   value={addFormData.shift_id}
-//                   onChange={(e) => setAddFormData({...addFormData, shift_id: e.target.value})}
+//                     value={editFormData.shift_id}
+//   onChange={(e) =>
+//     setEditFormData(prev => ({
+//       ...prev,
+//       shift_id: e.target.value
+//     }))
+//   }
 //                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
 //                 >
 //                   <option value="">Select Shift...</option>
 //                   {availableShifts.map(shift => (
-//                     <option key={shift.id} value={shift.id}>
+//                     <option key={shift.id} value={String(shift.id)}>
 //                       {shift.shift_name} ({shift.start_time} - {shift.end_time})
 //                     </option>
 //                   ))}
@@ -1380,6 +1583,88 @@
 //         </div>
 //       )}
 
+//       {isEditModalOpen && (
+//         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+//           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+//             <div className="px-6 py-4 border-b border-gray-200 bg-white flex justify-between items-center">
+//               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+//                 <FaEdit className="text-purple-600" /> Edit Attendance Record
+//               </h3>
+//               <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+//                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+//               </button>
+//             </div>
+            
+//             <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-1">Employee</label>
+//                 <div className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600">
+//                   {editFormData.employee_name} ({editFormData.unique_id})
+//                 </div>
+//               </div>
+
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-1">Shift</label>
+//                 <select 
+//                   required
+//                   value={editFormData.shift_id}
+//                   onChange={(e) => setEditFormData({...editFormData, shift_id: e.target.value})}
+//                   className="w-full border-2 border-purple-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm transition-all"
+//                 >
+//                   <option value="">Select Shift...</option>
+//                   {availableShifts.map(shift => (
+//                     <option key={shift.id} value={shift.id}>
+//                       {shift.shift_name} ({shift.start_time} - {shift.end_time})
+//                     </option>
+//                   ))}
+//                 </select>
+//               </div>
+
+//               <div className="grid grid-cols-2 gap-4">
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 mb-1">Clock In Time</label>
+//                   <input 
+//                     type="time" 
+//                     required
+//                     value={editFormData.clock_in_time}
+//                     disabled={editFormData.mode !== 'full-add'}
+//                     onChange={(e) => setEditFormData({...editFormData, clock_in_time: e.target.value})}
+//                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 outline-none text-sm"
+//                   />
+//                 </div>
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 mb-1">Clock Out Time (Optional)</label>
+//                   <input 
+//                     type="time" 
+//                     value={editFormData.clock_out_time}
+//                     disabled={editFormData.mode === 'locked'}
+//                     onChange={(e) => setEditFormData({...editFormData, clock_out_time: e.target.value})}
+//                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 outline-none text-sm"
+//                   />
+//                 </div>
+//               </div>
+
+//               <div className="pt-4 flex gap-3 justify-end border-t border-gray-100 mt-6">
+//                 <button 
+//                   type="button" 
+//                   onClick={() => setIsEditModalOpen(false)}
+//                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+//                 >
+//                   Cancel
+//                 </button>
+//                 <button 
+//                   type="submit" 
+//                   disabled={isEditing}
+//                   className="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors flex items-center gap-2"
+//                 >
+//                   {isEditing ? 'Updating...' : 'Update Record'}
+//                 </button>
+//               </div>
+//             </form>
+//           </div>
+//         </div>
+//       )}
+
 //       {modalOpen && <EmployeeAttendanceModal employeeData={modalData} onClose={closeModal} />}
 
 //       {monthlyPhotoEmployee && (
@@ -1405,7 +1690,6 @@
 //   );
 // }
 
-
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
@@ -1414,7 +1698,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import EmployeeAttendanceModal from './EmployeeAttendanceModal';
 import EmployeeMonthlyPhotosModal from './EmployeeMonthlyPhotosModal'; 
-import { FaCalendarAlt, FaFileExport, FaCheckCircle, FaExclamationTriangle, FaClock, FaTimesCircle, FaBriefcase, FaChartLine, FaSearch, FaEdit } from 'react-icons/fa';
+import { FaCalendarAlt, FaFileExport, FaCheckCircle, FaExclamationTriangle, FaClock, FaTimesCircle, FaBriefcase, FaChartLine, FaSearch, FaEdit, FaTrash } from 'react-icons/fa';
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
 
@@ -1450,29 +1734,11 @@ const TableSkeleton = () => (
   </div>
 );
 
-// // Helper to extract HH:mm for the time input from DB strings
-// function formatHHMMForInput(timeRaw) {
-//   if (!timeRaw) return '';
-//   if (typeof timeRaw === 'string' && timeRaw.length >= 16) {
-//     return timeRaw.substring(11, 16);
-//   }
-//   const d = new Date(timeRaw);
-//   if (!isNaN(d.getTime())) {
-//     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-//   }
-//   return '';
-// }
-// 1. Replace the existing formatHHMMForInput function with this improved version
 function formatHHMMForInput(timeRaw) {
   if (!timeRaw || timeRaw === 'Missed') return '';
-  
-  // If it's already HH:MM format
   if (/^\d{2}:\d{2}$/.test(timeRaw)) return timeRaw;
-  
-  // If it's HH:MM:SS format
   if (/^\d{2}:\d{2}:\d{2}/.test(timeRaw)) return timeRaw.substring(0, 5);
 
-  // If it's 12-hour format like "9:30 AM" or "02:15 PM"
   if (typeof timeRaw === 'string' && /AM|PM/i.test(timeRaw)) {
     const isPM = /PM/i.test(timeRaw);
     const timeOnly = timeRaw.replace(/AM|PM/i, '').trim();
@@ -1485,7 +1751,6 @@ function formatHHMMForInput(timeRaw) {
     }
   }
 
-  // Handle ISO strings (e.g., 2023-10-10T10:30:00Z)
   if (typeof timeRaw === 'string' && timeRaw.includes('T')) {
     const d = new Date(timeRaw);
     if (!isNaN(d.getTime())) {
@@ -1496,7 +1761,6 @@ function formatHHMMForInput(timeRaw) {
     }
   }
 
-  // Native Date object fallback
   const d = new Date(timeRaw);
   if (!isNaN(d.getTime())) {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -1504,12 +1768,9 @@ function formatHHMMForInput(timeRaw) {
 
   return '';
 }
-
-
-// 2. Replace the openEditModal function
   
 function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, graceMinutes = 0, earlyGraceMinutes = 15) {
-  const details = { status: 'Absent', late_minutes: 0, early_clock_out_minutes: 0, overtime_minutes: 0 };
+  const details = { status: 'Absent', late_minutes: 0, early_clock_out_minutes: 0, overtime_minutes: 0, penalty_minutes: 0 };
   if (!clockIn) return details;
 
   const isVersion2 = typeof clockIn === 'string' && clockIn.length <= 20 && !clockIn.includes('T') && !clockIn.includes('Z');
@@ -1646,6 +1907,7 @@ function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, gra
     }
   }
 
+  details.penalty_minutes = details.late_minutes + details.early_clock_out_minutes;
   return details;
 }
 
@@ -1653,6 +1915,12 @@ export default function AdminDashboard() {
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [monthlyYear, setMonthlyYear] = useState(new Date().getFullYear());
   const [monthlyMonth, setMonthlyMonth] = useState(new Date().getMonth() + 1);
+  
+  // NEW: State for specific start date filter in the Monthly view
+  const [monthlyStartDate, setMonthlyStartDate] = useState(
+    `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`
+  );
+
   const [dailyData, setDailyData] = useState([]);
   const [monthlyData, setMonthlyData] = useState([]);
   const [loadingDaily, setLoadingDaily] = useState(false);
@@ -1688,6 +1956,11 @@ export default function AdminDashboard() {
   });
   const [isEditing, setIsEditing] = useState(false);
 
+  // Keep monthlyStartDate synced with the dropdowns if user changes the Year/Month
+  useEffect(() => {
+    setMonthlyStartDate(`${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}-01`);
+  }, [monthlyYear, monthlyMonth]);
+
   const fetchShifts = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/clockin/shifts`);
@@ -1714,7 +1987,7 @@ export default function AdminDashboard() {
         const shiftEnd = employee.shift_end || '18:00:00';
         const isFlexible = employee.shift_name === 'ADMIN';
 
-        let { status, late_minutes, early_clock_out_minutes, overtime_minutes } = calculateAttendanceDetails(
+        let { status, late_minutes, early_clock_out_minutes, overtime_minutes, penalty_minutes } = calculateAttendanceDetails(
           employee.clock_in, employee.clock_out, shiftStart, shiftEnd, 0, 15 
         );
         
@@ -1725,10 +1998,12 @@ export default function AdminDashboard() {
           late_minutes = 0;
           early_clock_out_minutes = 0;
           overtime_minutes = 0;
+          penalty_minutes = 0;
         }
 
         if (employee.is_late_waived) {
-          late_minutes = '0';
+          late_minutes = 0;
+          penalty_minutes = early_clock_out_minutes; // late is zero, early remains
           if (status === 'Late') status = 'Present';
           if (status === 'Late & Early') status = 'Early Clock Out';
         }
@@ -1738,6 +2013,7 @@ export default function AdminDashboard() {
           status,
           late_minutes,
           early_clock_out_minutes,
+          penalty_minutes,
           overtime_minutes, 
           total_ot_minutes: overtime_minutes
         };
@@ -1768,10 +2044,30 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteRecord = async (id) => {
+    if (!id || String(id).startsWith('absent')) return;
+    if (!window.confirm("Are you sure you want to delete this record? This action cannot be undone.")) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/clockin/admin/record/${id}`, {
+        method: 'DELETE'
+      });
+      const result = await res.json();
+      if (result.success) {
+        fetchDaily();
+      } else {
+        alert(result.message || 'Failed to delete record');
+      }
+    } catch (err) {
+      console.error('Failed to delete record:', err);
+      alert('Error deleting record.');
+    }
+  };
+
   const fetchMonthly = useCallback(async () => {
     setLoadingMonthly(true);
     try {
-      const res = await fetch(`${API_BASE}/clockin/admin/monthly?year=${monthlyYear}&month=${monthlyMonth}`);
+      const res = await fetch(`${API_BASE}/clockin/admin/monthly?year=${monthlyYear}&month=${monthlyMonth}&start_date=${monthlyStartDate}`);
       const result = await res.json();
       setMonthlyData(result.success ? result.data : []);
     } catch (err) {
@@ -1780,7 +2076,7 @@ export default function AdminDashboard() {
     } finally {
       setLoadingMonthly(false);
     }
-  }, [monthlyYear, monthlyMonth]);
+  }, [monthlyYear, monthlyMonth, monthlyStartDate]);
 
   useEffect(() => { fetchDaily(); }, [fetchDaily]);
   useEffect(() => { fetchMonthly(); }, [fetchMonthly]);
@@ -1838,50 +2134,47 @@ export default function AdminDashboard() {
     if (type === 'daily') await exportDailyStyled();
     else if (type === 'monthly') await exportMonthlyStyled();
   };
-// const openEditModal = (row) => {
-//     // If shift_id is missing but we have the shift_name, try to match it
-//     let targetShiftId = row.shift_id;
-//     if (!targetShiftId && row.shift_name) {
-//       const matchingShift = availableShifts.find(s => 
-//         s.shift_name === row.shift_name || 
-//         (row.shift_name === 'ADMIN' && s.shift_name === 'ADMIN')
-//       );
-//       if (matchingShift) targetShiftId = matchingShift.id;
-//     }
 
-//     setEditFormData({
-//       attendance_id: row.id,
-//       employee_name: row.name,
-//       unique_id: row.unique_id,
-//       shift_id: targetShiftId || '',
-//       clock_in_time: formatHHMMForInput(row.raw_clock_in || row.clock_in),
-//       clock_out_time: row.clock_out === 'Missed' ? '' : formatHHMMForInput(row.raw_clock_out || row.clock_out)
-//     });
-//     setIsEditModalOpen(true);
-//   };
+  // const openEditModal = (row) => {
+  //   setEditFormData({
+  //     attendance_id: row.id,
+  //     employee_name: row.name,
+  //     unique_id: row.unique_id,
+  //     shift_id: row.shift_id ? String(row.shift_id) : '',
+  //     clock_in_time: formatHHMMForInput(row.raw_clock_in || row.clock_in),
+  //     clock_out_time: (row.clock_out && row.clock_out !== 'Missed') ? formatHHMMForInput(row.raw_clock_out || row.clock_out) : '',
+  //   });
+  //   setIsEditModalOpen(true);
+  // };
 
-const openEditModal = (row) => {
-  const hasClockIn = !!row.clock_in;
-  const hasClockOut = !!row.clock_out && row.clock_out !== 'Missed';
-
-  setEditFormData({
-    attendance_id: row.id,
-    employee_name: row.name,
-    unique_id: row.unique_id,
-      shift_id: row.shift_id ? String(row.shift_id) : '',
-    clock_in_time: formatHHMMForInput(row.raw_clock_in || row.clock_in),
-    clock_out_time: hasClockOut ? formatHHMMForInput(row.raw_clock_out || row.clock_out) : '',
+    const openEditModal = (row) => {
+    let targetShiftId = row.shift_id;
     
-    // 🔥 ADD THIS
-    mode: !hasClockIn ? 'full-add'
-         : hasClockIn && !hasClockOut ? 'add-out'
-         : 'locked'
-  });
+    // Fallback: Find the shift ID by matching the shift_name from the row 
+    // to the list of availableShifts fetched from the database
+    if (!targetShiftId && row.shift_name && row.shift_name !== '—') {
+      const matchingShift = availableShifts.find(s => 
+        s.shift_name === row.shift_name || 
+        (row.shift_name === 'Flexible 8-Hour' && s.shift_name === 'ADMIN')
+      );
+      if (matchingShift) {
+        targetShiftId = matchingShift.id;
+      }
+    }
 
-  setIsEditModalOpen(true);
-};
+    setEditFormData({
+      attendance_id: row.id,
+      employee_name: row.name,
+      unique_id: row.unique_id,
+      shift_id: targetShiftId ? String(targetShiftId) : '',
+      clock_in_time: formatHHMMForInput(row.raw_clock_in || row.clock_in),
+      clock_out_time: (row.clock_out && row.clock_out !== 'Missed') ? formatHHMMForInput(row.raw_clock_out || row.clock_out) : '',
+    });
+    setIsEditModalOpen(true);
+  };
 
-const openManualAdd = (row) => {
+
+  const openManualAdd = (row) => {
     setAddFormData({
       employee_id: row.unique_id,
       employee_name: row.name,
@@ -1923,89 +2216,44 @@ const openManualAdd = (row) => {
     }
   };
 
-
-
-  // const handleEditSubmit = async (e) => {
-  //   e.preventDefault();
-  //   setIsEditing(true);
-  //   try {
-  //     const res = await fetch(`${API_BASE}/clockin/admin/manual-edit`, {
-  //       method: 'PUT',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({
-  //         attendance_id: editFormData.attendance_id,
-  //         shift_id: editFormData.shift_id,
-  //         attendance_date: date,
-  //         clock_in_time: editFormData.clock_in_time,
-  //         clock_out_time: editFormData.clock_out_time || null
-  //       })
-  //     });
-  //     const result = await res.json();
-  //     if (result.success) {
-  //       setIsEditModalOpen(false);
-  //       fetchDaily();
-  //     } else {
-  //       alert(result.message || 'Failed to update record');
-  //     }
-  //   } catch (err) {
-  //     console.error(err);
-  //     alert('Error updating manual record.');
-  //   } finally {
-  //     setIsEditing(false);
-  //   }
-  // };
-
   const handleEditSubmit = async (e) => {
-  e.preventDefault();
-  setIsEditing(true);
+    e.preventDefault();
+    setIsEditing(true);
 
-  try {
+    try {
+      const payload = {
+        attendance_id: editFormData.attendance_id,
+        shift_id: editFormData.shift_id,
+        attendance_date: date,
+        clock_in_time: editFormData.clock_in_time,
+      };
 
-    // 🔥 Build payload safely
-    const payload = {
-      attendance_id: editFormData.attendance_id,
-      shift_id: editFormData.shift_id,
-      attendance_date: date,
-    };
+      if (editFormData.clock_out_time) {
+        payload.clock_out_time = editFormData.clock_out_time;
+      }
 
-    // ✅ Only send clock_in for full add
-    if (
-      !editFormData.mode ||
-      editFormData.mode === 'full-add'
-    ) {
-      payload.clock_in_time = editFormData.clock_in_time;
+      const res = await fetch(`${API_BASE}/clockin/admin/manual-edit`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        setIsEditModalOpen(false);
+        fetchDaily();
+      } else {
+        alert(result.message || 'Failed to update record');
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert('Error updating manual record.');
+    } finally {
+      setIsEditing(false);
     }
-
-    // ✅ Send clock_out only if entered
-    if (editFormData.clock_out_time) {
-      payload.clock_out_time = editFormData.clock_out_time;
-    }
-
-    const res = await fetch(`${API_BASE}/clockin/admin/manual-edit`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const result = await res.json();
-
-    if (result.success) {
-      setIsEditModalOpen(false);
-      fetchDaily();
-    } else {
-      alert(result.message || 'Failed to update record');
-    }
-
-  } catch (err) {
-    console.error(err);
-    alert('Error updating manual record.');
-  } finally {
-    setIsEditing(false);
-  }
-};
-
+  };
 
   const COLORS = {
     primary: 'FF2563EB', primaryDark: 'FF1D4ED8', primaryLight: 'FFDBEAFE', 
@@ -2013,7 +2261,7 @@ const openManualAdd = (row) => {
     gray200: 'FFE5E7EB', gray500: 'FF6B7280', gray700: 'FF374151', gray900: 'FF111827',
     green: 'FF16A34A', greenLight: 'FFF0FDF4', red: 'FFDC2626', redLight: 'FFFEF2F2',
     orange: 'FFEA580C', orangeLight: 'FFFFF7ED', amber: 'FFD97706', amberLight: 'FFFFFBEB',
-    purple: 'FF7C3AED', sundayBg: 'FFFFF1F2',
+    purple: 'FF7C3AED', purpleLight: 'FFF3E8FF', sundayBg: 'FFFFF1F2',
   };
 
   const thinBorder = (color = COLORS.gray200) => ({
@@ -2029,7 +2277,7 @@ const openManualAdd = (row) => {
     const ws = wb.addWorksheet('Daily Report');
     const formattedDate = format(parseISO(date), 'EEEE, MMMM d, yyyy');
 
-    ws.mergeCells('A1:M1');
+    ws.mergeCells('A1:N1');
     const t1 = ws.getCell('A1');
     t1.value = 'KIOTEL — Daily Attendance Report';
     t1.font = { size: 18, bold: true, color: { argb: COLORS.primary } };
@@ -2037,7 +2285,7 @@ const openManualAdd = (row) => {
     t1.fill = solidFill(COLORS.primaryLight);
     ws.getRow(1).height = 36;
 
-    ws.mergeCells('A2:M2');
+    ws.mergeCells('A2:N2');
     const t2 = ws.getCell('A2');
     t2.value = formattedDate;
     t2.font = { size: 12, bold: true, color: { argb: COLORS.gray700 } };
@@ -2047,37 +2295,10 @@ const openManualAdd = (row) => {
 
     ws.addRow([]);
 
-    const summaryRow = ws.addRow([
-      `✅ Present: ${dailySummary.present}`, '',
-      `⚠️ Late: ${dailySummary.late}`, '',
-      `🕐 Early Out: ${dailySummary.earlyClockOut}`, '', '',
-      `❌ Absent: ${dailySummary.absent}`, '',
-      `❓ Missed Out: ${dailySummary.missed}`, '', '', ''
-    ]);
-    ws.mergeCells(summaryRow.number, 1, summaryRow.number, 2);
-    ws.mergeCells(summaryRow.number, 3, summaryRow.number, 4);
-    ws.mergeCells(summaryRow.number, 5, summaryRow.number, 7);
-    ws.mergeCells(summaryRow.number, 8, summaryRow.number, 9);
-    ws.mergeCells(summaryRow.number, 10, summaryRow.number, 13);
-
-    [1, 3, 5, 8, 10].forEach((col) => {
-      const cell = summaryRow.getCell(col);
-      cell.font = { bold: true, size: 11 };
-      cell.alignment = { horizontal: 'center' };
-    });
-    summaryRow.getCell(1).fill = solidFill(COLORS.greenLight);
-    summaryRow.getCell(3).fill = solidFill(COLORS.amberLight);
-    summaryRow.getCell(5).fill = solidFill(COLORS.orangeLight);
-    summaryRow.getCell(8).fill = solidFill(COLORS.gray100);
-    summaryRow.getCell(10).fill = solidFill(COLORS.redLight);
-    ws.getRow(summaryRow.number).height = 28;
-
-    ws.addRow([]);
-
     const headers = [
       'Employee ID', 'Name', 'Shift', 'Shift Start', 'Shift End',
       'Clock In', 'Clock Out', 'Status',
-      'Late (min)', 'Early Out (min)', 'OT (min)', 'Working Hours', 'Photo'
+      'Late (min)', 'Early Out (min)', 'Penalty (min)', 'OT (min)', 'Working Hours', 'Photo'
     ];
     const headerRow = ws.addRow(headers);
     headerRow.eachCell((cell) => {
@@ -2103,7 +2324,7 @@ const openManualAdd = (row) => {
 
       const isFlexible = row.shift_name === 'ADMIN';
       const outText = row.is_missed ? 'Missed' : formatTime(row.clock_out);
-      const lateValue = row.is_late_waived ? '0' : (row.late_minutes > 0 ? row.late_minutes : '');
+      const lateValue = row.is_late_waived ? 0 : (row.late_minutes > 0 ? row.late_minutes : 0);
 
       const empName = row.is_first_shift ? row.name : `   └─ Shift ${row.shift_index}`;
       const empId = row.is_first_shift ? row.unique_id : '';
@@ -2121,8 +2342,9 @@ const openManualAdd = (row) => {
         formatTime(row.clock_in), 
         outText,
         row.status || '—',
-        lateValue, 
+        lateValue || '', 
         row.early_clock_out_minutes || '',
+        row.penalty_minutes || '',
         row.overtime_minutes || '', 
         workingHours,
         photoLabel,
@@ -2139,7 +2361,7 @@ const openManualAdd = (row) => {
       dataRow.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
       dataRow.getCell(2).font = row.is_first_shift ? { size: 10, bold: true } : { size: 9, italic: true, color: { argb: COLORS.gray500 } };
 
-      if (lateValue !== '' && lateValue !== '0') {
+      if (lateValue > 0) {
         dataRow.getCell(9).font = { bold: true, color: { argb: COLORS.red }, size: 10 };
         dataRow.getCell(9).fill = solidFill(COLORS.redLight);
       }
@@ -2147,9 +2369,13 @@ const openManualAdd = (row) => {
         dataRow.getCell(10).font = { bold: true, color: { argb: COLORS.orange }, size: 10 };
         dataRow.getCell(10).fill = solidFill(COLORS.orangeLight);
       }
+      if (row.penalty_minutes > 0) {
+        dataRow.getCell(11).font = { bold: true, color: { argb: COLORS.purple }, size: 10 };
+        dataRow.getCell(11).fill = solidFill(COLORS.purpleLight);
+      }
       if (row.overtime_minutes > 0) {
-        dataRow.getCell(11).font = { bold: true, color: { argb: COLORS.green }, size: 10 };
-        dataRow.getCell(11).fill = solidFill(COLORS.greenLight);
+        dataRow.getCell(12).font = { bold: true, color: { argb: COLORS.green }, size: 10 };
+        dataRow.getCell(12).fill = solidFill(COLORS.greenLight);
       }
 
       const statusCell = dataRow.getCell(8);
@@ -2159,11 +2385,11 @@ const openManualAdd = (row) => {
       else if (row.status === 'Missed' || row.status === 'Absent') statusCell.font = { bold: true, color: { argb: COLORS.red }, size: 10 };
     });
 
-    ws.getColumn(1).width = 14; ws.getColumn(2).width = 24; ws.getColumn(3).width = 20;
-    ws.getColumn(4).width = 12; ws.getColumn(5).width = 12; ws.getColumn(6).width = 12;
-    ws.getColumn(7).width = 12; ws.getColumn(8).width = 16; ws.getColumn(9).width = 12;
-    ws.getColumn(10).width = 14; ws.getColumn(11).width = 12; ws.getColumn(12).width = 14;
-    ws.getColumn(13).width = 12;
+    ws.columns = [
+      { width: 14 }, { width: 24 }, { width: 20 }, { width: 12 }, { width: 12 }, 
+      { width: 12 }, { width: 12 }, { width: 16 }, { width: 12 }, { width: 14 }, 
+      { width: 14 }, { width: 12 }, { width: 14 }, { width: 12 }
+    ];
 
     const buffer = await wb.xlsx.writeBuffer();
     saveAs(new Blob([buffer]), `Attendance_Daily_${date}.xlsx`);
@@ -2171,7 +2397,7 @@ const openManualAdd = (row) => {
 
   const exportMonthlyStyled = async () => {
     try {
-      const res = await fetch(`${API_BASE}/clockin/admin/monthly-detailed?year=${monthlyYear}&month=${monthlyMonth}`);
+      const res = await fetch(`${API_BASE}/clockin/admin/monthly-detailed?year=${monthlyYear}&month=${monthlyMonth}&start_date=${monthlyStartDate}`);
       const result = await res.json();
       if (!result.success || !result.data) {
         alert('Failed to fetch detailed report. Check backend API.');
@@ -2191,7 +2417,8 @@ const openManualAdd = (row) => {
       wb.creator = 'KIOTEL Attendance System';
 
       const ws = wb.addWorksheet('Monthly Overview', { views: [{ state: 'frozen', xSplit: 2, ySplit: 5 }] });
-      const totalCols = 2 + dates.length + 5; 
+      const extraColsCount = 6; // Late, Early, Penalty, OT, Hours, Present
+      const totalCols = 2 + dates.length + extraColsCount; 
 
       ws.mergeCells(1, 1, 1, totalCols);
       const t1 = ws.getCell('A1');
@@ -2203,7 +2430,7 @@ const openManualAdd = (row) => {
 
       ws.mergeCells(2, 1, 2, totalCols);
       const t2 = ws.getCell('A2');
-      t2.value = `${month_name} ${monthlyYear}`;
+      t2.value = `${month_name} ${monthlyYear} (From ${monthlyStartDate})`;
       t2.font = { size: 13, bold: true, color: { argb: COLORS.white } };
       t2.fill = solidFill(COLORS.primaryDark);
       t2.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -2230,9 +2457,10 @@ const openManualAdd = (row) => {
       const totalsStartCol = 3 + dates.length;
       headerRow.getCell(totalsStartCol).value = 'Total\nLate';
       headerRow.getCell(totalsStartCol + 1).value = 'Total\nEarly';
-      headerRow.getCell(totalsStartCol + 2).value = 'Total\nOT';
-      headerRow.getCell(totalsStartCol + 3).value = 'Total\nHours';
-      headerRow.getCell(totalsStartCol + 4).value = 'Days\nPresent';
+      headerRow.getCell(totalsStartCol + 2).value = 'Total\nPenalty';
+      headerRow.getCell(totalsStartCol + 3).value = 'Total\nOT';
+      headerRow.getCell(totalsStartCol + 4).value = 'Total\nHours';
+      headerRow.getCell(totalsStartCol + 5).value = 'Days\nPresent';
 
       ws.getRow(5).height = 36;
       for (let c = 1; c <= totalCols; c++) {
@@ -2294,14 +2522,17 @@ const openManualAdd = (row) => {
           }
         });
 
+        const totalPenalty = (emp.totals.total_late_min || 0) + (emp.totals.total_early_min || 0);
+
         inRowData.push(
           emp.totals.total_late_min || '',
           emp.totals.total_early_min || '',
+          totalPenalty || '',
           emp.totals.total_ot_min || '',
           emp.totals.total_working_min > 0 ? `${Math.floor(emp.totals.total_working_min / 60)}h ${emp.totals.total_working_min % 60}m` : '—',
           emp.totals.present
         );
-        for (let i = 0; i < 5; i++) { outRowData.push(''); metricsRowData.push(''); shiftRowData.push(''); }
+        for (let i = 0; i < extraColsCount; i++) { outRowData.push(''); metricsRowData.push(''); shiftRowData.push(''); }
 
         const rowIn = ws.addRow(inRowData);
         const rowOut = ws.addRow(outRowData);
@@ -2367,13 +2598,18 @@ const openManualAdd = (row) => {
           c.font = { bold: true, size: 10, color: { argb: COLORS.orange } };
           c.fill = solidFill(COLORS.orangeLight);
         }
-        if (emp.totals.total_ot_min > 0) {
+        if (totalPenalty > 0) {
           const c = rowIn.getCell(totColStart + 2);
+          c.font = { bold: true, size: 10, color: { argb: COLORS.purple } };
+          c.fill = solidFill(COLORS.purpleLight);
+        }
+        if (emp.totals.total_ot_min > 0) {
+          const c = rowIn.getCell(totColStart + 3);
           c.font = { bold: true, size: 10, color: { argb: COLORS.green } };
           c.fill = solidFill(COLORS.greenLight);
         }
-        rowIn.getCell(totColStart + 3).font = { bold: true, size: 10, color: { argb: COLORS.primary } };
-        const presentCell = rowIn.getCell(totColStart + 4);
+        rowIn.getCell(totColStart + 4).font = { bold: true, size: 10, color: { argb: COLORS.primary } };
+        const presentCell = rowIn.getCell(totColStart + 5);
         presentCell.font = { bold: true, size: 11, color: { argb: COLORS.primary } };
         presentCell.fill = solidFill(COLORS.primaryLight);
 
@@ -2384,109 +2620,12 @@ const openManualAdd = (row) => {
 
       ws.getColumn(1).width = 22; ws.getColumn(2).width = 14;
       dates.forEach((_, i) => { ws.getColumn(3 + i).width = 12; });
-      ws.getColumn(totalsStartCol).width = 12; ws.getColumn(totalsStartCol + 1).width = 12;
-      ws.getColumn(totalsStartCol + 2).width = 10; ws.getColumn(totalsStartCol + 3).width = 13;
-      ws.getColumn(totalsStartCol + 4).width = 11;
-
-      const ws2 = wb.addWorksheet('Detailed Report');
-      ws2.mergeCells('A1:L1');
-      const dt1 = ws2.getCell('A1');
-      dt1.value = 'KIOTEL — Detailed Attendance Report';
-      dt1.font = { size: 18, bold: true, color: { argb: COLORS.white } };
-      dt1.fill = solidFill(COLORS.primary);
-      dt1.alignment = { horizontal: 'center', vertical: 'middle' };
-      ws2.getRow(1).height = 36;
-
-      ws2.mergeCells('A2:L2');
-      const dt2 = ws2.getCell('A2');
-      dt2.value = `${month_name} ${monthlyYear}`;
-      dt2.font = { size: 12, bold: true, color: { argb: COLORS.white } };
-      dt2.fill = solidFill(COLORS.primaryDark);
-      dt2.alignment = { horizontal: 'center', vertical: 'middle' };
-      ws2.getRow(2).height = 26;
-
-      ws2.addRow([]);
-
-      const dHeaders = ['Employee', 'ID', 'Date', 'Day', 'Shift', 'Clock In', 'Clock Out', 'Hours', 'Late (min)', 'Early (min)', 'OT (min)', 'Status'];
-      const dHeaderRow = ws2.addRow(dHeaders);
-      dHeaderRow.eachCell((cell) => {
-        cell.font = { bold: true, color: { argb: COLORS.white }, size: 10 };
-        cell.fill = solidFill(COLORS.primary);
-        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        cell.border = thinBorder(COLORS.primaryDark);
-      });
-      ws2.getRow(dHeaderRow.number).height = 28;
-
-      let rowIdx = 0;
-      employees.forEach((emp) => {
-        let isFirst = true;
-
-        dates.forEach(d => {
-          const dayRecords = emp.dates[d];
-          if (dayRecords && dayRecords.length > 0) {
-            dayRecords.forEach(rec => {
-              const dateObj = new Date(d + 'T00:00:00');
-              const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-              const isSunday = dateObj.getDay() === 0;
-              const isFlexible = rec.shift_name === 'ADMIN';
-
-              const row = ws2.addRow([
-                isFirst ? emp.name : '',
-                isFirst ? emp.employee_id : '',
-                rec.attendance_date, dayName, 
-                isFlexible ? 'Flexible 8-Hour' : rec.shift_name,
-                rec.clock_in || '—', rec.clock_out || '—',
-                rec.working_hours || '—',
-                isFlexible ? 0 : (rec.late_min || ''), 
-                isFlexible ? 0 : (rec.early_min || ''), 
-                isFlexible ? 0 : (rec.ot_min || ''),
-                rec.status === 'completed' ? 'Done' : (rec.status === 'Missed' ? 'Missed Out' : 'Active'),
-              ]);
-
-              const bg = isSunday ? COLORS.sundayBg : (rowIdx % 2 === 0 ? COLORS.white : COLORS.gray50);
-              row.eachCell((cell) => {
-                cell.fill = solidFill(bg);
-                cell.border = thinBorder(COLORS.gray200);
-                cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                cell.font = { size: 10 };
-              });
-
-              if (isFirst) {
-                row.getCell(1).font = { bold: true, size: 10 };
-                row.getCell(1).alignment = { horizontal: 'left' };
-              }
-
-              if (!isFlexible && rec.late_min > 0) row.getCell(9).font = { bold: true, color: { argb: COLORS.red }, size: 10 };
-              if (!isFlexible && rec.early_min > 0) row.getCell(10).font = { bold: true, color: { argb: COLORS.orange }, size: 10 };
-              if (!isFlexible && rec.ot_min > 0) row.getCell(11).font = { bold: true, color: { argb: COLORS.green }, size: 10 };
-              if (rec.clock_out === 'Missed') row.getCell(7).font = { bold: true, color: { argb: COLORS.red } };
-
-              isFirst = false;
-              rowIdx++;
-            });
-          }
-        });
-
-        const totalHrs = Math.floor(emp.totals.total_working_min / 60);
-        const totalMins = emp.totals.total_working_min % 60;
-        const totalRow = ws2.addRow([
-          `TOTAL: ${emp.name}`, emp.employee_id, '', '', `${emp.totals.present} days`,
-          '', '', `${totalHrs}h ${totalMins}m`,
-          emp.totals.total_late_min || '', emp.totals.total_early_min || '', emp.totals.total_ot_min || '', '',
-        ]);
-        totalRow.eachCell((cell) => {
-          cell.font = { bold: true, size: 10 };
-          cell.fill = solidFill(COLORS.primaryLight);
-          cell.border = thinBorder(COLORS.gray200);
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        });
-        totalRow.getCell(1).alignment = { horizontal: 'left' };
-
-        ws2.addRow([]); 
-        rowIdx = 0;
-      });
-
-      [22, 14, 12, 8, 20, 12, 12, 13, 11, 11, 11, 10].forEach((w, i) => { ws2.getColumn(i + 1).width = w; });
+      ws.getColumn(totalsStartCol).width = 12; 
+      ws.getColumn(totalsStartCol + 1).width = 12;
+      ws.getColumn(totalsStartCol + 2).width = 12; 
+      ws.getColumn(totalsStartCol + 3).width = 10; 
+      ws.getColumn(totalsStartCol + 4).width = 13;
+      ws.getColumn(totalsStartCol + 5).width = 11;
 
       const buffer = await wb.xlsx.writeBuffer();
       saveAs(new Blob([buffer]), `Attendance_Monthly_${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}.xlsx`);
@@ -2706,7 +2845,7 @@ const openManualAdd = (row) => {
                     <div className="p-4"><TableSkeleton /></div>
                   ) : filteredDailyData && filteredDailyData.length > 0 ? (
                     <div className="overflow-x-auto h-full">
-                      <table className="w-full min-w-[900px]">
+                      <table className="w-full min-w-[1000px]">
                         <thead className="sticky top-0 z-10">
                           <tr className="bg-gradient-to-r from-blue-600 to-blue-500">
                             <th className="px-2 sm:px-3 py-2 text-left text-[10px] sm:text-xs font-semibold text-white uppercase">Employee</th>
@@ -2716,6 +2855,7 @@ const openManualAdd = (row) => {
                             <th className="px-2 sm:px-3 py-2 text-left text-[10px] sm:text-xs font-semibold text-white uppercase">Status</th>
                             <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">Late</th>
                             <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">Early</th>
+                            <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">Penalty</th>
                             <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">OT</th>
                             <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-semibold text-white uppercase">Photo</th>
                             <th className="px-2 sm:px-3 py-2 text-center text-[10px] sm:text-xs font-semibold text-white uppercase">Actions</th>
@@ -2801,6 +2941,11 @@ const openManualAdd = (row) => {
                               </td>
 
                               <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-orange-700">{row.early_clock_out_minutes || '—'}</td>
+                              
+                              <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-purple-700 bg-purple-50/30">
+                                {row.penalty_minutes > 0 ? row.penalty_minutes : '—'}
+                              </td>
+
                               <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-blue-700">{row.overtime_minutes || 0}</td>
                               <td className="px-2 sm:px-3 py-2 text-center">
                                 {row.photo_placeholder === 'manual_entry' ? (
@@ -2816,13 +2961,22 @@ const openManualAdd = (row) => {
                               
                               <td className="px-2 sm:px-3 py-2 text-center">
                                 {row.clock_in && !String(row.id).startsWith('absent') && (
-                                  <button 
-                                    onClick={() => openEditModal(row)}
-                                    className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
-                                    title="Edit Times"
-                                  >
-                                    <FaEdit />
-                                  </button>
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <button 
+                                      onClick={() => openEditModal(row)}
+                                      className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
+                                      title="Edit Times"
+                                    >
+                                      <FaEdit />
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDeleteRecord(row.id)}
+                                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                      title="Delete Record"
+                                    >
+                                      <FaTrash />
+                                    </button>
+                                  </div>
                                 )}
                               </td>
                             </tr>
@@ -2856,7 +3010,16 @@ const openManualAdd = (row) => {
                       <select value={monthlyMonth} onChange={(e) => setMonthlyMonth(Number(e.target.value))} className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                         {monthNames.map((name, idx) => <option key={idx} value={idx + 1}>{name}</option>)}
                       </select>
-                      <button onClick={() => handleExport('monthly')} className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg transition text-xs sm:text-sm whitespace-nowrap">
+                      <div className="flex items-center gap-1 border-l pl-2 ml-1 border-gray-300">
+                        <span className="text-xs font-semibold text-gray-600">Start:</span>
+                        <input
+                          type="date"
+                          value={monthlyStartDate}
+                          onChange={(e) => setMonthlyStartDate(e.target.value)}
+                          className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                      </div>
+                      <button onClick={() => handleExport('monthly')} className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg transition text-xs sm:text-sm whitespace-nowrap ml-2">
                         <FaFileExport className="text-xs" /><span>Export</span>
                       </button>
                     </div>
@@ -2868,7 +3031,7 @@ const openManualAdd = (row) => {
                     <div className="p-4"><TableSkeleton /></div>
                   ) : filteredMonthlyData && filteredMonthlyData.length > 0 ? (
                     <div className="overflow-x-auto h-full">
-                      <table className="w-full min-w-[800px]">
+                      <table className="w-full min-w-[900px]">
                         <thead className="sticky top-0 z-10">
                           <tr className="bg-gradient-to-r from-blue-600 to-blue-500">
                             <th className="px-2 sm:px-3 py-2 text-left text-[10px] sm:text-xs font-semibold text-white uppercase">Employee</th>
@@ -2876,6 +3039,7 @@ const openManualAdd = (row) => {
                             <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">Present</th>
                             <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">Late</th>
                             <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">Early</th>
+                            <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">Penalty</th>
                             <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">Absent</th>
                             <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">OT (min)</th>
                             <th className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-xs font-semibold text-white uppercase">OT (hrs)</th>
@@ -2894,6 +3058,7 @@ const openManualAdd = (row) => {
                               <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-emerald-700">{row.present}</td>
                               <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-amber-700">{row.late}</td>
                               <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-orange-700">{row.early_clock_out || 0}</td>
+                              <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-purple-700 bg-purple-50/50">{row.penalty_minutes || 0}</td>
                               <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-rose-700">{row.absent}</td>
                               <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-blue-700">{row.total_ot_minutes}</td>
                               <td className="px-2 sm:px-3 py-2 text-right text-xs sm:text-sm font-semibold text-blue-700">{Math.floor((Number(row.total_ot_minutes) || 0) / 60)}</td>
@@ -2940,13 +3105,8 @@ const openManualAdd = (row) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Shift</label>
                 <select 
                   required
-                    value={editFormData.shift_id}
-  onChange={(e) =>
-    setEditFormData(prev => ({
-      ...prev,
-      shift_id: e.target.value
-    }))
-  }
+                  value={addFormData.shift_id}
+                  onChange={(e) => setAddFormData(prev => ({ ...prev, shift_id: e.target.value }))}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                 >
                   <option value="">Select Shift...</option>
@@ -3045,7 +3205,6 @@ const openManualAdd = (row) => {
                     type="time" 
                     required
                     value={editFormData.clock_in_time}
-                    disabled={editFormData.mode !== 'full-add'}
                     onChange={(e) => setEditFormData({...editFormData, clock_in_time: e.target.value})}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 outline-none text-sm"
                   />
@@ -3055,7 +3214,6 @@ const openManualAdd = (row) => {
                   <input 
                     type="time" 
                     value={editFormData.clock_out_time}
-                    disabled={editFormData.mode === 'locked'}
                     onChange={(e) => setEditFormData({...editFormData, clock_out_time: e.target.value})}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 outline-none text-sm"
                   />
