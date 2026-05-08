@@ -1734,33 +1734,76 @@ const TableSkeleton = () => (
   </div>
 );
 
+// function formatHHMMForInput(timeRaw) {
+//   if (!timeRaw || timeRaw === 'Missed') return '';
+//   if (/^\d{2}:\d{2}$/.test(timeRaw)) return timeRaw;
+//   if (/^\d{2}:\d{2}:\d{2}/.test(timeRaw)) return timeRaw.substring(0, 5);
+
+//   if (typeof timeRaw === 'string' && /AM|PM/i.test(timeRaw)) {
+//     const isPM = /PM/i.test(timeRaw);
+//     const timeOnly = timeRaw.replace(/AM|PM/i, '').trim();
+//     const parts = timeOnly.split(':').map(Number);
+//     if (parts.length >= 2) {
+//       let hours = parts[0];
+//       if (isPM && hours !== 12) hours += 12;
+//       if (!isPM && hours === 12) hours = 0;
+//       return `${String(hours).padStart(2, '0')}:${String(parts[1]).padStart(2, '0')}`;
+//     }
+//   }
+
+//   if (typeof timeRaw === 'string' && timeRaw.includes('T')) {
+//     const d = new Date(timeRaw);
+//     if (!isNaN(d.getTime())) {
+//       return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+//     }
+//     if (timeRaw.length >= 16) {
+//       return timeRaw.substring(11, 16);
+//     }
+//   }
+
+//   const d = new Date(timeRaw);
+//   if (!isNaN(d.getTime())) {
+//     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+//   }
+
+//   return '';
+// }
+
 function formatHHMMForInput(timeRaw) {
   if (!timeRaw || timeRaw === 'Missed') return '';
+  
+  // If it's already HH:MM format
   if (/^\d{2}:\d{2}$/.test(timeRaw)) return timeRaw;
-  if (/^\d{2}:\d{2}:\d{2}/.test(timeRaw)) return timeRaw.substring(0, 5);
+  
+  if (typeof timeRaw === 'string') {
+    // If it's 12-hour format like "9:30 AM" or "02:15 PM"
+    if (/AM|PM/i.test(timeRaw)) {
+      const isPM = /PM/i.test(timeRaw);
+      const timeOnly = timeRaw.replace(/AM|PM/i, '').trim();
+      const parts = timeOnly.split(':').map(Number);
+      if (parts.length >= 2) {
+        let hours = parts[0];
+        if (isPM && hours !== 12) hours += 12;
+        if (!isPM && hours === 12) hours = 0;
+        return `${String(hours).padStart(2, '0')}:${String(parts[1]).padStart(2, '0')}`;
+      }
+    }
 
-  if (typeof timeRaw === 'string' && /AM|PM/i.test(timeRaw)) {
-    const isPM = /PM/i.test(timeRaw);
-    const timeOnly = timeRaw.replace(/AM|PM/i, '').trim();
-    const parts = timeOnly.split(':').map(Number);
-    if (parts.length >= 2) {
-      let hours = parts[0];
-      if (isPM && hours !== 12) hours += 12;
-      if (!isPM && hours === 12) hours = 0;
-      return `${String(hours).padStart(2, '0')}:${String(parts[1]).padStart(2, '0')}`;
+    // Bulletproof extraction: Just grab the raw HH:mm directly from the string.
+    // If the string is "2026-05-08T17:58:00.000Z", this extracts "17:58" directly,
+    // ignoring the 'Z' so the browser doesn't try to add +5:30.
+    const timeMatch = timeRaw.match(/T?(\d{2}:\d{2})/);
+    if (timeMatch) {
+      return timeMatch[1].replace('T', '');
+    }
+    
+    const spaceMatch = timeRaw.match(/\s(\d{2}:\d{2})/);
+    if (spaceMatch) {
+      return spaceMatch[1];
     }
   }
 
-  if (typeof timeRaw === 'string' && timeRaw.includes('T')) {
-    const d = new Date(timeRaw);
-    if (!isNaN(d.getTime())) {
-      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    }
-    if (timeRaw.length >= 16) {
-      return timeRaw.substring(11, 16);
-    }
-  }
-
+  // Native Date object fallback (only used if it's an actual Date object)
   const d = new Date(timeRaw);
   if (!isNaN(d.getTime())) {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -1768,7 +1811,8 @@ function formatHHMMForInput(timeRaw) {
 
   return '';
 }
-  
+
+
 function calculateAttendanceDetails(clockIn, clockOut, shiftStart, shiftEnd, graceMinutes = 0, earlyGraceMinutes = 15) {
   const details = { status: 'Absent', late_minutes: 0, early_clock_out_minutes: 0, overtime_minutes: 0, penalty_minutes: 0 };
   if (!clockIn) return details;
