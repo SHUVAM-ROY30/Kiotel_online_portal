@@ -1,11 +1,11 @@
-
 // "use client";
 
 // import { useEffect, useMemo, useState } from "react";
 // import {
 //   CheckCircle, Cancel, Download, Visibility, Add,
 //   Search, Work, People, TrendingUp, LocationOn, Business, Close,
-//   Phone, Email, Delete, RestoreFromTrash
+//   Phone, Email, Delete, RestoreFromTrash, WarningAmber,
+//   Event, AccessTime, DateRange, FilterList
 // } from "@mui/icons-material";
 
 // const PAGE_SIZE = 8;
@@ -68,6 +68,59 @@
 //     default: { bg: theme.colors.surface, text: theme.colors.textSecondary, border: theme.colors.border },
 //   };
 //   return styles[status?.toLowerCase()] || styles.default;
+// }
+
+// function formatTime12Hour(timeStr) {
+//   if (!timeStr) return "";
+//   const [hourStr, minuteStr] = timeStr.split(":");
+//   let hour = parseInt(hourStr, 10);
+//   const ampm = hour >= 12 ? "PM" : "AM";
+//   hour = hour % 12;
+//   hour = hour ? hour : 12; // the hour '0' should be '12'
+//   return `${hour}:${minuteStr} ${ampm}`;
+// }
+
+// function generatePreviewSlots(sched) {
+//   if (!sched.date || !sched.startTime || !sched.endTime || !sched.slotDuration) return [];
+  
+//   const slots = [];
+//   const durationMs = parseInt(sched.slotDuration) * 60000;
+  
+//   let current = new Date(`${sched.date}T${sched.startTime}`);
+//   const end = new Date(`${sched.date}T${sched.endTime}`);
+  
+//   const bStart = (sched.breakStart) ? new Date(`${sched.date}T${sched.breakStart}`) : null;
+//   const bEnd = (sched.breakEnd) ? new Date(`${sched.date}T${sched.breakEnd}`) : null;
+
+//   while (current < end) {
+//     let slotEnd = new Date(current.getTime() + durationMs);
+    
+//     if (bStart && bEnd) {
+//       if (current >= bStart && current < bEnd) {
+//         slots.push({ 
+//           isBreak: true, 
+//           start: formatTime12Hour(current.toTimeString().slice(0,5)), 
+//           end: formatTime12Hour(bEnd.toTimeString().slice(0,5)) 
+//         });
+//         current = new Date(bEnd);
+//         continue;
+//       }
+//       if (slotEnd > bStart && current < bStart) {
+//         current = new Date(bEnd);
+//         continue;
+//       }
+//     }
+    
+//     if (slotEnd <= end) {
+//       slots.push({ 
+//         isBreak: false, 
+//         start: formatTime12Hour(current.toTimeString().slice(0,5)), 
+//         end: formatTime12Hour(slotEnd.toTimeString().slice(0,5)) 
+//       });
+//     }
+//     current = slotEnd;
+//   }
+//   return slots;
 // }
 
 // // --- Styled Components ---
@@ -141,21 +194,43 @@
 //   const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 //   const [activeTab, setActiveTab]     = useState(0);
+//   const [appViewType, setAppViewType] = useState("external"); // Toggle between 'external' and 'internal'
+  
 //   const [apps, setApps]               = useState([]);
+//   const [internalApps, setInternalApps] = useState([]);
 //   const [binApps, setBinApps]         = useState([]);
 //   const [positions, setPositions]     = useState([]);
+//   const [internalPositions, setInternalPositions] = useState([]);
   
 //   const [appsPage, setAppsPage]       = useState(1);
 //   const [posPage, setPosPage]         = useState(1);
 //   const [binPage, setBinPage]         = useState(1);
   
 //   const [appsSearch, setAppsSearch]   = useState("");
+//   const [internalDateFilter, setInternalDateFilter] = useState(""); 
 //   const [posSearch, setPosSearch]     = useState("");
 //   const [binSearch, setBinSearch]     = useState("");
   
 //   const [newPosition, setNewPosition] = useState({ title: "", department: "", location: "" });
 //   const [addingPos, setAddingPos]     = useState(false);
 //   const [updatingId, setUpdatingId]   = useState(null);
+  
+//   const [positionToDelete, setPositionToDelete] = useState(null);
+
+//   // Internal Positions State
+//   const [addingInternal, setAddingInternal] = useState(false);
+//   const [internalPosTitle, setInternalPosTitle] = useState("");
+//   const [internalPosDept, setInternalPosDept] = useState("");
+  
+//   const [schedules, setSchedules] = useState([]);
+//   const [currentSchedule, setCurrentSchedule] = useState({
+//     date: "",
+//     startTime: "",
+//     endTime: "",
+//     breakStart: "",
+//     breakEnd: "",
+//     slotDuration: "60"
+//   });
 
 //   useEffect(() => {
 //     const id = "dm-sans-font";
@@ -170,26 +245,36 @@
 
 //   const refresh = async () => {
 //     try {
-//       const [appsRes, posRes, binRes] = await Promise.all([
+//       const [appsRes, intAppsRes, posRes, binRes, intPosRes] = await Promise.all([
 //         fetch(`${backend}/api/careers/admin/applications`),
+//         fetch(`${backend}/api/careers/admin/internal-applications`),
 //         fetch(`${backend}/api/careers/positions`),
-//         fetch(`${backend}/api/careers/admin/applications/bin`)
+//         fetch(`${backend}/api/careers/admin/applications/bin`),
+//         fetch(`${backend}/api/careers/admin/internal-positions`)
 //       ]);
 //       const appsData = await appsRes.json();
+//       const intAppsData = await intAppsRes.json();
 //       const posData = await posRes.json();
 //       const binData = await binRes.json();
+//       const intPosData = await intPosRes.json();
       
 //       setApps(Array.isArray(appsData) ? appsData : []);
+//       setInternalApps(Array.isArray(intAppsData) ? intAppsData : []);
 //       setPositions(Array.isArray(posData) ? posData : []);
 //       setBinApps(Array.isArray(binData) ? binData : []);
+//       setInternalPositions(Array.isArray(intPosData) ? intPosData : []);
 //     } catch (e) { console.error(e); }
 //   };
 
 //   useEffect(() => { refresh(); }, []);
 
-//   const updateStatus = async (id, status) => {
+//   const updateStatus = async (id, status, isInternal = false) => {
 //     setUpdatingId(id);
-//     await fetch(`${backend}/api/careers/admin/applications/${id}/status`, {
+//     const endpoint = isInternal 
+//         ? `${backend}/api/careers/admin/internal-applications/${id}/status`
+//         : `${backend}/api/careers/admin/applications/${id}/status`;
+        
+//     await fetch(endpoint, {
 //       method: "PUT", headers: { "Content-Type": "application/json" },
 //       body: JSON.stringify({ status }),
 //     });
@@ -226,13 +311,99 @@
 
 //   const deactivatePosition = async (id) => {
 //     await fetch(`${backend}/api/careers/admin/positions/${id}/deactivate`, { method: "PUT" });
+//     setPositionToDelete(null);
 //     refresh();
 //   };
 
+//   // Internal Position Methods
+//   const handleAddSchedule = () => {
+//     if (!currentSchedule.date || !currentSchedule.startTime || !currentSchedule.endTime || !currentSchedule.slotDuration) {
+//       alert("Please fill date, start time, end time, and duration.");
+//       return;
+//     }
+//     setSchedules([...schedules, { ...currentSchedule, id: Date.now() }]);
+//     setCurrentSchedule({
+//       date: "",
+//       startTime: "",
+//       endTime: "",
+//       breakStart: "",
+//       breakEnd: "",
+//       slotDuration: "60"
+//     });
+//   };
+
+//   const removeSchedule = (id) => {
+//     setSchedules(schedules.filter(s => s.id !== id));
+//   };
+
+//   const submitInternalPosition = async () => {
+//     if (!internalPosTitle.trim()) return alert("Position Title is required.");
+//     if (schedules.length === 0) return alert("Please add at least one date schedule.");
+
+//     setAddingInternal(true);
+//     try {
+//       const payload = {
+//         title: internalPosTitle,
+//         department: internalPosDept,
+//         schedules: schedules
+//       };
+      
+//       const res = await fetch(`${backend}/api/careers/admin/internal-positions`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(payload)
+//       });
+      
+//       if (res.ok) {
+//         alert("Internal position and time slots successfully created.");
+//         setInternalPosTitle("");
+//         setInternalPosDept("");
+//         setSchedules([]);
+//         refresh();
+//       } else {
+//         const errorData = await res.json();
+//         alert(errorData.error || "Failed to create internal position");
+//       }
+//     } catch (e) {
+//       console.error(e);
+//       alert("Error creating internal position.");
+//     } finally {
+//       setAddingInternal(false);
+//     }
+//   };
+
+//   const deleteInternalPosition = async (id) => {
+//     if (!window.confirm("Are you sure you want to remove this internal position? All associated slots and applications will be deleted.")) return;
+//     try {
+//       await fetch(`${backend}/api/careers/admin/internal-positions/${id}`, { method: "DELETE" });
+//       refresh();
+//     } catch (e) {
+//       console.error(e);
+//     }
+//   };
+
+//   // Memoized Filters
 //   const filteredApps = useMemo(() =>
 //     apps.filter(a => `${a.name} ${a.email} ${a.phone} ${a.title}`.toLowerCase().includes(appsSearch.toLowerCase())),
 //     [apps, appsSearch]
 //   );
+
+//   const filteredInternalApps = useMemo(() => {
+//     return internalApps.filter(a => {
+//         const matchSearch = `${a.first_name} ${a.last_name} ${a.email} ${a.position_title}`.toLowerCase().includes(appsSearch.toLowerCase());
+        
+//         // Safely extract YYYY-MM-DD from the selected interview slot date
+//         let interviewDateString = "";
+//         if (a.interview_date) {
+//             interviewDateString = typeof a.interview_date === 'string' 
+//                 ? a.interview_date.split('T')[0] 
+//                 : new Date(a.interview_date).toISOString().split('T')[0];
+//         }
+        
+//         const matchDate = internalDateFilter ? interviewDateString === internalDateFilter : true;
+//         return matchSearch && matchDate;
+//     });
+//   }, [internalApps, appsSearch, internalDateFilter]);
 
 //   const filteredPositions = useMemo(() =>
 //     positions.filter(p => `${p.title} ${p.department} ${p.location}`.toLowerCase().includes(posSearch.toLowerCase())),
@@ -244,16 +415,19 @@
 //     [binApps, binSearch]
 //   );
 
-//   const appsTotalPages = Math.ceil(filteredApps.length / PAGE_SIZE) || 1;
+//   // Pagination Variables
+//   const currentAppsData = appViewType === 'external' ? filteredApps : filteredInternalApps;
+//   const appsTotalPages = Math.ceil(currentAppsData.length / PAGE_SIZE) || 1;
+//   const appsPageData = currentAppsData.slice((appsPage - 1) * PAGE_SIZE, appsPage * PAGE_SIZE);
+
 //   const posTotalPages = Math.ceil(filteredPositions.length / PAGE_SIZE) || 1;
-//   const binTotalPages = Math.ceil(filteredBinApps.length / PAGE_SIZE) || 1;
-  
-//   const appsPageData = filteredApps.slice((appsPage - 1) * PAGE_SIZE, appsPage * PAGE_SIZE);
 //   const posPageData = filteredPositions.slice((posPage - 1) * PAGE_SIZE, posPage * PAGE_SIZE);
+  
+//   const binTotalPages = Math.ceil(filteredBinApps.length / PAGE_SIZE) || 1;
 //   const binPageData = filteredBinApps.slice((binPage - 1) * PAGE_SIZE, binPage * PAGE_SIZE);
   
-//   const approvedCount = apps.filter(a => a.status === "approved").length;
-//   const pendingCount = apps.filter(a => a.status === "pending" || !a.status).length;
+//   const approvedCount = apps.filter(a => a.status === "approved").length + internalApps.filter(a => a.status === "approved").length;
+//   const pendingCount = apps.filter(a => a.status === "pending" || !a.status).length + internalApps.filter(a => a.status === "pending" || !a.status).length;
 
 //   const inputStyle = {
 //     width: "100%", padding: `${theme.spacing.md} ${theme.spacing.md}`,
@@ -287,6 +461,77 @@
 //         ".ac-input:focus{border-color:#2563EB!important;background:#fff!important;box-shadow:0 0 0 3px rgba(37,99,235,0.2)!important;}",
 //       ].join("")}</style>
 
+//       {/* Position Deletion Modal */}
+//       {positionToDelete && (
+//         <div style={{
+//           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+//           background: "rgba(15, 23, 42, 0.6)", zIndex: 9999,
+//           display: "flex", alignItems: "center", justifyContent: "center",
+//           padding: theme.spacing.xl, backdropFilter: "blur(4px)"
+//         }}>
+//           <div style={{
+//             background: theme.colors.card, borderRadius: theme.radius.xl,
+//             padding: theme.spacing.xxl, maxWidth: 420, width: "100%",
+//             boxShadow: theme.shadows.xl, border: `1px solid ${theme.colors.border}`,
+//             animation: "fadeIn 0.2s ease-out"
+//           }}>
+//             <style>{`@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }`}</style>
+            
+//             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+//               <div style={{ background: theme.colors.dangerLight, color: theme.colors.danger, padding: 8, borderRadius: "50%", display: "flex" }}>
+//                 <Close style={{ fontSize: 24 }} />
+//               </div>
+//               <h3 style={{ margin: 0, color: theme.colors.textPrimary, fontSize: 20, fontWeight: 700 }}>Remove Position</h3>
+//             </div>
+            
+//             <p style={{ margin: "0 0 24px 0", color: theme.colors.textSecondary, fontSize: 14, lineHeight: 1.5 }}>
+//               Are you sure you want to remove this open position? This action cannot be undone and it will no longer be visible to applicants.
+//             </p>
+            
+//             <div style={{ 
+//               background: theme.colors.surface, padding: theme.spacing.lg, 
+//               borderRadius: theme.radius.md, marginBottom: theme.spacing.xl, 
+//               border: `1px solid ${theme.colors.border}` 
+//             }}>
+//               <div style={{ fontWeight: 700, color: theme.colors.textPrimary, marginBottom: 12, fontSize: 16 }}>
+//                 {positionToDelete.title}
+//               </div>
+//               <div style={{ display: "flex", gap: 20, flexWrap: "wrap", fontSize: 13, color: theme.colors.textSecondary }}>
+//                 {positionToDelete.department && (
+//                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+//                     <Business style={{ fontSize: 16, color: theme.colors.textTertiary }} />
+//                     {positionToDelete.department}
+//                   </span>
+//                 )}
+//                 {positionToDelete.location && (
+//                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+//                     <LocationOn style={{ fontSize: 16, color: theme.colors.textTertiary }} />
+//                     {positionToDelete.location}
+//                   </span>
+//                 )}
+//               </div>
+//             </div>
+            
+//             <div style={{ display: "flex", justifyContent: "flex-end", gap: theme.spacing.md }}>
+//               <button onClick={() => setPositionToDelete(null)} style={{
+//                 padding: "10px 20px", borderRadius: theme.radius.md, border: `1px solid ${theme.colors.border}`,
+//                 background: theme.colors.card, color: theme.colors.textPrimary, cursor: "pointer", 
+//                 fontWeight: 600, fontSize: 14, transition: theme.transitions.fast,
+//                 ":hover": { background: theme.colors.hover }
+//               }}>No, Keep it</button>
+              
+//               <button onClick={() => deactivatePosition(positionToDelete.id)} style={{
+//                 padding: "10px 20px", borderRadius: theme.radius.md, border: "none",
+//                 background: theme.colors.danger, color: "#fff", cursor: "pointer", 
+//                 fontWeight: 600, fontSize: 14, transition: theme.transitions.fast,
+//                 boxShadow: `0 4px 12px ${theme.colors.danger}40`,
+//                 ":hover": { background: "#B91C1C", transform: "translateY(-1px)" }
+//               }}>Yes, Remove</button>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
 //       <div style={{ maxWidth: 1280, margin: "0 auto" }}>
 //         <div style={{ marginBottom: theme.spacing.xxl }}>
 //           <div style={{ display: "flex", alignItems: "center", gap: theme.spacing.lg, marginBottom: theme.spacing.xl }}>
@@ -309,20 +554,20 @@
 //           </div>
           
 //           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: theme.spacing.lg }}>
-//             <StatCard icon={<People style={{ fontSize: 22 }} />} label="Total Applications" value={apps.length} accent="#2563EB" />
+//             <StatCard icon={<People style={{ fontSize: 22 }} />} label="Total Applications" value={apps.length + internalApps.length} accent="#2563EB" />
 //             <StatCard icon={<TrendingUp style={{ fontSize: 22 }} />} label="Approved" value={approvedCount} accent="#16A34A" />
 //             <StatCard icon={<Work style={{ fontSize: 22 }} />} label="Pending Review" value={pendingCount} accent="#D97706" />
-//             <StatCard icon={<Business style={{ fontSize: 22 }} />} label="Open Positions" value={positions.length} accent="#7C3AED" />
+//             <StatCard icon={<Business style={{ fontSize: 22 }} />} label="Open Positions" value={positions.length + internalPositions.length} accent="#7C3AED" />
 //           </div>
 //         </div>
 
 //         <div style={{
 //           display: "flex", gap: theme.spacing.sm, background: theme.colors.card, borderRadius: theme.radius.lg,
 //           padding: theme.spacing.sm, marginBottom: theme.spacing.xxl, border: `1px solid ${theme.colors.border}`,
-//           boxShadow: theme.shadows.md, width: "fit-content",
+//           boxShadow: theme.shadows.md, width: "fit-content", flexWrap: "wrap"
 //         }}>
-//           {["Applications", "Positions", "Bin"].map((t, i) => (
-//             <button key={t} onClick={() => setActiveTab(i)} style={{
+//           {["Applications", "Positions", "Internal Positions", "Bin"].map((t, i) => (
+//             <button key={t} onClick={() => { setActiveTab(i); setAppsPage(1); }} style={{
 //               padding: `${theme.spacing.sm} ${theme.spacing.xl}`, borderRadius: theme.radius.md, border: "none",
 //               background: activeTab === i ? `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryHover})` : "transparent",
 //               color: activeTab === i ? "#fff" : theme.colors.textSecondary,
@@ -342,15 +587,43 @@
 //           }}>
 //             <div style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: theme.spacing.md }}>
 //               <div>
-//                 <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: theme.colors.textPrimary }}>Applications</h2>
-//                 <p style={{ margin: `${theme.spacing.xs} 0 0`, fontSize: 13, color: theme.colors.textTertiary }}>{filteredApps.length} total results</p>
+//                 <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
+//                     <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: theme.colors.textPrimary }}>Applications</h2>
+//                     <div style={{ display: "flex", background: theme.colors.surface, borderRadius: theme.radius.sm, border: `1px solid ${theme.colors.border}`, overflow: "hidden" }}>
+//                         <button onClick={() => { setAppViewType('external'); setAppsPage(1); }} style={{
+//                             padding: "4px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
+//                             background: appViewType === 'external' ? theme.colors.primaryLight : "transparent",
+//                             color: appViewType === 'external' ? theme.colors.primary : theme.colors.textSecondary
+//                         }}>External Candidates</button>
+//                         <button onClick={() => { setAppViewType('internal'); setAppsPage(1); }} style={{
+//                             padding: "4px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
+//                             background: appViewType === 'internal' ? theme.colors.primaryLight : "transparent",
+//                             color: appViewType === 'internal' ? theme.colors.primary : theme.colors.textSecondary
+//                         }}>Internal Employees</button>
+//                     </div>
+//                 </div>
+//                 <p style={{ margin: 0, fontSize: 13, color: theme.colors.textTertiary }}>{currentAppsData.length} total results</p>
 //               </div>
-//               <div style={{ position: "relative", minWidth: 300 }}>
-//                 <Search style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: theme.colors.textTertiary, fontSize: 20 }} />
-//                 <input placeholder="Search name, email, position..." value={appsSearch}
-//                   onChange={e => { setAppsSearch(e.target.value); setAppsPage(1); }}
-//                   style={{ ...inputStyle, paddingLeft: 44 }}
-//                 />
+              
+//               <div style={{ display: "flex", gap: theme.spacing.md, alignItems: "center", flexWrap: "wrap" }}>
+//                 {appViewType === 'internal' && (
+//                     <div style={{ position: "relative" }}>
+//                         <input 
+//                             type="date" 
+//                             value={internalDateFilter}
+//                             onChange={e => { setInternalDateFilter(e.target.value); setAppsPage(1); }}
+//                             style={inputStyle}
+//                         />
+//                     </div>
+//                 )}
+                
+//                 <div style={{ position: "relative", minWidth: 260 }}>
+//                   <Search style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: theme.colors.textTertiary, fontSize: 20 }} />
+//                   <input placeholder="Search name, email, position..." value={appsSearch}
+//                     onChange={e => { setAppsSearch(e.target.value); setAppsPage(1); }}
+//                     style={{ ...inputStyle, paddingLeft: 44 }}
+//                   />
+//                 </div>
 //               </div>
 //             </div>
 
@@ -358,13 +631,23 @@
 //               <table style={{ width: "100%", borderCollapse: "collapse" }}>
 //                 <thead>
 //                   <tr style={{ background: theme.colors.surface }}>
-//                     {[...["Candidate Details", "Position", "Status", "Resume", "Actions"]].map(h => (
-//                       <th key={h} style={{
-//                         padding: `${theme.spacing.md} ${theme.spacing.xl}`, textAlign: h === "Actions" ? "right" : "left",
-//                         fontSize: 11, fontWeight: 700, color: theme.colors.textSecondary,
-//                         letterSpacing: "0.06em", textTransform: "uppercase", borderBottom: `1px solid ${theme.colors.border}`,
-//                       }}>{h}</th>
-//                     ))}
+//                     {appViewType === 'external' ? (
+//                         [...["Candidate Details", "Position", "Status", "Resume", "Actions"]].map(h => (
+//                         <th key={h} style={{
+//                             padding: `${theme.spacing.md} ${theme.spacing.xl}`, textAlign: h === "Actions" ? "right" : "left",
+//                             fontSize: 11, fontWeight: 700, color: theme.colors.textSecondary,
+//                             letterSpacing: "0.06em", textTransform: "uppercase", borderBottom: `1px solid ${theme.colors.border}`,
+//                         }}>{h}</th>
+//                         ))
+//                     ) : (
+//                         [...["Employee Details", "Position & Time", "Details", "Resume", "Status", "Actions"]].map(h => (
+//                             <th key={h} style={{
+//                                 padding: `${theme.spacing.md} ${theme.spacing.xl}`, textAlign: h === "Actions" ? "right" : "left",
+//                                 fontSize: 11, fontWeight: 700, color: theme.colors.textSecondary,
+//                                 letterSpacing: "0.06em", textTransform: "uppercase", borderBottom: `1px solid ${theme.colors.border}`,
+//                             }}>{h}</th>
+//                         ))
+//                     )}
 //                   </tr>
 //                 </thead>
 //                 <tbody>
@@ -373,88 +656,169 @@
 //                       background: idx % 2 === 0 ? "#fff" : theme.colors.surface,
 //                       transition: "background 150ms",
 //                     }}>
-//                       <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
-//                         <div style={{ fontWeight: 700, color: theme.colors.textPrimary, fontSize: 15, marginBottom: 8 }}>{app.name}</div>
-//                         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textSecondary, marginBottom: 6 }}>
-//                           <Email style={{ fontSize: 16, color: theme.colors.textTertiary }} /> {app.email}
-//                         </div>
-//                         {app.phone ? (
-//                           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textSecondary, fontWeight: 500 }}>
-//                             <Phone style={{ fontSize: 16, color: theme.colors.textTertiary }} /> {app.phone}
-//                           </div>
-//                         ) : (
-//                           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textTertiary, fontStyle: "italic" }}>
-//                             <Phone style={{ fontSize: 16, opacity: 0.5 }} /> Not provided
-//                           </div>
-//                         )}
-//                       </td>
-//                       <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
-//                         <span style={{ fontSize: 14, color: theme.colors.textPrimary, fontWeight: 500 }}>{app.title || "N/A"}</span>
-//                       </td>
-//                       <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
-//                         <StatusBadge status={app.status} />
-//                       </td>
-//                       <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
-//                         {app.resume_url ? (
-//                           <div style={{ display: "flex", gap: theme.spacing.sm, flexWrap: "wrap" }}>
-//                             <a href={app.resume_url} target="_blank" rel="noreferrer" style={{
-//                               display: "inline-flex", alignItems: "center", gap: theme.spacing.xs,
-//                               padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm,
-//                               background: theme.colors.primaryLight, color: theme.colors.primary,
-//                               fontSize: 13, fontWeight: 600, textDecoration: "none",
-//                             }}>
-//                               <Visibility style={{ fontSize: 14 }} /> View
-//                             </a>
-//                             <a href={`${backend}/api/careers/admin/applications/${app.id}/download`} style={{
-//                               display: "inline-flex", alignItems: "center", gap: theme.spacing.xs,
-//                               padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm,
-//                               background: theme.colors.successLight, color: theme.colors.success,
-//                               fontSize: 13, fontWeight: 600, textDecoration: "none",
-//                             }}>
-//                               <Download style={{ fontSize: 14 }} /> Download
-//                             </a>
-//                           </div>
-//                         ) : (
-//                           <span style={{ fontSize: 13, color: theme.colors.textTertiary }}>No resume</span>
-//                         )}
-//                       </td>
-//                       <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, textAlign: "right" }}>
-//                         <div style={{ display: "flex", gap: theme.spacing.sm, justifyContent: "flex-end" }}>
-//                           <button disabled={updatingId === app.id} onClick={() => updateStatus(app.id, "approved")}
-//                             style={{
-//                               padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
-//                               background: `linear-gradient(135deg, ${theme.colors.success}, #15803D)`,
-//                               color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
-//                               boxShadow: "0 2px 6px rgba(22,163,74,0.25)", opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
-//                             }}>
-//                             <CheckCircle style={{ fontSize: 14 }} /> Approve
-//                           </button>
-//                           <button disabled={updatingId === app.id} onClick={() => updateStatus(app.id, "rejected")}
-//                             style={{
-//                               padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
-//                               background: `linear-gradient(135deg, ${theme.colors.danger}, #B91C1C)`,
-//                               color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
-//                               boxShadow: "0 2px 6px rgba(220,38,38,0.25)", opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
-//                             }}>
-//                             <Cancel style={{ fontSize: 14 }} /> Reject
-//                           </button>
-//                           <button disabled={updatingId === app.id} onClick={() => softDeleteApp(app.id)}
-//                             style={{
-//                               padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
-//                               background: theme.colors.surface, color: theme.colors.textSecondary, 
-//                               border: `1px solid ${theme.colors.border}`,
-//                               fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
-//                               opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
-//                             }}>
-//                             <Delete style={{ fontSize: 14 }} /> Bin
-//                           </button>
-//                         </div>
-//                       </td>
+//                       {appViewType === 'external' ? (
+//                           <>
+//                             <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+//                               <div style={{ fontWeight: 700, color: theme.colors.textPrimary, fontSize: 15, marginBottom: 8 }}>{app.name}</div>
+//                               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textSecondary, marginBottom: 6 }}>
+//                                 <Email style={{ fontSize: 16, color: theme.colors.textTertiary }} /> {app.email}
+//                               </div>
+//                               {app.phone ? (
+//                                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textSecondary, fontWeight: 500 }}>
+//                                   <Phone style={{ fontSize: 16, color: theme.colors.textTertiary }} /> {app.phone}
+//                                 </div>
+//                               ) : (
+//                                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textTertiary, fontStyle: "italic" }}>
+//                                   <Phone style={{ fontSize: 16, opacity: 0.5 }} /> Not provided
+//                                 </div>
+//                               )}
+//                             </td>
+//                             <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+//                               <span style={{ fontSize: 14, color: theme.colors.textPrimary, fontWeight: 500 }}>{app.title || "N/A"}</span>
+//                             </td>
+//                             <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+//                               <StatusBadge status={app.status} />
+//                             </td>
+//                             <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+//                               {app.resume_url ? (
+//                                 <div style={{ display: "flex", gap: theme.spacing.sm, flexWrap: "wrap" }}>
+//                                   <a href={app.resume_url} target="_blank" rel="noreferrer" style={{
+//                                     display: "inline-flex", alignItems: "center", gap: theme.spacing.xs,
+//                                     padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm,
+//                                     background: theme.colors.primaryLight, color: theme.colors.primary,
+//                                     fontSize: 13, fontWeight: 600, textDecoration: "none",
+//                                   }}>
+//                                     <Visibility style={{ fontSize: 14 }} /> View
+//                                   </a>
+//                                   <a href={`${backend}/api/careers/admin/applications/${app.id}/download`} style={{
+//                                     display: "inline-flex", alignItems: "center", gap: theme.spacing.xs,
+//                                     padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm,
+//                                     background: theme.colors.successLight, color: theme.colors.success,
+//                                     fontSize: 13, fontWeight: 600, textDecoration: "none",
+//                                   }}>
+//                                     <Download style={{ fontSize: 14 }} /> Download
+//                                   </a>
+//                                 </div>
+//                               ) : (
+//                                 <span style={{ fontSize: 13, color: theme.colors.textTertiary }}>No resume</span>
+//                               )}
+//                             </td>
+//                             <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, textAlign: "right" }}>
+//                               <div style={{ display: "flex", gap: theme.spacing.sm, justifyContent: "flex-end" }}>
+//                                 <button disabled={updatingId === app.id} onClick={() => updateStatus(app.id, "approved", false)}
+//                                   style={{
+//                                     padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
+//                                     background: `linear-gradient(135deg, ${theme.colors.success}, #15803D)`,
+//                                     color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+//                                     boxShadow: "0 2px 6px rgba(22,163,74,0.25)", opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
+//                                   }}>
+//                                   <CheckCircle style={{ fontSize: 14 }} /> Approve
+//                                 </button>
+//                                 <button disabled={updatingId === app.id} onClick={() => updateStatus(app.id, "rejected", false)}
+//                                   style={{
+//                                     padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
+//                                     background: `linear-gradient(135deg, ${theme.colors.danger}, #B91C1C)`,
+//                                     color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+//                                     boxShadow: "0 2px 6px rgba(220,38,38,0.25)", opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
+//                                   }}>
+//                                   <Cancel style={{ fontSize: 14 }} /> Reject
+//                                 </button>
+//                                 <button disabled={updatingId === app.id} onClick={() => softDeleteApp(app.id)}
+//                                   style={{
+//                                     padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
+//                                     background: theme.colors.surface, color: theme.colors.textSecondary, 
+//                                     border: `1px solid ${theme.colors.border}`,
+//                                     fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+//                                     opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
+//                                   }}>
+//                                   <Delete style={{ fontSize: 14 }} /> Bin
+//                                 </button>
+//                               </div>
+//                             </td>
+//                           </>
+//                       ) : (
+//                           <>
+//                             <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+//                               <div style={{ fontWeight: 700, color: theme.colors.textPrimary, fontSize: 15, marginBottom: 8 }}>{app.first_name} {app.last_name}</div>
+//                               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textSecondary, marginBottom: 6 }}>
+//                                 <Email style={{ fontSize: 16, color: theme.colors.textTertiary }} /> {app.email}
+//                               </div>
+//                               {app.phone ? (
+//                                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textSecondary, fontWeight: 500 }}>
+//                                   <Phone style={{ fontSize: 16, color: theme.colors.textTertiary }} /> {app.phone}
+//                                 </div>
+//                               ) : (
+//                                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textTertiary, fontStyle: "italic" }}>
+//                                   <Phone style={{ fontSize: 16, opacity: 0.5 }} /> Not provided
+//                                 </div>
+//                               )}
+//                             </td>
+//                             <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+//                               <div style={{ fontSize: 14, color: theme.colors.textPrimary, fontWeight: 600 }}>{app.position_title}</div>
+//                               <div style={{ fontSize: 12, color: theme.colors.textSecondary, marginTop: 4 }}>
+//                                 <DateRange style={{ fontSize: 14, verticalAlign: "middle", marginRight: 4 }}/>
+//                                 {app.interview_date ? new Date(app.interview_date).toLocaleDateString() : ""} <br/>
+//                                 <AccessTime style={{ fontSize: 14, verticalAlign: "middle", marginRight: 4, marginTop: 4 }}/>
+//                                 {formatTime12Hour(app.start_time)} - {formatTime12Hour(app.end_time)}
+//                               </div>
+//                             </td>
+//                             <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, maxWidth: 250 }}>
+//                                 <div style={{ fontSize: 12, marginBottom: 6 }}>
+//                                     <strong style={{ color: theme.colors.textSecondary }}>Shifts:</strong>{" "}
+//                                     {Array.isArray(app.shifts) ? app.shifts.join(", ") : (JSON.parse(app.shifts || '[]').join(", "))}
+//                                 </div>
+//                                 <div style={{ fontSize: 12, color: theme.colors.textSecondary, fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={app.fit_reason}>
+//                                     "{app.fit_reason}"
+//                                 </div>
+//                             </td>
+//                             <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+//                               {app.resume_url ? (
+//                                 <div style={{ display: "flex", gap: theme.spacing.sm, flexWrap: "wrap" }}>
+//                                   <a href={app.resume_url} target="_blank" rel="noreferrer" style={{
+//                                     display: "inline-flex", alignItems: "center", gap: theme.spacing.xs,
+//                                     padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm,
+//                                     background: theme.colors.primaryLight, color: theme.colors.primary,
+//                                     fontSize: 13, fontWeight: 600, textDecoration: "none",
+//                                   }}>
+//                                     <Visibility style={{ fontSize: 14 }} /> View
+//                                   </a>
+//                                 </div>
+//                               ) : (
+//                                 <span style={{ fontSize: 13, color: theme.colors.textTertiary }}>No resume</span>
+//                               )}
+//                             </td>
+//                             <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+//                               <StatusBadge status={app.status} />
+//                             </td>
+//                             <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, textAlign: "right" }}>
+//                               <div style={{ display: "flex", gap: theme.spacing.sm, justifyContent: "flex-end" }}>
+//                                 <button disabled={updatingId === app.id} onClick={() => updateStatus(app.id, "approved", true)}
+//                                   style={{
+//                                     padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
+//                                     background: `linear-gradient(135deg, ${theme.colors.success}, #15803D)`,
+//                                     color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+//                                     boxShadow: "0 2px 6px rgba(22,163,74,0.25)", opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
+//                                   }}>
+//                                   <CheckCircle style={{ fontSize: 14 }} /> Approve
+//                                 </button>
+//                                 <button disabled={updatingId === app.id} onClick={() => updateStatus(app.id, "rejected", true)}
+//                                   style={{
+//                                     padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
+//                                     background: `linear-gradient(135deg, ${theme.colors.danger}, #B91C1C)`,
+//                                     color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+//                                     boxShadow: "0 2px 6px rgba(220,38,38,0.25)", opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
+//                                   }}>
+//                                   <Cancel style={{ fontSize: 14 }} /> Reject
+//                                 </button>
+//                               </div>
+//                             </td>
+//                           </>
+//                       )}
 //                     </tr>
 //                   ))}
 //                   {appsPageData.length === 0 && (
 //                     <tr>
-//                       <td colSpan={5} style={{ padding: `${theme.spacing.xxl} 20px`, textAlign: "center", color: theme.colors.textTertiary, fontSize: 15 }}>
+//                       <td colSpan={6} style={{ padding: `${theme.spacing.xxl} 20px`, textAlign: "center", color: theme.colors.textTertiary, fontSize: 15 }}>
 //                         <div style={{ fontSize: 36, marginBottom: theme.spacing.md }}>📋</div>
 //                         No applications found
 //                       </td>
@@ -522,7 +886,7 @@
 //                         </div>
 //                       </div>
 //                     </div>
-//                     <button onClick={() => deactivatePosition(p.id)} style={{
+//                     <button onClick={() => setPositionToDelete(p)} style={{
 //                       padding: `${theme.spacing.sm} ${theme.spacing.lg}`, borderRadius: theme.radius.sm,
 //                       background: theme.colors.dangerLight, color: theme.colors.danger,
 //                       border: `1px solid #FECDD3`, fontSize: 13, fontWeight: 600,
@@ -595,8 +959,206 @@
 //           </div>
 //         )}
 
-//         {/* Bin Tab */}
+//         {/* Internal Positions Tab */}
 //         {activeTab === 2 && (
+//           <div style={{ display: "flex", flexDirection: "column", gap: theme.spacing.xl }}>
+            
+//             {/* View Active Internal Positions */}
+//             <div style={{
+//               background: theme.colors.card, borderRadius: theme.radius.xl, border: `1px solid ${theme.colors.border}`,
+//               boxShadow: theme.shadows.lg, overflow: "hidden",
+//             }}>
+//               <div style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: theme.spacing.md }}>
+//                 <div>
+//                   <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: theme.colors.textPrimary }}>Active Internal Positions</h2>
+//                   <p style={{ margin: `${theme.spacing.xs} 0 0`, fontSize: 13, color: theme.colors.textTertiary }}>{internalPositions.length} opportunities created</p>
+//                 </div>
+//               </div>
+
+//               <div style={{ padding: theme.spacing.xl, display: "flex", flexDirection: "column", gap: theme.spacing.md }}>
+//                 {internalPositions.map(p => (
+//                   <div key={p.id} style={{
+//                     display: "flex", alignItems: "center", justifyContent: "space-between",
+//                     padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderRadius: theme.radius.md,
+//                     border: `1px solid ${theme.colors.border}`, background: theme.colors.surface,
+//                     transition: theme.transitions.medium, ":hover": { borderColor: theme.colors.success, boxShadow: theme.shadows.sm }, flexWrap: "wrap", gap: theme.spacing.md,
+//                   }}>
+//                     <div style={{ display: "flex", alignItems: "center", gap: theme.spacing.lg }}>
+//                       <div style={{
+//                         width: 44, height: 44, borderRadius: theme.radius.md,
+//                         background: `linear-gradient(135deg, #ECFDF5, #D1FAE5)`,
+//                         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+//                       }}>
+//                         <Event style={{ color: theme.colors.success, fontSize: 20 }} />
+//                       </div>
+//                       <div>
+//                         <div style={{ fontWeight: 700, fontSize: 15, color: theme.colors.textPrimary }}>{p.title}</div>
+//                         <div style={{ display: "flex", alignItems: "center", gap: theme.spacing.lg, marginTop: theme.spacing.xs, flexWrap: "wrap" }}>
+//                           {p.department && (
+//                             <span style={{ display: "flex", alignItems: "center", gap: theme.spacing.xs, fontSize: 13, color: theme.colors.textSecondary }}>
+//                               <Business style={{ fontSize: 13 }} /> {p.department}
+//                             </span>
+//                           )}
+//                           <span style={{ display: "flex", alignItems: "center", gap: theme.spacing.xs, fontSize: 13, color: theme.colors.textSecondary }}>
+//                             <AccessTime style={{ fontSize: 13 }} /> {p.slots?.length || 0} Total Slots
+//                           </span>
+//                           <span style={{ display: "flex", alignItems: "center", gap: theme.spacing.xs, fontSize: 13, color: theme.colors.primary }}>
+//                             <People style={{ fontSize: 13 }} /> {p.slots?.filter(s => s.is_booked).length || 0} Booked
+//                           </span>
+//                         </div>
+//                       </div>
+//                     </div>
+//                     <button onClick={() => deleteInternalPosition(p.id)} style={{
+//                       padding: `${theme.spacing.sm} ${theme.spacing.lg}`, borderRadius: theme.radius.sm,
+//                       background: theme.colors.dangerLight, color: theme.colors.danger,
+//                       border: `1px solid #FECDD3`, fontSize: 13, fontWeight: 600,
+//                       cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, transition: theme.transitions.fast,
+//                       ":hover": { background: theme.colors.dangerLight, opacity: 0.9 },
+//                     }}>
+//                       <Close style={{ fontSize: 14 }} /> Remove
+//                     </button>
+//                   </div>
+//                 ))}
+//                 {internalPositions.length === 0 && (
+//                   <div style={{ padding: `${theme.spacing.xxl} 0`, textAlign: "center", color: theme.colors.textTertiary }}>
+//                     <div style={{ fontSize: 36, marginBottom: theme.spacing.md }}>🎯</div>
+//                     No active internal positions
+//                   </div>
+//                 )}
+//               </div>
+//             </div>
+
+//             {/* Add New Internal Position */}
+//             <div style={{
+//               background: theme.colors.card, borderRadius: theme.radius.xl, border: `1px solid ${theme.colors.border}`,
+//               boxShadow: theme.shadows.lg, padding: theme.spacing.xxl,
+//             }}>
+//               <div style={{ display: "flex", alignItems: "center", gap: theme.spacing.lg, marginBottom: theme.spacing.xl }}>
+//                 <div style={{
+//                   width: 40, height: 40, borderRadius: theme.radius.sm,
+//                   background: `linear-gradient(135deg, #ECFDF5, #D1FAE5)`,
+//                   display: "flex", alignItems: "center", justifyContent: "center",
+//                 }}>
+//                   <Add style={{ color: theme.colors.success, fontSize: 20 }} />
+//                 </div>
+//                 <div>
+//                   <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: theme.colors.textPrimary }}>Post Internal Opportunity</h3>
+//                   <p style={{ margin: 0, fontSize: 13, color: theme.colors.textTertiary }}>Create internal positions and customize interview slots per date</p>
+//                 </div>
+//               </div>
+              
+//               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: theme.spacing.lg, marginBottom: theme.spacing.xl }}>
+//                 <div>
+//                   <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Position Title *</label>
+//                   <input style={inputStyle} placeholder="e.g. Team Lead" value={internalPosTitle} onChange={e => setInternalPosTitle(e.target.value)} />
+//                 </div>
+//                 <div>
+//                   <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Department</label>
+//                   <input style={inputStyle} placeholder="e.g. HR" value={internalPosDept} onChange={e => setInternalPosDept(e.target.value)} />
+//                 </div>
+//               </div>
+
+//               <div style={{ borderTop: `1px dashed ${theme.colors.border}`, margin: `${theme.spacing.xl} 0` }}></div>
+
+//               <h4 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 600, color: theme.colors.textPrimary }}>Add Interview Schedule</h4>
+//               <div style={{ 
+//                 background: theme.colors.surface, border: `1px solid ${theme.colors.border}`, 
+//                 borderRadius: theme.radius.md, padding: theme.spacing.lg, marginBottom: theme.spacing.xl
+//               }}>
+//                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: theme.spacing.lg }}>
+//                   <div>
+//                     <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Date *</label>
+//                     <input type="date" style={inputStyle} value={currentSchedule.date} onChange={e => setCurrentSchedule({...currentSchedule, date: e.target.value})} />
+//                   </div>
+//                   <div>
+//                     <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Slot Duration (Mins) *</label>
+//                     <input type="number" style={inputStyle} value={currentSchedule.slotDuration} onChange={e => setCurrentSchedule({...currentSchedule, slotDuration: e.target.value})} />
+//                   </div>
+//                   <div>
+//                     <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Start Time *</label>
+//                     <input type="time" style={inputStyle} value={currentSchedule.startTime} onChange={e => setCurrentSchedule({...currentSchedule, startTime: e.target.value})} />
+//                   </div>
+//                   <div>
+//                     <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>End Time *</label>
+//                     <input type="time" style={inputStyle} value={currentSchedule.endTime} onChange={e => setCurrentSchedule({...currentSchedule, endTime: e.target.value})} />
+//                   </div>
+//                   <div>
+//                     <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Break Start</label>
+//                     <input type="time" style={inputStyle} value={currentSchedule.breakStart} onChange={e => setCurrentSchedule({...currentSchedule, breakStart: e.target.value})} />
+//                   </div>
+//                   <div>
+//                     <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Break End</label>
+//                     <input type="time" style={inputStyle} value={currentSchedule.breakEnd} onChange={e => setCurrentSchedule({...currentSchedule, breakEnd: e.target.value})} />
+//                   </div>
+//                 </div>
+//                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: theme.spacing.md }}>
+//                   <button onClick={handleAddSchedule} style={{
+//                     padding: `${theme.spacing.sm} ${theme.spacing.lg}`, borderRadius: theme.radius.sm,
+//                     background: theme.colors.primaryLight, color: theme.colors.primary, border: "none",
+//                     fontWeight: 600, fontSize: 13, cursor: "pointer", transition: theme.transitions.fast,
+//                     ":hover": { background: "#DBEAFE" }
+//                   }}>+ Add Date</button>
+//                 </div>
+//               </div>
+
+//               {schedules.length > 0 && (
+//                 <div style={{ marginBottom: theme.spacing.xl }}>
+//                   <h4 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 600, color: theme.colors.textPrimary }}>Review Generated Slots</h4>
+//                   <div style={{ display: "flex", flexDirection: "column", gap: theme.spacing.md }}>
+//                     {schedules.map(sched => {
+//                       const slotsPreview = generatePreviewSlots(sched);
+//                       return (
+//                         <div key={sched.id} style={{ border: `1px solid ${theme.colors.border}`, borderRadius: theme.radius.md, overflow: "hidden" }}>
+//                           <div style={{ background: theme.colors.surface, padding: theme.spacing.md, display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${theme.colors.border}` }}>
+//                             <div style={{ fontWeight: 600, color: theme.colors.textPrimary, display: "flex", alignItems: "center", gap: 8 }}>
+//                               <DateRange style={{ fontSize: 16, color: theme.colors.textSecondary }} />
+//                               {sched.date} <span style={{ color: theme.colors.textTertiary, fontWeight: 400, fontSize: 13 }}>
+//                                 ({formatTime12Hour(sched.startTime)} - {formatTime12Hour(sched.endTime)})
+//                               </span>
+//                             </div>
+//                             <button onClick={() => removeSchedule(sched.id)} style={{ background: "none", border: "none", color: theme.colors.danger, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>Remove</button>
+//                           </div>
+//                           <div style={{ padding: theme.spacing.md, display: "flex", flexWrap: "wrap", gap: 8 }}>
+//                             {slotsPreview.length > 0 ? slotsPreview.map((slot, i) => (
+//                               <span key={i} style={{ 
+//                                 padding: "4px 10px", borderRadius: "4px", fontSize: 12, fontWeight: 500,
+//                                 background: slot.isBreak ? theme.colors.warningLight : theme.colors.primaryLight,
+//                                 color: slot.isBreak ? theme.colors.warning : theme.colors.primary,
+//                                 border: `1px solid ${slot.isBreak ? '#FDE68A' : '#BFDBFE'}`
+//                               }}>
+//                                 {slot.isBreak ? "☕ Break " : "🕒 "}{slot.start} - {slot.end}
+//                               </span>
+//                             )) : <span style={{ fontSize: 13, color: theme.colors.textTertiary }}>No slots generated with these timings.</span>}
+//                           </div>
+//                         </div>
+//                       );
+//                     })}
+//                   </div>
+//                 </div>
+//               )}
+              
+//               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: theme.spacing.xl, borderTop: `1px solid ${theme.colors.border}`, paddingTop: theme.spacing.xl }}>
+//                 <button 
+//                   disabled={addingInternal || !internalPosTitle.trim() || schedules.length === 0}
+//                   onClick={submitInternalPosition}
+//                   style={{
+//                     ...btnPrimary,
+//                     background: `linear-gradient(135deg, ${theme.colors.success}, #15803D)`,
+//                     boxShadow: `0 4px 14px rgba(22, 163, 74, 0.4)`,
+//                     opacity: addingInternal || !internalPosTitle.trim() || schedules.length === 0 ? 0.6 : 1,
+//                     cursor: addingInternal || !internalPosTitle.trim() || schedules.length === 0 ? "not-allowed" : "pointer",
+//                   }}
+//                 >
+//                   <AccessTime style={{ fontSize: 18 }} />
+//                   {addingInternal ? "Creating..." : "Save Position & Time Slots"}
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {/* Bin Tab */}
+//         {activeTab === 3 && (
 //           <div style={{
 //             background: theme.colors.card, borderRadius: theme.radius.xl, border: `1px solid ${theme.colors.border}`,
 //             boxShadow: theme.shadows.lg, overflow: "hidden",
@@ -687,7 +1249,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle, Cancel, Download, Visibility, Add,
   Search, Work, People, TrendingUp, LocationOn, Business, Close,
-  Phone, Email, Delete, RestoreFromTrash, WarningAmber // <-- Added WarningAmber icon
+  Phone, Email, Delete, RestoreFromTrash, WarningAmber,
+  Event, AccessTime, DateRange, FilterList
 } from "@mui/icons-material";
 
 const PAGE_SIZE = 8;
@@ -750,6 +1313,59 @@ function getStatusStyles(status) {
     default: { bg: theme.colors.surface, text: theme.colors.textSecondary, border: theme.colors.border },
   };
   return styles[status?.toLowerCase()] || styles.default;
+}
+
+function formatTime12Hour(timeStr) {
+  if (!timeStr) return "";
+  const [hourStr, minuteStr] = timeStr.split(":");
+  let hour = parseInt(hourStr, 10);
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12;
+  hour = hour ? hour : 12; // the hour '0' should be '12'
+  return `${hour}:${minuteStr} ${ampm}`;
+}
+
+function generatePreviewSlots(sched) {
+  if (!sched.date || !sched.startTime || !sched.endTime || !sched.slotDuration) return [];
+  
+  const slots = [];
+  const durationMs = parseInt(sched.slotDuration) * 60000;
+  
+  let current = new Date(`${sched.date}T${sched.startTime}`);
+  const end = new Date(`${sched.date}T${sched.endTime}`);
+  
+  const bStart = (sched.breakStart) ? new Date(`${sched.date}T${sched.breakStart}`) : null;
+  const bEnd = (sched.breakEnd) ? new Date(`${sched.date}T${sched.breakEnd}`) : null;
+
+  while (current < end) {
+    let slotEnd = new Date(current.getTime() + durationMs);
+    
+    if (bStart && bEnd) {
+      if (current >= bStart && current < bEnd) {
+        slots.push({ 
+          isBreak: true, 
+          start: formatTime12Hour(current.toTimeString().slice(0,5)), 
+          end: formatTime12Hour(bEnd.toTimeString().slice(0,5)) 
+        });
+        current = new Date(bEnd);
+        continue;
+      }
+      if (slotEnd > bStart && current < bStart) {
+        current = new Date(bEnd);
+        continue;
+      }
+    }
+    
+    if (slotEnd <= end) {
+      slots.push({ 
+        isBreak: false, 
+        start: formatTime12Hour(current.toTimeString().slice(0,5)), 
+        end: formatTime12Hour(slotEnd.toTimeString().slice(0,5)) 
+      });
+    }
+    current = slotEnd;
+  }
+  return slots;
 }
 
 // --- Styled Components ---
@@ -823,15 +1439,20 @@ export default function AdminCareers() {
   const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const [activeTab, setActiveTab]     = useState(0);
+  const [appViewType, setAppViewType] = useState("external"); // Toggle between 'external' and 'internal'
+  
   const [apps, setApps]               = useState([]);
+  const [internalApps, setInternalApps] = useState([]);
   const [binApps, setBinApps]         = useState([]);
   const [positions, setPositions]     = useState([]);
+  const [internalPositions, setInternalPositions] = useState([]);
   
   const [appsPage, setAppsPage]       = useState(1);
   const [posPage, setPosPage]         = useState(1);
   const [binPage, setBinPage]         = useState(1);
   
   const [appsSearch, setAppsSearch]   = useState("");
+  const [internalDateFilter, setInternalDateFilter] = useState(""); 
   const [posSearch, setPosSearch]     = useState("");
   const [binSearch, setBinSearch]     = useState("");
   
@@ -839,8 +1460,22 @@ export default function AdminCareers() {
   const [addingPos, setAddingPos]     = useState(false);
   const [updatingId, setUpdatingId]   = useState(null);
   
-  // <-- NEW: State for Position Deletion Modal -->
   const [positionToDelete, setPositionToDelete] = useState(null);
+
+  // Internal Positions State
+  const [addingInternal, setAddingInternal] = useState(false);
+  const [internalPosTitle, setInternalPosTitle] = useState("");
+  const [internalPosDept, setInternalPosDept] = useState("");
+  
+  const [schedules, setSchedules] = useState([]);
+  const [currentSchedule, setCurrentSchedule] = useState({
+    date: "",
+    startTime: "",
+    endTime: "",
+    breakStart: "",
+    breakEnd: "",
+    slotDuration: "60"
+  });
 
   useEffect(() => {
     const id = "dm-sans-font";
@@ -855,26 +1490,36 @@ export default function AdminCareers() {
 
   const refresh = async () => {
     try {
-      const [appsRes, posRes, binRes] = await Promise.all([
+      const [appsRes, intAppsRes, posRes, binRes, intPosRes] = await Promise.all([
         fetch(`${backend}/api/careers/admin/applications`),
+        fetch(`${backend}/api/careers/admin/internal-applications`),
         fetch(`${backend}/api/careers/positions`),
-        fetch(`${backend}/api/careers/admin/applications/bin`)
+        fetch(`${backend}/api/careers/admin/applications/bin`),
+        fetch(`${backend}/api/careers/admin/internal-positions`)
       ]);
       const appsData = await appsRes.json();
+      const intAppsData = await intAppsRes.json();
       const posData = await posRes.json();
       const binData = await binRes.json();
+      const intPosData = await intPosRes.json();
       
       setApps(Array.isArray(appsData) ? appsData : []);
+      setInternalApps(Array.isArray(intAppsData) ? intAppsData : []);
       setPositions(Array.isArray(posData) ? posData : []);
       setBinApps(Array.isArray(binData) ? binData : []);
+      setInternalPositions(Array.isArray(intPosData) ? intPosData : []);
     } catch (e) { console.error(e); }
   };
 
   useEffect(() => { refresh(); }, []);
 
-  const updateStatus = async (id, status) => {
+  const updateStatus = async (id, status, isInternal = false) => {
     setUpdatingId(id);
-    await fetch(`${backend}/api/careers/admin/applications/${id}/status`, {
+    const endpoint = isInternal 
+        ? `${backend}/api/careers/admin/internal-applications/${id}/status`
+        : `${backend}/api/careers/admin/applications/${id}/status`;
+        
+    await fetch(endpoint, {
       method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
@@ -909,17 +1554,100 @@ export default function AdminCareers() {
     setAddingPos(false);
   };
 
-  // <-- UPDATED: Now clears modal state after deactivating -->
   const deactivatePosition = async (id) => {
     await fetch(`${backend}/api/careers/admin/positions/${id}/deactivate`, { method: "PUT" });
-    setPositionToDelete(null); // Close modal
+    setPositionToDelete(null);
     refresh();
   };
 
+  // Internal Position Methods
+  const handleAddSchedule = () => {
+    if (!currentSchedule.date || !currentSchedule.startTime || !currentSchedule.endTime || !currentSchedule.slotDuration) {
+      alert("Please fill date, start time, end time, and duration.");
+      return;
+    }
+    setSchedules([...schedules, { ...currentSchedule, id: Date.now() }]);
+    setCurrentSchedule({
+      date: "",
+      startTime: "",
+      endTime: "",
+      breakStart: "",
+      breakEnd: "",
+      slotDuration: "60"
+    });
+  };
+
+  const removeSchedule = (id) => {
+    setSchedules(schedules.filter(s => s.id !== id));
+  };
+
+  const submitInternalPosition = async () => {
+    if (!internalPosTitle.trim()) return alert("Position Title is required.");
+    if (schedules.length === 0) return alert("Please add at least one date schedule.");
+
+    setAddingInternal(true);
+    try {
+      const payload = {
+        title: internalPosTitle,
+        department: internalPosDept,
+        schedules: schedules
+      };
+      
+      const res = await fetch(`${backend}/api/careers/admin/internal-positions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (res.ok) {
+        alert("Internal position and time slots successfully created.");
+        setInternalPosTitle("");
+        setInternalPosDept("");
+        setSchedules([]);
+        refresh();
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || "Failed to create internal position");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error creating internal position.");
+    } finally {
+      setAddingInternal(false);
+    }
+  };
+
+  const deleteInternalPosition = async (id) => {
+    if (!window.confirm("Are you sure you want to remove this internal position? All associated slots and applications will be deleted.")) return;
+    try {
+      await fetch(`${backend}/api/careers/admin/internal-positions/${id}`, { method: "DELETE" });
+      refresh();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Memoized Filters
   const filteredApps = useMemo(() =>
     apps.filter(a => `${a.name} ${a.email} ${a.phone} ${a.title}`.toLowerCase().includes(appsSearch.toLowerCase())),
     [apps, appsSearch]
   );
+
+  const filteredInternalApps = useMemo(() => {
+    return internalApps.filter(a => {
+        const matchSearch = `${a.first_name} ${a.last_name} ${a.email} ${a.position_title}`.toLowerCase().includes(appsSearch.toLowerCase());
+        
+        let interviewDateString = "";
+        if (a.interview_date) {
+            interviewDateString = typeof a.interview_date === 'string' 
+                ? a.interview_date.split('T')[0] 
+                : new Date(a.interview_date).toISOString().split('T')[0];
+        }
+        
+        const matchDate = internalDateFilter ? interviewDateString === internalDateFilter : true;
+        return matchSearch && matchDate;
+    });
+  }, [internalApps, appsSearch, internalDateFilter]);
 
   const filteredPositions = useMemo(() =>
     positions.filter(p => `${p.title} ${p.department} ${p.location}`.toLowerCase().includes(posSearch.toLowerCase())),
@@ -931,16 +1659,19 @@ export default function AdminCareers() {
     [binApps, binSearch]
   );
 
-  const appsTotalPages = Math.ceil(filteredApps.length / PAGE_SIZE) || 1;
+  // Pagination Variables
+  const currentAppsData = appViewType === 'external' ? filteredApps : filteredInternalApps;
+  const appsTotalPages = Math.ceil(currentAppsData.length / PAGE_SIZE) || 1;
+  const appsPageData = currentAppsData.slice((appsPage - 1) * PAGE_SIZE, appsPage * PAGE_SIZE);
+
   const posTotalPages = Math.ceil(filteredPositions.length / PAGE_SIZE) || 1;
-  const binTotalPages = Math.ceil(filteredBinApps.length / PAGE_SIZE) || 1;
-  
-  const appsPageData = filteredApps.slice((appsPage - 1) * PAGE_SIZE, appsPage * PAGE_SIZE);
   const posPageData = filteredPositions.slice((posPage - 1) * PAGE_SIZE, posPage * PAGE_SIZE);
+  
+  const binTotalPages = Math.ceil(filteredBinApps.length / PAGE_SIZE) || 1;
   const binPageData = filteredBinApps.slice((binPage - 1) * PAGE_SIZE, binPage * PAGE_SIZE);
   
-  const approvedCount = apps.filter(a => a.status === "approved").length;
-  const pendingCount = apps.filter(a => a.status === "pending" || !a.status).length;
+  const approvedCount = apps.filter(a => a.status === "approved").length + internalApps.filter(a => a.status === "approved").length;
+  const pendingCount = apps.filter(a => a.status === "pending" || !a.status).length + internalApps.filter(a => a.status === "pending" || !a.status).length;
 
   const inputStyle = {
     width: "100%", padding: `${theme.spacing.md} ${theme.spacing.md}`,
@@ -974,7 +1705,7 @@ export default function AdminCareers() {
         ".ac-input:focus{border-color:#2563EB!important;background:#fff!important;box-shadow:0 0 0 3px rgba(37,99,235,0.2)!important;}",
       ].join("")}</style>
 
-      {/* <-- NEW: Position Deletion Modal --> */}
+      {/* Position Deletion Modal */}
       {positionToDelete && (
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
@@ -1067,20 +1798,20 @@ export default function AdminCareers() {
           </div>
           
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: theme.spacing.lg }}>
-            <StatCard icon={<People style={{ fontSize: 22 }} />} label="Total Applications" value={apps.length} accent="#2563EB" />
+            <StatCard icon={<People style={{ fontSize: 22 }} />} label="Total Applications" value={apps.length + internalApps.length} accent="#2563EB" />
             <StatCard icon={<TrendingUp style={{ fontSize: 22 }} />} label="Approved" value={approvedCount} accent="#16A34A" />
             <StatCard icon={<Work style={{ fontSize: 22 }} />} label="Pending Review" value={pendingCount} accent="#D97706" />
-            <StatCard icon={<Business style={{ fontSize: 22 }} />} label="Open Positions" value={positions.length} accent="#7C3AED" />
+            <StatCard icon={<Business style={{ fontSize: 22 }} />} label="Open Positions" value={positions.length + internalPositions.length} accent="#7C3AED" />
           </div>
         </div>
 
         <div style={{
           display: "flex", gap: theme.spacing.sm, background: theme.colors.card, borderRadius: theme.radius.lg,
           padding: theme.spacing.sm, marginBottom: theme.spacing.xxl, border: `1px solid ${theme.colors.border}`,
-          boxShadow: theme.shadows.md, width: "fit-content",
+          boxShadow: theme.shadows.md, width: "fit-content", flexWrap: "wrap"
         }}>
-          {["Applications", "Positions", "Bin"].map((t, i) => (
-            <button key={t} onClick={() => setActiveTab(i)} style={{
+          {["Applications", "Positions", "Internal Positions", "Bin"].map((t, i) => (
+            <button key={t} onClick={() => { setActiveTab(i); setAppsPage(1); }} style={{
               padding: `${theme.spacing.sm} ${theme.spacing.xl}`, borderRadius: theme.radius.md, border: "none",
               background: activeTab === i ? `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryHover})` : "transparent",
               color: activeTab === i ? "#fff" : theme.colors.textSecondary,
@@ -1100,15 +1831,43 @@ export default function AdminCareers() {
           }}>
             <div style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: theme.spacing.md }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: theme.colors.textPrimary }}>Applications</h2>
-                <p style={{ margin: `${theme.spacing.xs} 0 0`, fontSize: 13, color: theme.colors.textTertiary }}>{filteredApps.length} total results</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
+                    <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: theme.colors.textPrimary }}>Applications</h2>
+                    <div style={{ display: "flex", background: theme.colors.surface, borderRadius: theme.radius.sm, border: `1px solid ${theme.colors.border}`, overflow: "hidden" }}>
+                        <button onClick={() => { setAppViewType('external'); setAppsPage(1); }} style={{
+                            padding: "4px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
+                            background: appViewType === 'external' ? theme.colors.primaryLight : "transparent",
+                            color: appViewType === 'external' ? theme.colors.primary : theme.colors.textSecondary
+                        }}>External Candidates</button>
+                        <button onClick={() => { setAppViewType('internal'); setAppsPage(1); }} style={{
+                            padding: "4px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
+                            background: appViewType === 'internal' ? theme.colors.primaryLight : "transparent",
+                            color: appViewType === 'internal' ? theme.colors.primary : theme.colors.textSecondary
+                        }}>Internal Employees</button>
+                    </div>
+                </div>
+                <p style={{ margin: 0, fontSize: 13, color: theme.colors.textTertiary }}>{currentAppsData.length} total results</p>
               </div>
-              <div style={{ position: "relative", minWidth: 300 }}>
-                <Search style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: theme.colors.textTertiary, fontSize: 20 }} />
-                <input placeholder="Search name, email, position..." value={appsSearch}
-                  onChange={e => { setAppsSearch(e.target.value); setAppsPage(1); }}
-                  style={{ ...inputStyle, paddingLeft: 44 }}
-                />
+              
+              <div style={{ display: "flex", gap: theme.spacing.md, alignItems: "center", flexWrap: "wrap" }}>
+                {appViewType === 'internal' && (
+                    <div style={{ position: "relative" }}>
+                        <input 
+                            type="date" 
+                            value={internalDateFilter}
+                            onChange={e => { setInternalDateFilter(e.target.value); setAppsPage(1); }}
+                            style={inputStyle}
+                        />
+                    </div>
+                )}
+                
+                <div style={{ position: "relative", minWidth: 260 }}>
+                  <Search style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: theme.colors.textTertiary, fontSize: 20 }} />
+                  <input placeholder="Search name, email, position..." value={appsSearch}
+                    onChange={e => { setAppsSearch(e.target.value); setAppsPage(1); }}
+                    style={{ ...inputStyle, paddingLeft: 44 }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -1116,13 +1875,23 @@ export default function AdminCareers() {
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: theme.colors.surface }}>
-                    {[...["Candidate Details", "Position", "Status", "Resume", "Actions"]].map(h => (
-                      <th key={h} style={{
-                        padding: `${theme.spacing.md} ${theme.spacing.xl}`, textAlign: h === "Actions" ? "right" : "left",
-                        fontSize: 11, fontWeight: 700, color: theme.colors.textSecondary,
-                        letterSpacing: "0.06em", textTransform: "uppercase", borderBottom: `1px solid ${theme.colors.border}`,
-                      }}>{h}</th>
-                    ))}
+                    {appViewType === 'external' ? (
+                        [...["Candidate Details", "Position", "Status", "Resume", "Actions"]].map(h => (
+                        <th key={h} style={{
+                            padding: `${theme.spacing.md} ${theme.spacing.xl}`, textAlign: h === "Actions" ? "right" : "left",
+                            fontSize: 11, fontWeight: 700, color: theme.colors.textSecondary,
+                            letterSpacing: "0.06em", textTransform: "uppercase", borderBottom: `1px solid ${theme.colors.border}`,
+                        }}>{h}</th>
+                        ))
+                    ) : (
+                        [...["Employee Details", "Position & Time", "Details", "Status", "Actions"]].map(h => (
+                            <th key={h} style={{
+                                padding: `${theme.spacing.md} ${theme.spacing.xl}`, textAlign: h === "Actions" ? "right" : "left",
+                                fontSize: 11, fontWeight: 700, color: theme.colors.textSecondary,
+                                letterSpacing: "0.06em", textTransform: "uppercase", borderBottom: `1px solid ${theme.colors.border}`,
+                            }}>{h}</th>
+                        ))
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -1131,83 +1900,139 @@ export default function AdminCareers() {
                       background: idx % 2 === 0 ? "#fff" : theme.colors.surface,
                       transition: "background 150ms",
                     }}>
-                      <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
-                        <div style={{ fontWeight: 700, color: theme.colors.textPrimary, fontSize: 15, marginBottom: 8 }}>{app.name}</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textSecondary, marginBottom: 6 }}>
-                          <Email style={{ fontSize: 16, color: theme.colors.textTertiary }} /> {app.email}
-                        </div>
-                        {app.phone ? (
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textSecondary, fontWeight: 500 }}>
-                            <Phone style={{ fontSize: 16, color: theme.colors.textTertiary }} /> {app.phone}
-                          </div>
-                        ) : (
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textTertiary, fontStyle: "italic" }}>
-                            <Phone style={{ fontSize: 16, opacity: 0.5 }} /> Not provided
-                          </div>
-                        )}
-                      </td>
-                      <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
-                        <span style={{ fontSize: 14, color: theme.colors.textPrimary, fontWeight: 500 }}>{app.title || "N/A"}</span>
-                      </td>
-                      <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
-                        <StatusBadge status={app.status} />
-                      </td>
-                      <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
-                        {app.resume_url ? (
-                          <div style={{ display: "flex", gap: theme.spacing.sm, flexWrap: "wrap" }}>
-                            <a href={app.resume_url} target="_blank" rel="noreferrer" style={{
-                              display: "inline-flex", alignItems: "center", gap: theme.spacing.xs,
-                              padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm,
-                              background: theme.colors.primaryLight, color: theme.colors.primary,
-                              fontSize: 13, fontWeight: 600, textDecoration: "none",
-                            }}>
-                              <Visibility style={{ fontSize: 14 }} /> View
-                            </a>
-                            <a href={`${backend}/api/careers/admin/applications/${app.id}/download`} style={{
-                              display: "inline-flex", alignItems: "center", gap: theme.spacing.xs,
-                              padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm,
-                              background: theme.colors.successLight, color: theme.colors.success,
-                              fontSize: 13, fontWeight: 600, textDecoration: "none",
-                            }}>
-                              <Download style={{ fontSize: 14 }} /> Download
-                            </a>
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: 13, color: theme.colors.textTertiary }}>No resume</span>
-                        )}
-                      </td>
-                      <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, textAlign: "right" }}>
-                        <div style={{ display: "flex", gap: theme.spacing.sm, justifyContent: "flex-end" }}>
-                          <button disabled={updatingId === app.id} onClick={() => updateStatus(app.id, "approved")}
-                            style={{
-                              padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
-                              background: `linear-gradient(135deg, ${theme.colors.success}, #15803D)`,
-                              color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
-                              boxShadow: "0 2px 6px rgba(22,163,74,0.25)", opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
-                            }}>
-                            <CheckCircle style={{ fontSize: 14 }} /> Approve
-                          </button>
-                          <button disabled={updatingId === app.id} onClick={() => updateStatus(app.id, "rejected")}
-                            style={{
-                              padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
-                              background: `linear-gradient(135deg, ${theme.colors.danger}, #B91C1C)`,
-                              color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
-                              boxShadow: "0 2px 6px rgba(220,38,38,0.25)", opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
-                            }}>
-                            <Cancel style={{ fontSize: 14 }} /> Reject
-                          </button>
-                          <button disabled={updatingId === app.id} onClick={() => softDeleteApp(app.id)}
-                            style={{
-                              padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
-                              background: theme.colors.surface, color: theme.colors.textSecondary, 
-                              border: `1px solid ${theme.colors.border}`,
-                              fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
-                              opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
-                            }}>
-                            <Delete style={{ fontSize: 14 }} /> Bin
-                          </button>
-                        </div>
-                      </td>
+                      {appViewType === 'external' ? (
+                          <>
+                            <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+                              <div style={{ fontWeight: 700, color: theme.colors.textPrimary, fontSize: 15, marginBottom: 8 }}>{app.name}</div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textSecondary, marginBottom: 6 }}>
+                                <Email style={{ fontSize: 16, color: theme.colors.textTertiary }} /> {app.email}
+                              </div>
+                              {app.phone ? (
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textSecondary, fontWeight: 500 }}>
+                                  <Phone style={{ fontSize: 16, color: theme.colors.textTertiary }} /> {app.phone}
+                                </div>
+                              ) : (
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textTertiary, fontStyle: "italic" }}>
+                                  <Phone style={{ fontSize: 16, opacity: 0.5 }} /> Not provided
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+                              <span style={{ fontSize: 14, color: theme.colors.textPrimary, fontWeight: 500 }}>{app.title || "N/A"}</span>
+                            </td>
+                            <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+                              <StatusBadge status={app.status} />
+                            </td>
+                            <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+                              {app.resume_url ? (
+                                <div style={{ display: "flex", gap: theme.spacing.sm, flexWrap: "wrap" }}>
+                                  <a href={app.resume_url} target="_blank" rel="noreferrer" style={{
+                                    display: "inline-flex", alignItems: "center", gap: theme.spacing.xs,
+                                    padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm,
+                                    background: theme.colors.primaryLight, color: theme.colors.primary,
+                                    fontSize: 13, fontWeight: 600, textDecoration: "none",
+                                  }}>
+                                    <Visibility style={{ fontSize: 14 }} /> View
+                                  </a>
+                                  <a href={`${backend}/api/careers/admin/applications/${app.id}/download`} style={{
+                                    display: "inline-flex", alignItems: "center", gap: theme.spacing.xs,
+                                    padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm,
+                                    background: theme.colors.successLight, color: theme.colors.success,
+                                    fontSize: 13, fontWeight: 600, textDecoration: "none",
+                                  }}>
+                                    <Download style={{ fontSize: 14 }} /> Download
+                                  </a>
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: 13, color: theme.colors.textTertiary }}>No resume</span>
+                              )}
+                            </td>
+                            <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, textAlign: "right" }}>
+                              <div style={{ display: "flex", gap: theme.spacing.sm, justifyContent: "flex-end" }}>
+                                <button disabled={updatingId === app.id} onClick={() => updateStatus(app.id, "approved", false)}
+                                  style={{
+                                    padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
+                                    background: `linear-gradient(135deg, ${theme.colors.success}, #15803D)`,
+                                    color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+                                    boxShadow: "0 2px 6px rgba(22,163,74,0.25)", opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
+                                  }}>
+                                  <CheckCircle style={{ fontSize: 14 }} /> Approve
+                                </button>
+                                <button disabled={updatingId === app.id} onClick={() => updateStatus(app.id, "rejected", false)}
+                                  style={{
+                                    padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
+                                    background: `linear-gradient(135deg, ${theme.colors.danger}, #B91C1C)`,
+                                    color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+                                    boxShadow: "0 2px 6px rgba(220,38,38,0.25)", opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
+                                  }}>
+                                  <Cancel style={{ fontSize: 14 }} /> Reject
+                                </button>
+                                <button disabled={updatingId === app.id} onClick={() => softDeleteApp(app.id)}
+                                  style={{
+                                    padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
+                                    background: theme.colors.surface, color: theme.colors.textSecondary, 
+                                    border: `1px solid ${theme.colors.border}`,
+                                    fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+                                    opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
+                                  }}>
+                                  <Delete style={{ fontSize: 14 }} /> Bin
+                                </button>
+                              </div>
+                            </td>
+                          </>
+                      ) : (
+                          <>
+                            <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+                              <div style={{ fontWeight: 700, color: theme.colors.textPrimary, fontSize: 15, marginBottom: 8 }}>{app.first_name} {app.last_name}</div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: theme.colors.textSecondary }}>
+                                <Email style={{ fontSize: 16, color: theme.colors.textTertiary }} /> {app.email}
+                              </div>
+                            </td>
+                            <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+                              <div style={{ fontSize: 14, color: theme.colors.textPrimary, fontWeight: 600 }}>{app.position_title}</div>
+                              <div style={{ fontSize: 12, color: theme.colors.textSecondary, marginTop: 4 }}>
+                                <DateRange style={{ fontSize: 14, verticalAlign: "middle", marginRight: 4 }}/>
+                                {app.interview_date ? new Date(app.interview_date).toLocaleDateString() : ""} <br/>
+                                <AccessTime style={{ fontSize: 14, verticalAlign: "middle", marginRight: 4, marginTop: 4 }}/>
+                                {formatTime12Hour(app.start_time)} - {formatTime12Hour(app.end_time)}
+                              </div>
+                            </td>
+                            <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, maxWidth: 250 }}>
+                                <div style={{ fontSize: 12, marginBottom: 6 }}>
+                                    <strong style={{ color: theme.colors.textSecondary }}>Shifts:</strong>{" "}
+                                    {Array.isArray(app.shifts) ? app.shifts.join(", ") : (JSON.parse(app.shifts || '[]').join(", "))}
+                                </div>
+                                <div style={{ fontSize: 12, color: theme.colors.textSecondary, fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={app.fit_reason}>
+                                    "{app.fit_reason}"
+                                </div>
+                            </td>
+                            <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
+                              <StatusBadge status={app.status} />
+                            </td>
+                            <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, textAlign: "right" }}>
+                              <div style={{ display: "flex", gap: theme.spacing.sm, justifyContent: "flex-end" }}>
+                                <button disabled={updatingId === app.id} onClick={() => updateStatus(app.id, "approved", true)}
+                                  style={{
+                                    padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
+                                    background: `linear-gradient(135deg, ${theme.colors.success}, #15803D)`,
+                                    color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+                                    boxShadow: "0 2px 6px rgba(22,163,74,0.25)", opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
+                                  }}>
+                                  <CheckCircle style={{ fontSize: 14 }} /> Approve
+                                </button>
+                                <button disabled={updatingId === app.id} onClick={() => updateStatus(app.id, "rejected", true)}
+                                  style={{
+                                    padding: `${theme.spacing.xs} ${theme.spacing.md}`, borderRadius: theme.radius.sm, border: "none",
+                                    background: `linear-gradient(135deg, ${theme.colors.danger}, #B91C1C)`,
+                                    color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+                                    boxShadow: "0 2px 6px rgba(220,38,38,0.25)", opacity: updatingId === app.id ? 0.6 : 1, transition: theme.transitions.fast,
+                                  }}>
+                                  <Cancel style={{ fontSize: 14 }} /> Reject
+                                </button>
+                              </div>
+                            </td>
+                          </>
+                      )}
                     </tr>
                   ))}
                   {appsPageData.length === 0 && (
@@ -1280,7 +2105,6 @@ export default function AdminCareers() {
                         </div>
                       </div>
                     </div>
-                    {/* <-- UPDATED: Now triggers the modal by setting state --> */}
                     <button onClick={() => setPositionToDelete(p)} style={{
                       padding: `${theme.spacing.sm} ${theme.spacing.lg}`, borderRadius: theme.radius.sm,
                       background: theme.colors.dangerLight, color: theme.colors.danger,
@@ -1354,8 +2178,206 @@ export default function AdminCareers() {
           </div>
         )}
 
-        {/* Bin Tab */}
+        {/* Internal Positions Tab */}
         {activeTab === 2 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: theme.spacing.xl }}>
+            
+            {/* View Active Internal Positions */}
+            <div style={{
+              background: theme.colors.card, borderRadius: theme.radius.xl, border: `1px solid ${theme.colors.border}`,
+              boxShadow: theme.shadows.lg, overflow: "hidden",
+            }}>
+              <div style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: theme.spacing.md }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: theme.colors.textPrimary }}>Active Internal Positions</h2>
+                  <p style={{ margin: `${theme.spacing.xs} 0 0`, fontSize: 13, color: theme.colors.textTertiary }}>{internalPositions.length} opportunities created</p>
+                </div>
+              </div>
+
+              <div style={{ padding: theme.spacing.xl, display: "flex", flexDirection: "column", gap: theme.spacing.md }}>
+                {internalPositions.map(p => (
+                  <div key={p.id} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderRadius: theme.radius.md,
+                    border: `1px solid ${theme.colors.border}`, background: theme.colors.surface,
+                    transition: theme.transitions.medium, ":hover": { borderColor: theme.colors.success, boxShadow: theme.shadows.sm }, flexWrap: "wrap", gap: theme.spacing.md,
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: theme.spacing.lg }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: theme.radius.md,
+                        background: `linear-gradient(135deg, #ECFDF5, #D1FAE5)`,
+                        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                      }}>
+                        <Event style={{ color: theme.colors.success, fontSize: 20 }} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: theme.colors.textPrimary }}>{p.title}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: theme.spacing.lg, marginTop: theme.spacing.xs, flexWrap: "wrap" }}>
+                          {p.department && (
+                            <span style={{ display: "flex", alignItems: "center", gap: theme.spacing.xs, fontSize: 13, color: theme.colors.textSecondary }}>
+                              <Business style={{ fontSize: 13 }} /> {p.department}
+                            </span>
+                          )}
+                          <span style={{ display: "flex", alignItems: "center", gap: theme.spacing.xs, fontSize: 13, color: theme.colors.textSecondary }}>
+                            <AccessTime style={{ fontSize: 13 }} /> {p.slots?.length || 0} Total Slots
+                          </span>
+                          <span style={{ display: "flex", alignItems: "center", gap: theme.spacing.xs, fontSize: 13, color: theme.colors.primary }}>
+                            <People style={{ fontSize: 13 }} /> {p.slots?.filter(s => s.is_booked).length || 0} Booked
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <button onClick={() => deleteInternalPosition(p.id)} style={{
+                      padding: `${theme.spacing.sm} ${theme.spacing.lg}`, borderRadius: theme.radius.sm,
+                      background: theme.colors.dangerLight, color: theme.colors.danger,
+                      border: `1px solid #FECDD3`, fontSize: 13, fontWeight: 600,
+                      cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, transition: theme.transitions.fast,
+                      ":hover": { background: theme.colors.dangerLight, opacity: 0.9 },
+                    }}>
+                      <Close style={{ fontSize: 14 }} /> Remove
+                    </button>
+                  </div>
+                ))}
+                {internalPositions.length === 0 && (
+                  <div style={{ padding: `${theme.spacing.xxl} 0`, textAlign: "center", color: theme.colors.textTertiary }}>
+                    <div style={{ fontSize: 36, marginBottom: theme.spacing.md }}>🎯</div>
+                    No active internal positions
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Add New Internal Position */}
+            <div style={{
+              background: theme.colors.card, borderRadius: theme.radius.xl, border: `1px solid ${theme.colors.border}`,
+              boxShadow: theme.shadows.lg, padding: theme.spacing.xxl,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: theme.spacing.lg, marginBottom: theme.spacing.xl }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: theme.radius.sm,
+                  background: `linear-gradient(135deg, #ECFDF5, #D1FAE5)`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <Add style={{ color: theme.colors.success, fontSize: 20 }} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: theme.colors.textPrimary }}>Post Internal Opportunity</h3>
+                  <p style={{ margin: 0, fontSize: 13, color: theme.colors.textTertiary }}>Create internal positions and customize interview slots per date</p>
+                </div>
+              </div>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: theme.spacing.lg, marginBottom: theme.spacing.xl }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Position Title *</label>
+                  <input style={inputStyle} placeholder="e.g. Team Lead" value={internalPosTitle} onChange={e => setInternalPosTitle(e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Department</label>
+                  <input style={inputStyle} placeholder="e.g. HR" value={internalPosDept} onChange={e => setInternalPosDept(e.target.value)} />
+                </div>
+              </div>
+
+              <div style={{ borderTop: `1px dashed ${theme.colors.border}`, margin: `${theme.spacing.xl} 0` }}></div>
+
+              <h4 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 600, color: theme.colors.textPrimary }}>Add Interview Schedule</h4>
+              <div style={{ 
+                background: theme.colors.surface, border: `1px solid ${theme.colors.border}`, 
+                borderRadius: theme.radius.md, padding: theme.spacing.lg, marginBottom: theme.spacing.xl
+              }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: theme.spacing.lg }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Date *</label>
+                    <input type="date" style={inputStyle} value={currentSchedule.date} onChange={e => setCurrentSchedule({...currentSchedule, date: e.target.value})} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Slot Duration (Mins) *</label>
+                    <input type="number" style={inputStyle} value={currentSchedule.slotDuration} onChange={e => setCurrentSchedule({...currentSchedule, slotDuration: e.target.value})} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Start Time *</label>
+                    <input type="time" style={inputStyle} value={currentSchedule.startTime} onChange={e => setCurrentSchedule({...currentSchedule, startTime: e.target.value})} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>End Time *</label>
+                    <input type="time" style={inputStyle} value={currentSchedule.endTime} onChange={e => setCurrentSchedule({...currentSchedule, endTime: e.target.value})} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Break Start</label>
+                    <input type="time" style={inputStyle} value={currentSchedule.breakStart} onChange={e => setCurrentSchedule({...currentSchedule, breakStart: e.target.value})} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm, textTransform: "uppercase" }}>Break End</label>
+                    <input type="time" style={inputStyle} value={currentSchedule.breakEnd} onChange={e => setCurrentSchedule({...currentSchedule, breakEnd: e.target.value})} />
+                  </div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: theme.spacing.md }}>
+                  <button onClick={handleAddSchedule} style={{
+                    padding: `${theme.spacing.sm} ${theme.spacing.lg}`, borderRadius: theme.radius.sm,
+                    background: theme.colors.primaryLight, color: theme.colors.primary, border: "none",
+                    fontWeight: 600, fontSize: 13, cursor: "pointer", transition: theme.transitions.fast,
+                    ":hover": { background: "#DBEAFE" }
+                  }}>+ Add Date</button>
+                </div>
+              </div>
+
+              {schedules.length > 0 && (
+                <div style={{ marginBottom: theme.spacing.xl }}>
+                  <h4 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 600, color: theme.colors.textPrimary }}>Review Generated Slots</h4>
+                  <div style={{ display: "flex", flexDirection: "column", gap: theme.spacing.md }}>
+                    {schedules.map(sched => {
+                      const slotsPreview = generatePreviewSlots(sched);
+                      return (
+                        <div key={sched.id} style={{ border: `1px solid ${theme.colors.border}`, borderRadius: theme.radius.md, overflow: "hidden" }}>
+                          <div style={{ background: theme.colors.surface, padding: theme.spacing.md, display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${theme.colors.border}` }}>
+                            <div style={{ fontWeight: 600, color: theme.colors.textPrimary, display: "flex", alignItems: "center", gap: 8 }}>
+                              <DateRange style={{ fontSize: 16, color: theme.colors.textSecondary }} />
+                              {sched.date} <span style={{ color: theme.colors.textTertiary, fontWeight: 400, fontSize: 13 }}>
+                                ({formatTime12Hour(sched.startTime)} - {formatTime12Hour(sched.endTime)})
+                              </span>
+                            </div>
+                            <button onClick={() => removeSchedule(sched.id)} style={{ background: "none", border: "none", color: theme.colors.danger, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>Remove</button>
+                          </div>
+                          <div style={{ padding: theme.spacing.md, display: "flex", flexWrap: "wrap", gap: 8 }}>
+                            {slotsPreview.length > 0 ? slotsPreview.map((slot, i) => (
+                              <span key={i} style={{ 
+                                padding: "4px 10px", borderRadius: "4px", fontSize: 12, fontWeight: 500,
+                                background: slot.isBreak ? theme.colors.warningLight : theme.colors.primaryLight,
+                                color: slot.isBreak ? theme.colors.warning : theme.colors.primary,
+                                border: `1px solid ${slot.isBreak ? '#FDE68A' : '#BFDBFE'}`
+                              }}>
+                                {slot.isBreak ? "☕ Break " : "🕒 "}{slot.start} - {slot.end}
+                              </span>
+                            )) : <span style={{ fontSize: 13, color: theme.colors.textTertiary }}>No slots generated with these timings.</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: theme.spacing.xl, borderTop: `1px solid ${theme.colors.border}`, paddingTop: theme.spacing.xl }}>
+                <button 
+                  disabled={addingInternal || !internalPosTitle.trim() || schedules.length === 0}
+                  onClick={submitInternalPosition}
+                  style={{
+                    ...btnPrimary,
+                    background: `linear-gradient(135deg, ${theme.colors.success}, #15803D)`,
+                    boxShadow: `0 4px 14px rgba(22, 163, 74, 0.4)`,
+                    opacity: addingInternal || !internalPosTitle.trim() || schedules.length === 0 ? 0.6 : 1,
+                    cursor: addingInternal || !internalPosTitle.trim() || schedules.length === 0 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <AccessTime style={{ fontSize: 18 }} />
+                  {addingInternal ? "Creating..." : "Save Position & Time Slots"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bin Tab */}
+        {activeTab === 3 && (
           <div style={{
             background: theme.colors.card, borderRadius: theme.radius.xl, border: `1px solid ${theme.colors.border}`,
             boxShadow: theme.shadows.lg, overflow: "hidden",
