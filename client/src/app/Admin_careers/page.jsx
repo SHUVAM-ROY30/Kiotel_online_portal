@@ -2003,7 +2003,7 @@ export default function AdminCareers() {
                                     {Array.isArray(app.shifts) ? app.shifts.join(", ") : (JSON.parse(app.shifts || '[]').join(", "))}
                                 </div>
                                 <div style={{ fontSize: 12, color: theme.colors.textSecondary, fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={app.fit_reason}>
-                                    "{app.fit_reason}"
+                                    {app.fit_reason}
                                 </div>
                             </td>
                             <td style={{ padding: `${theme.spacing.xl} ${theme.spacing.xl}`, borderBottom: `1px solid ${theme.colors.hover}` }}>
