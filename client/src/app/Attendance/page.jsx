@@ -2612,6 +2612,21 @@ export default function ClockPage() {
       }
 
       if (currentStatus === "clocked_in") {
+
+         // ---- NEW: 15 MINUTE CLOCK-OUT RESTRICTION ----
+        if (clockIn) {
+          const clockInDate = new Date(clockIn);
+          const diffMins = (new Date() - clockInDate) / (1000 * 60);
+          
+          if (diffMins >= 0 && diffMins < 15) {
+            const remaining = Math.ceil(15 - diffMins);
+            setMessage(`🚫 Cannot clock out yet. Please wait ${remaining} more minute(s).`);
+            setLoading(false);
+            return;
+          }
+        }
+
+
         setIsClockedIn(true);
         setClockInTime(extractTime(clockIn));
         setClockOutTime(null);
@@ -2741,7 +2756,8 @@ export default function ClockPage() {
         setPhotoType("clock_in");
         setMessage("✅ Clocked out successfully! Redirecting...");
         setPhotoCaptured(true);
-        speakMessage("Clock out successful");
+        speakMessage("Good bye");
+        // speakMessage("Clock out successful");
         setTimeout(() => {
           resetSession();
         }, 2500);
@@ -2752,7 +2768,8 @@ export default function ClockPage() {
         setPhotoType("clock_out");
         setMessage("✅ Clocked in successfully! Redirecting...");
         setPhotoCaptured(true);
-        speakMessage("Clock in successful");
+        speakMessage("Hi, looking good.");
+        // speakMessage("Clock in successful");
         setTimeout(() => {
           resetSession();
         }, 2500);
