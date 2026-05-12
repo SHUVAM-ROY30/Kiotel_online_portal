@@ -995,6 +995,8 @@ const ATTENDANCE_ONLY_EMAILS = [
 const ATTENDANCE_WITH_OTHER_TABS_EMAILS = [
   "shuvam.r@kiotel.co",
   "bhuvnesh.s@kiotel.co",
+  "vishals@kiotel.co",
+  "tushars@kiotel.co",
 ];
 
 /**
@@ -1161,6 +1163,7 @@ function Dashboard() {
     { title: "Invoices", href: "/Customer_Portal", icon: FaChartLine, gradient: "from-indigo-500 to-blue-600", description: "", show: !isAttendanceOnlyUser && (userRole === 1 || userRole === 4) },
     { title: "Attendance", href: "/Attendance", icon: FaClipboardCheck, gradient: "from-blue-500 to-blue-600", description: "Clock in/out", show: isAttendanceOnlyUser || canSeeAttendanceWithOtherTabs },
     { title: "Customer Portal", href: "/customer", icon: FaBuilding, gradient: "from-blue-500 to-cyan-600", description: "Service Plan, Agents, Shared Folder", show: !isAttendanceOnlyUser && userRole === 4 },
+    { title: "Task-Manager/HelpDesk", href: "/tasks", icon: FaBuilding, gradient: "from-blue-500 to-cyan-600", description: "Service Plan, Agents, Shared Folder", show: !isAttendanceOnlyUser && userRole === 4 },
     { title: "Current Property", href: "/agent", icon: FaMapMarkerAlt, gradient: "from-blue-600 to-sky-500", description: "Your assigned working property", show: !isAttendanceOnlyUser && (userRole === 2 || userRole === 3) },
     { title: "HR (Admin)", href: "/admin-dashboard", icon: FaUserShield, gradient: "from-indigo-600 to-purple-600", description: "Admin HR controls", show: !isAttendanceOnlyUser && (userRole === 1 || userRole === 5 || userRole === 8), isAdminCard: true },
     

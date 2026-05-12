@@ -2102,6 +2102,8 @@ const ALLOWED_EMAIL = "Clockin@kiotel.co";
 const DIRECT_SHIFT_EMAILS = [
   "shuvam.r@kiotel.co",
   "bhuvnesh.s@kiotel.co",
+  "tushars@kiotel.co",
+  "vishals@kiotel.co",
 ];
 
 // 🔴 ADD YOUR SPECIFIC EMPLOYEE IDs HERE 🔴
