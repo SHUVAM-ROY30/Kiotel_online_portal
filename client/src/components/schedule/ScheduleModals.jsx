@@ -196,6 +196,7 @@ const ScheduleModals = ({
             <option value="PTO_APPROVED">Paid Leave</option>
             <option value="UNAVAILABLE">Week OFF</option>
             <option value="OFF">LOP</option>
+            <option value="LLOP_EX">LLOP_EX</option>
           </select>
 
           {editFormData.assignment_status === 'ASSIGNED' && (
