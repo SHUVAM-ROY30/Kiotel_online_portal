@@ -134,11 +134,21 @@ export default function EditLeaveForm({ employee, onClose, onUpdate }) {
     other_leave: employee.other_leave,
   });
 
-  // Handle input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({ ...prevData, [name]: value }));
-  };
+  // // Handle input changes
+  // const handleInputChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setFormData((prevData) => ({ ...prevData, [name]: value }));
+  // };
+
+const handleInputChange = (e) => {
+  const { name, value } = e.target;
+
+  setFormData((prevData) => ({
+    ...prevData,
+    [name]: parseFloat(value) || 0,
+  }));
+};
+
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -189,47 +199,24 @@ export default function EditLeaveForm({ employee, onClose, onUpdate }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Paid Leave</label>
-            <input
+            {/* <input
               type="number"
               name="annual_leave"
               value={formData.annual_leave}
               onChange={handleInputChange}
               className="mt-1 block w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
+            /> */}
+            <input
+  type="number"
+  step="0.01"
+  min="0"
+  name="annual_leave"
+  value={formData.annual_leave}
+  onChange={handleInputChange}
+  className="mt-1 block w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+/>
           </div>
 
-          {/* <div>
-            <label className="block text-sm font-medium text-gray-700">Festive Leave</label>
-            <input
-              type="number"
-              name="sick_leave"
-              value={formData.sick_leave}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Casual Leave</label>
-            <input
-              type="number"
-              name="casual_leave"
-              value={formData.casual_leave}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
-          </div> */}
-
-          {/* <div>
-            <label className="block text-sm font-medium text-gray-700">Other Leave</label>
-            <input
-              type="number"
-              name="other_leave"
-              value={formData.other_leave}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
-          </div> */}
 
           {/* Submit Button */}
           <button
