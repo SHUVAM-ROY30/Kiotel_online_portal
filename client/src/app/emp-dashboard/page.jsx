@@ -6,7 +6,8 @@ import axios from "axios";
 import Navbar from "../../components/Navbar";
 import DashboardModule from "../../components/DashboardModule";
 import AttendanceRecords from "../../components/AttendanceRecords";
-import { FaCalendarCheck, FaCalendarAlt, TrendingUp } from "react-icons/fa";
+import { FaCalendarCheck, FaCalendarAlt } from "react-icons/fa";
+import { FaChartLine } from "react-icons/fa";
 import LeaveRequest from "../../components/LeaveRequestForm";
 import AvailableLeave from "../../components/AvailableLeave";
 import PromotionHub from "../../components/PromotionHub";
@@ -114,7 +115,7 @@ export default function EmployeeDashboard() {
 <DashboardModule
   title="Promotion Hub"
   description="Apply for internal opportunities and track your growth"
-  icon={TrendingUp} // Import from react-icons
+  icon={FaChartLine} // Import from react-icons
   iconBgColor="bg-purple-100"
   iconColor="text-purple-600"
   defaultOpen={false}

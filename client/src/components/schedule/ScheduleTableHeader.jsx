@@ -1,33 +1,4 @@
-// // src/components/schedule/ScheduleTableHeader.jsx
-// import React from 'react';
-// import { format } from 'date-fns';
 
-// const ScheduleTableHeader = ({ weekDays }) => {
-//   return (
-//     <div className="bg-gradient-to-r from-slate-100 to-slate-200 shadow-md">
-//       <table className="min-w-full">
-//         <thead>
-//           <tr>
-//             <th className="border-r border-slate-200 p-2 sm:p-3 lg:p-4 w-32 sm:w-48 lg:w-72 text-left text-slate-800 font-bold text-xs sm:text-sm lg:text-lg sticky left-0 bg-gradient-to-r from-slate-100 to-slate-200 z-10">
-//               Employees
-//             </th>
-//             {weekDays.map((d, i) => (
-//               <th
-//                 key={i}
-//                 className="border-r border-slate-200 p-2 sm:p-3 lg:p-4 text-center min-w-[100px] sm:min-w-[120px] lg:min-w-[140px] text-slate-800 font-bold text-xs sm:text-sm lg:text-lg"
-//               >
-//                 <div className="font-bold">{format(d, 'EEE')}</div>
-//                 <div className="text-slate-600 mt-1 sm:mt-2 text-xs sm:text-sm">{format(d, 'd')}</div>
-//               </th>
-//             ))}
-//           </tr>
-//         </thead>
-//       </table>
-//     </div>
-//   );
-// };
-
-// export default ScheduleTableHeader;
 
 
 // src/components/schedule/ScheduleTableHeader.jsx

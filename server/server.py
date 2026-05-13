@@ -108,51 +108,253 @@ log = logging.getLogger(__name__)
 
 
 
+# @app.route("/api/signin", methods=["POST"])
+# def login_user():
+#     email = request.json.get("email")
+#     password = request.json.get("password")
+
+#     if not email or not password:
+#         return jsonify({"error": "Email and password are required"}), 400
+
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+#             # Call stored procedure to check credentials
+#             cursor.callproc('Proc_tblUsers_CheckCredentials', (email, password, 0))
+#             cursor.execute("SELECT @_Proc_tblUsers_CheckCredentials_2 AS result")
+#             result = cursor.fetchone()
+#             credentials_valid = result['result']
+
+#             if credentials_valid == 1:
+#                 # Fetch user data including account_no
+#                 cursor.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
+#                 user = cursor.fetchone()
+
+#                 if not user:
+#                     return jsonify({"error": "User not found"}), 404
+
+#                 # Save user_id to session
+#                 session["user_id"] = user['id']
+#                 session.permanent = True  # Make session persistent
+
+#                 # Return user data including account_no
+#                 return jsonify({
+#                     "id": user['id'],
+#                     "email": user['emailid'],
+#                     "account_no": user['account_no']  # 👈 Added account_no
+#                 })
+#             else:
+#                 return jsonify({"error": "Unauthorized"}), 401
+#     except pymysql.MySQLError as e:
+#         print(f"The error '{e}' occurred")
+#         return jsonify({"error": "Database query failed"}), 500
+#     finally:
+#         connection.close()
+
+
+# @app.route("/api/signin", methods=["POST"])
+# def login_user():
+#     # 1. Validate incoming request payload
+#     data = request.get_json()
+#     if not data:
+#         return jsonify({"error": "Invalid JSON payload"}), 400
+
+#     email = data.get("email")
+#     password = data.get("password")
+
+#     if not email or not password:
+#         return jsonify({"error": "Email and password are required"}), 400
+
+#     # 2. Establish database connection
+#     connection = create_connection()
+#     if connection is None:
+#         return jsonify({"error": "Failed to connect to the database"}), 500
+
+#     try:
+#         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+#             # 3. Direct Query: Fetch user by email including the IsDeleted flag
+#             query = """
+#                 SELECT 
+#                     id, emailid, password, fname, lname, role_id, account_no, IsDeleted 
+#                 FROM tblusers 
+#                 WHERE emailid = %s 
+#             """
+#             cursor.execute(query, (email,))
+#             user = cursor.fetchone()
+
+#             # 4. Check if user exists at all
+#             if not user:
+#                 return jsonify({"error": "User not found"}), 404
+
+#             # 5. Check if user is deleted 
+#             # (pymysql can return bit(1) as an int, boolean, or byte depending on setup)
+#             is_deleted = user.get('IsDeleted')
+#             if is_deleted in (1, True, b'\x01'):
+#                 return jsonify({"error": "Your account has been deactivated or deleted"}), 403
+
+#             # 6. Verify Password
+#             if user['password'] != password:
+#                 return jsonify({"error": "Invalid password"}), 401
+
+#             # 7. Set persistent session
+#             session["user_id"] = user['id']
+#             session.permanent = True  
+
+#             # 8. Return data needed for the React frontend
+#             return jsonify({
+#                 "id": user['id'],
+#                 "email": user['emailid'],
+#                 "account_no": user['account_no'],
+#                 "fname": user['fname'],
+#                 "lname": user['lname'],
+#                 "role_id": user['role_id']
+#             }), 200
+
+#     except pymysql.MySQLError as e:
+#         print(f"Database error during signin: '{e}'")
+#         return jsonify({"error": "An internal database error occurred"}), 500
+#     except Exception as e:
+#         print(f"Unexpected error during signin: '{e}'")
+#         return jsonify({"error": "An unexpected error occurred"}), 500
+#     finally:
+#         connection.close()
+
+
 @app.route("/api/signin", methods=["POST"])
 def login_user():
-    email = request.json.get("email")
-    password = request.json.get("password")
+    # 1. Validate incoming request payload
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON payload"}), 400
+
+    email = data.get("email")
+    password = data.get("password")
+    device_id = data.get("device_id") # New parameter from frontend
 
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400
 
+    # 2. Establish database connection
     connection = create_connection()
     if connection is None:
         return jsonify({"error": "Failed to connect to the database"}), 500
 
     try:
         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
-            # Call stored procedure to check credentials
-            cursor.callproc('Proc_tblUsers_CheckCredentials', (email, password, 0))
-            cursor.execute("SELECT @_Proc_tblUsers_CheckCredentials_2 AS result")
-            result = cursor.fetchone()
-            credentials_valid = result['result']
+            # 3. Direct Query: Fetch user by email including the IsDeleted flag
+            query = """
+                SELECT 
+                    id, emailid, password, fname, lname, role_id, account_no, IsDeleted 
+                FROM tblusers 
+                WHERE emailid = %s 
+            """
+            cursor.execute(query, (email,))
+            user = cursor.fetchone()
 
-            if credentials_valid == 1:
-                # Fetch user data including account_no
-                cursor.execute("SELECT * FROM tblusers WHERE emailid = %s", (email,))
-                user = cursor.fetchone()
+            # 4. Check if user exists at all
+            if not user:
+                return jsonify({"error": "User not found"}), 404
 
-                if not user:
-                    return jsonify({"error": "User not found"}), 404
+            # 5. Check if user is deleted 
+            is_deleted = user.get('IsDeleted')
+            if is_deleted in (1, True, b'\x01'):
+                return jsonify({"error": "Your account has been deactivated or deleted"}), 403
 
-                # Save user_id to session
-                session["user_id"] = user['id']
-                session.permanent = True  # Make session persistent
+            # 6. Verify Password
+            if user['password'] != password:
+                return jsonify({"error": "Invalid password"}), 401
 
-                # Return user data including account_no
-                return jsonify({
-                    "id": user['id'],
-                    "email": user['emailid'],
-                    "account_no": user['account_no']  # 👈 Added account_no
-                })
-            else:
-                return jsonify({"error": "Unauthorized"}), 401
+            # --- NEW FEATURE: Browser Approval check for special account ---
+            if email.strip().lower() == "clockin@kiotel.co":
+                if not device_id:
+                    return jsonify({"error": "Device ID is missing"}), 400
+                
+                # Check if this device is approved
+                check_device_query = "SELECT status FROM tbl_device_approvals WHERE user_id = %s AND device_id = %s"
+                cursor.execute(check_device_query, (user['id'], device_id))
+                device_record = cursor.fetchone()
+                
+                if not device_record:
+                    # Device not recognized at all, insert as pending
+                    insert_device_query = "INSERT INTO tbl_device_approvals (user_id, device_id, status) VALUES (%s, %s, 'pending')"
+                    cursor.execute(insert_device_query, (user['id'], device_id))
+                    connection.commit()
+                    
+                    # ---> TRIGGER EMAIL NOTIFICATION HERE <---
+                    send_browser_approval_email(device_id)
+
+                    # Return special status so frontend knows to show the pending message
+                    return jsonify({"error": "Pending Admin Approval", "status": "pending_approval"}), 403
+                
+                elif device_record['status'] == 'pending':
+                    # Device exists but is still pending
+                    return jsonify({"error": "Pending Admin Approval", "status": "pending_approval"}), 403
+                    
+                elif device_record['status'] == 'rejected':
+                    # If an admin rejected this browser
+                    return jsonify({"error": "This device has been blocked by an administrator.", "status": "rejected"}), 403
+                
+                # If device_record['status'] == 'approved', it drops down to step 7 and logs in normally.
+            # ----------------------------------------------------------------
+
+            # 7. Set persistent session
+            session["user_id"] = user['id']
+            session.permanent = True  
+
+            # 8. Return data needed for the React frontend
+            return jsonify({
+                "id": user['id'],
+                "email": user['emailid'],
+                "account_no": user['account_no'],
+                "fname": user['fname'],
+                "lname": user['lname'],
+                "role_id": user['role_id']
+            }), 200
+
     except pymysql.MySQLError as e:
-        print(f"The error '{e}' occurred")
-        return jsonify({"error": "Database query failed"}), 500
+        print(f"Database error during signin: '{e}'")
+        return jsonify({"error": "An internal database error occurred"}), 500
+    except Exception as e:
+        print(f"Unexpected error during signin: '{e}'")
+        return jsonify({"error": "An unexpected error occurred"}), 500
     finally:
         connection.close()
+
+
+def send_browser_approval_email(device_id):
+    try:
+        admin_email = "shuvam.r@kiotel.co"
+
+        # Create the email message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = admin_email
+        msg['Subject'] = "ACTION REQUIRED: New Browser Login Attempt (Clockin)"
+
+        # Add body text
+        body = f"Hello Admin,\n\nA new browser has attempted to log in using the clockin@kiotel.co account.\n\nDevice ID: {device_id}\nStatus: Pending Approval\n\nPlease login to portal.kiotel.co to approve or reject the browser request."
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Create secure connection with server and send the email
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.ehlo()
+            server.login(sender_email, password) # Uses your globally defined variables
+            server.sendmail(sender_email, admin_email, msg.as_string())
+
+        print("Approval email notification sent successfully")
+    except Exception as e:
+        print(f"Email sending failed: {e}")
+
+
+
+
+
 
 
 @app.route("/api/user-email", methods=["GET"])
@@ -171,7 +373,7 @@ def get_user_email():
             cursor.execute("SELECT * FROM tblusers WHERE id = %s", (user_id,))
             user = cursor.fetchone()
             if user:
-                return jsonify({"fname": user['fname'],"lname": user['lname'], "role": user["role_id"],"email": user['emailid'],"id": user['id'],"link": user['link'],"unique_id":user["account_no"]})
+                return jsonify({"fname": user['fname'],"lname": user['lname'], "role": user["role_id"],"email": user['emailid'],"id": user['id'],"link": user['link'],"unique_id":user["account_no"],"profile_pic":user["profile_pic"]})
             else:
                 return jsonify({"error": "User not found"}), 404
     except pymysql.MySQLError as e:
@@ -1698,8 +1900,90 @@ def update_user_byid(user_id):
         cursor.close()
         connection.close()
 
+@app.route('/api/user/update_new/<int:user_id>', methods=['POST'])
+def update_user_byid2(user_id):
+    connection = create_connection()
+    cursor = connection.cursor()
 
+    try:
+        data = request.json
 
+        # Validate required fields
+        required_fields = ["emailid", "fname", "lname", "dob", "address", "account_no", "mobileno", "role_id"]
+        if not all(field in data for field in required_fields):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Safely parse role_id
+        if not data['role_id']:
+            return jsonify({"error": "Role ID is required"}), 400
+        new_role_id = int(data['role_id'])
+        
+        AGENT_TRAINEE_ROLE_ID = 7
+        last_training_input = data.get('last_training')
+
+        # 1. Fetch the user's CURRENT state from the database
+        cursor.execute("SELECT role_id, last_training FROM tblusers WHERE id = %s", (user_id,))
+        current_user = cursor.fetchone()
+        
+        if not current_user:
+            return jsonify({"error": "User not found"}), 404
+
+        # Safely handle both Dictionary cursors and Tuple cursors
+        if isinstance(current_user, dict):
+            current_role_id = current_user.get('role_id')
+            existing_last_training = current_user.get('last_training')
+        else:
+            current_role_id = current_user[0]
+            existing_last_training = current_user[1]
+
+        # 2. Apply the new business logic
+        if current_role_id == AGENT_TRAINEE_ROLE_ID and new_role_id != AGENT_TRAINEE_ROLE_ID:
+            if not last_training_input:
+                return jsonify({"error": "last_training is required when promoting from Agent Trainee"}), 400
+            last_training = last_training_input
+        else:
+            last_training = last_training_input if last_training_input else existing_last_training
+
+        # 3. Perform the update
+        query = """
+            UPDATE tblusers SET
+                emailid       = %s,
+                fname         = %s,
+                lname         = %s,
+                dob           = %s,
+                address       = %s,
+                account_no    = %s,
+                mobileno      = %s,
+                role_id       = %s,
+                last_training = %s
+            WHERE id = %s
+        """
+
+        values = (
+            data['emailid'],
+            data['fname'],
+            data['lname'],
+            data['dob'],
+            data['address'],
+            data['account_no'],
+            data['mobileno'],
+            new_role_id,
+            last_training,
+            user_id
+        )
+
+        cursor.execute(query, values)
+        connection.commit()
+
+        return jsonify({"message": "User updated successfully"}), 200
+
+    except Exception as e:
+        # Check your backend terminal for this exact print statement!
+        print(f"CRITICAL ERROR updating user {user_id}: {str(e)}")
+        return jsonify({"error": str(e)}), 500  # temporarily send error to frontend so you can see it in network tab
+    finally:
+        cursor.close()
+        connection.close()
 #------------------------MODULE 2 (Customer module)-------------------------#
 @app.route("/api/submit", methods=["POST"])
 def hotel_information():
@@ -2317,7 +2601,7 @@ def get_locktypess():
 port = 587  # For starttls
 smtp_server = "smtp.gmail.com"
 sender_email = "noreply@kiotel.co"
-password = "tfyr kugr sjpj ayvh"
+password = "uqfs hzid zgyf eqox"
 
 from datetime import datetime, timezone # Import timezone
 
@@ -3999,6 +4283,32 @@ def create_recurring_task():
 
 
 
+# @app.route("/api/delete-user-account/<account_no>", methods=["DELETE"])
+# def delete_user_by_unique_id(account_no):
+#     try:
+#         connection = create_connection2()
+#         if not connection:
+#             return jsonify({"error": "DB connection failed"}), 500
+
+#         with connection.cursor() as cursor:
+#             cursor.execute(
+#                 "DELETE FROM employees WHERE unique_id = %s",
+#                 (account_no,)
+#             )
+#             connection.commit()
+
+#         return jsonify({"message": "Deleted successfully"}), 200
+
+#     except Exception as e:
+#         print("Delete error:", e)
+#         return jsonify({"error": "Internal Server Error"}), 500
+
+#     finally:
+#         try:
+#             connection.close()
+#         except:
+#             pass
+
 @app.route("/api/delete-user-account/<account_no>", methods=["DELETE"])
 def delete_user_by_unique_id(account_no):
     try:
@@ -4007,13 +4317,20 @@ def delete_user_by_unique_id(account_no):
             return jsonify({"error": "DB connection failed"}), 500
 
         with connection.cursor() as cursor:
+            # ✅ CHANGED: Update IsDeleted to 1 instead of deleting the row
             cursor.execute(
-                "DELETE FROM employees WHERE unique_id = %s",
+                "UPDATE employees SET IsDeleted = 1 WHERE unique_id = %s",
                 (account_no,)
             )
+            
+            # Optional but recommended: Check if a row was actually updated
+            if cursor.rowcount == 0:
+                connection.rollback()
+                return jsonify({"error": "User not found or already deleted"}), 404
+                
             connection.commit()
 
-        return jsonify({"message": "Deleted successfully"}), 200
+        return jsonify({"message": "Deleted successfully (Soft Delete)"}), 200
 
     except Exception as e:
         print("Delete error:", e)
@@ -4024,6 +4341,110 @@ def delete_user_by_unique_id(account_no):
             connection.close()
         except:
             pass
+
+
+
+# ---------------------------------------------------------
+# 1. GET KANBAN SETTINGS
+# ---------------------------------------------------------
+@app.route('/api/kanban-settings', methods=['GET'])
+def get_kanban_settings():
+    # user_id = session.get('user_id') # Make sure you get the user ID from your session!
+    user_id = 1 # HARDCODED FOR TESTING: Replace with your actual session logic
+
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    connection = create_connection()
+    if not connection:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT settings FROM kanban_settings WHERE user_id = %s", (user_id,))
+            result = cursor.fetchone()
+            
+            if result and result.get('settings'):
+                return jsonify({"settings": result['settings']}), 200
+            else:
+                return jsonify({"settings": None}), 200
+    except Exception as e:
+        print(f"Error fetching kanban settings: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        connection.close() # Always close the connection!
+
+
+# ---------------------------------------------------------
+# 2. SAVE KANBAN SETTINGS
+# ---------------------------------------------------------
+@app.route('/api/save-kanban-settings', methods=['POST'])
+def save_kanban_settings():
+    # user_id = session.get('user_id') 
+    user_id = 1 # HARDCODED FOR TESTING: Replace with your actual session logic
+
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json
+    settings = data.get('settings')
+
+    connection = create_connection()
+    if not connection:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            query = """
+                INSERT INTO kanban_settings (user_id, settings) 
+                VALUES (%s, %s) 
+                ON DUPLICATE KEY UPDATE settings = %s
+            """
+            cursor.execute(query, (user_id, settings, settings))
+            connection.commit()
+            
+        return jsonify({"success": True, "message": "Settings saved"}), 200
+    except Exception as e:
+        print(f"Error saving kanban settings: {e}")
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        connection.close()
+
+
+
+
+
+# ---------------------------------------------------------
+# 4. UPDATE TASK TITLE (Inline Title Editing)
+# ---------------------------------------------------------
+@app.route('/api/update_task_title', methods=['POST'])
+def update_task_title():
+    data = request.json
+    ticket_id = data.get('ticketId')
+    new_title = data.get('title')
+
+    if not ticket_id or not new_title:
+        return jsonify({"error": "Missing ticketId or title"}), 400
+
+    connection = create_connection()
+    if not connection:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Note: Verify if your column name is `task_id` or `id` in your tasks table!
+            cursor.execute("UPDATE tasks SET title = %s WHERE task_id = %s", (new_title, ticket_id))
+            connection.commit()
+            
+        return jsonify({"success": True, "message": "Task title updated"}), 200
+    except Exception as e:
+        print(f"Error updating task title: {e}")
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        connection.close()
+
 
 
 
@@ -4057,7 +4478,10 @@ def cosine_distance(a: np.ndarray, b: np.ndarray) -> float:
     b = b / (np.linalg.norm(b) + 1e-10)
     return float(1.0 - np.dot(a, b))
 
+# 1. TIGHTEN THRESHOLD TO STOP FALSE POSITIVES
+# THRESHOLD = 0.45  # Changed from 0.60
 
+# 2. STOP AVERAGING EMBEDDINGS
 def load_cache_from_rows(rows: list):
     global embedding_cache
     raw = {}
@@ -4069,134 +4493,199 @@ def load_cache_from_rows(rows: list):
             emb = json.loads(emb)
         elif isinstance(emb, dict):
             emb = list(emb.values())
-        elif isinstance(emb, list):
-            pass
-        else:
-            print(f"⚠️ Unknown embedding type for {emp_id}: {type(emb)}")
-            continue
 
         if len(emb) != 512:
-            print(f"⚠️ Wrong embedding length for {emp_id}: {len(emb)}")
             continue
 
         raw.setdefault(emp_id, []).append(np.array(emb, dtype=np.float32))
 
-    embedding_cache = {
-        emp_id: np.mean(embs, axis=0)
-        for emp_id, embs in raw.items()
-    }
+    # KEEP THE LIST OF VECTORS - Do not use np.mean
+    embedding_cache = raw
     print(f"✅ Cache loaded: {len(embedding_cache)} employees")
 
-
-# def extract_embedding_from_image(img: np.ndarray) -> list:
-#     try:
-#         print("   calling DeepFace.represent...")
-#         result = DeepFace.represent(
-#             img_path          = img,
-#             model_name        = MODEL_NAME,
-#             detector_backend  = DETECTOR,
-#             enforce_detection = True,
-#             align             = True,
-#         )
-#         print(f"   DeepFace result count: {len(result)}")
-#         return result[0]["embedding"]
-#     except Exception as e:
-#         print(f"   DeepFace failed: {type(e).__name__}: {e}")
-#         raise ValueError(f"No face detected: {e}")
-
+# 3. FIX ALIGNMENT AND CROPPING LOGIC
 def extract_embedding_from_image(img: np.ndarray) -> list:
     try:
-        print("   calling DeepFace.represent...")
+        print("   calling DeepFace.represent on FULL image...")
         
-        # ── Step 1: Detect all faces first ──
-        
-        face_objs = DeepFace.extract_faces(
-            img_path         = img,
-            detector_backend = DETECTOR,
-            enforce_detection = True,
-            align            = True,
-        )
-        
-        if not face_objs:
-            raise ValueError("No face detected")
-
-        print(f"   Detected {len(face_objs)} face(s)")
-
-        # ── Step 2: Pick the largest face (person closest to camera) ──
-        def face_area(face_obj):
-            region = face_obj.get("facial_area", {})
-            w = region.get("w", 0)
-            h = region.get("h", 0)
-            return w * h
-
-        largest_face = max(face_objs, key=face_area)
-        region       = largest_face["facial_area"]
-        
-        print(f"   Largest face area: {face_area(largest_face)}px | confidence: {largest_face.get('confidence', 0):.2f}")
-
-        # ── Step 3: Check confidence of largest face ──
-        # Reject if face confidence is too low
-        MIN_FACE_CONFIDENCE = 0.90
-        if largest_face.get("confidence", 0) < MIN_FACE_CONFIDENCE:
-            raise ValueError(f"Face confidence too low: {largest_face.get('confidence', 0):.2f}")
-
-        # ── Step 4: Check face is large enough (not far away) ──
-        # Face must be at least 10% of image width
-        img_h, img_w = img.shape[:2]
-        face_w = region.get("w", 0)
-        face_h = region.get("h", 0)
-        min_face_size = img_w * 0.10
-
-        if face_w < min_face_size:
-            raise ValueError(f"Face too small ({face_w}px) — please move closer")
-
-        # ── Step 5: Check face is roughly centered ──
-        # Face center must be within middle 70% of image
-        face_center_x = region.get("x", 0) + face_w / 2
-        face_center_y = region.get("y", 0) + face_h / 2
-        
-        left_bound  = img_w * 0.15
-        right_bound = img_w * 0.85
-        top_bound   = img_h * 0.10
-        bot_bound   = img_h * 0.90
-
-        if not (left_bound < face_center_x < right_bound and
-                top_bound  < face_center_y < bot_bound):
-            raise ValueError("Face not centered — please position yourself in front of the camera")
-
-        # ── Step 6: Crop to largest face and get embedding ──
-        x = max(0, region.get("x", 0))
-        y = max(0, region.get("y", 0))
-        w = region.get("w", img_w)
-        h = region.get("h", img_h)
-
-        # Add 20% padding around face for better recognition
-        pad_x = int(w * 0.20)
-        pad_y = int(h * 0.20)
-        x1 = max(0, x - pad_x)
-        y1 = max(0, y - pad_y)
-        x2 = min(img_w, x + w + pad_x)
-        y2 = min(img_h, y + h + pad_y)
-
-        cropped_face = img[y1:y2, x1:x2]
-
-        # ── Step 7: Get embedding from cropped face only ──
-        result = DeepFace.represent(
-            img_path          = cropped_face,
+        # Let DeepFace handle detection AND alignment natively
+        results = DeepFace.represent(
+            img_path          = img,
             model_name        = MODEL_NAME,
             detector_backend  = DETECTOR,
-            enforce_detection = False,  # already cropped, skip re-detection
-            align             = True,
+            enforce_detection = True,
+            align             = True, # This now works perfectly because we didn't manually crop
         )
 
-        print(f"   ✅ Embedding extracted from largest face")
-        return result[0]["embedding"]
+        if not results:
+            raise ValueError("No face detected")
+
+        # Find the largest face in the image
+        def face_area(res):
+            region = res.get("facial_area", {})
+            return region.get("w", 0) * region.get("h", 0)
+
+        largest_face = max(results, key=face_area)
+        region = largest_face.get("facial_area", {})
+
+        # Validation checks
+        img_h, img_w = img.shape[:2]
+        if region.get("w", 0) < img_w * 0.10:
+            raise ValueError("Face too small — please move closer")
+
+        # DeepFace represent returns confidence under "face_confidence"
+        if largest_face.get("face_confidence", 0) < 0.90:
+            raise ValueError("Face confidence too low")
+
+        print(f"   ✅ Embedding extracted perfectly via DeepFace native pipeline")
+        return largest_face["embedding"]
 
     except ValueError:
         raise
     except Exception as e:
         print(f"   DeepFace failed: {type(e).__name__}: {e}")
         raise ValueError(f"Face processing failed: {e}")
+
+
+# def load_cache_from_rows(rows: list):
+#     global embedding_cache
+#     raw = {}
+#     for row in rows:
+#         emp_id = row["employee_id"]
+#         emb    = row["embedding"]
+
+#         if isinstance(emb, str):
+#             emb = json.loads(emb)
+#         elif isinstance(emb, dict):
+#             emb = list(emb.values())
+#         elif isinstance(emb, list):
+#             pass
+#         else:
+#             print(f"⚠️ Unknown embedding type for {emp_id}: {type(emb)}")
+#             continue
+
+#         if len(emb) != 512:
+#             print(f"⚠️ Wrong embedding length for {emp_id}: {len(emb)}")
+#             continue
+
+#         raw.setdefault(emp_id, []).append(np.array(emb, dtype=np.float32))
+
+#     embedding_cache = {
+#         emp_id: np.mean(embs, axis=0)
+#         for emp_id, embs in raw.items()
+#     }
+#     print(f"✅ Cache loaded: {len(embedding_cache)} employees")
+
+
+# # def extract_embedding_from_image(img: np.ndarray) -> list:
+# #     try:
+# #         print("   calling DeepFace.represent...")
+# #         result = DeepFace.represent(
+# #             img_path          = img,
+# #             model_name        = MODEL_NAME,
+# #             detector_backend  = DETECTOR,
+# #             enforce_detection = True,
+# #             align             = True,
+# #         )
+# #         print(f"   DeepFace result count: {len(result)}")
+# #         return result[0]["embedding"]
+# #     except Exception as e:
+# #         print(f"   DeepFace failed: {type(e).__name__}: {e}")
+# #         raise ValueError(f"No face detected: {e}")
+
+# def extract_embedding_from_image(img: np.ndarray) -> list:
+#     try:
+#         print("   calling DeepFace.represent...")
+        
+#         # ── Step 1: Detect all faces first ──
+        
+#         face_objs = DeepFace.extract_faces(
+#             img_path         = img,
+#             detector_backend = DETECTOR,
+#             enforce_detection = True,
+#             align            = True,
+#         )
+        
+#         if not face_objs:
+#             raise ValueError("No face detected")
+
+#         print(f"   Detected {len(face_objs)} face(s)")
+
+#         # ── Step 2: Pick the largest face (person closest to camera) ──
+#         def face_area(face_obj):
+#             region = face_obj.get("facial_area", {})
+#             w = region.get("w", 0)
+#             h = region.get("h", 0)
+#             return w * h
+
+#         largest_face = max(face_objs, key=face_area)
+#         region       = largest_face["facial_area"]
+        
+#         print(f"   Largest face area: {face_area(largest_face)}px | confidence: {largest_face.get('confidence', 0):.2f}")
+
+#         # ── Step 3: Check confidence of largest face ──
+#         # Reject if face confidence is too low
+#         MIN_FACE_CONFIDENCE = 0.90
+#         if largest_face.get("confidence", 0) < MIN_FACE_CONFIDENCE:
+#             raise ValueError(f"Face confidence too low: {largest_face.get('confidence', 0):.2f}")
+
+#         # ── Step 4: Check face is large enough (not far away) ──
+#         # Face must be at least 10% of image width
+#         img_h, img_w = img.shape[:2]
+#         face_w = region.get("w", 0)
+#         face_h = region.get("h", 0)
+#         min_face_size = img_w * 0.10
+
+#         if face_w < min_face_size:
+#             raise ValueError(f"Face too small ({face_w}px) — please move closer")
+
+#         # ── Step 5: Check face is roughly centered ──
+#         # Face center must be within middle 70% of image
+#         face_center_x = region.get("x", 0) + face_w / 2
+#         face_center_y = region.get("y", 0) + face_h / 2
+        
+#         left_bound  = img_w * 0.15
+#         right_bound = img_w * 0.85
+#         top_bound   = img_h * 0.10
+#         bot_bound   = img_h * 0.90
+
+#         if not (left_bound < face_center_x < right_bound and
+#                 top_bound  < face_center_y < bot_bound):
+#             raise ValueError("Face not centered — please position yourself in front of the camera")
+
+#         # ── Step 6: Crop to largest face and get embedding ──
+#         x = max(0, region.get("x", 0))
+#         y = max(0, region.get("y", 0))
+#         w = region.get("w", img_w)
+#         h = region.get("h", img_h)
+
+#         # Add 20% padding around face for better recognition
+#         pad_x = int(w * 0.20)
+#         pad_y = int(h * 0.20)
+#         x1 = max(0, x - pad_x)
+#         y1 = max(0, y - pad_y)
+#         x2 = min(img_w, x + w + pad_x)
+#         y2 = min(img_h, y + h + pad_y)
+
+#         cropped_face = img[y1:y2, x1:x2]
+
+#         # ── Step 7: Get embedding from cropped face only ──
+#         result = DeepFace.represent(
+#             img_path          = cropped_face,
+#             model_name        = MODEL_NAME,
+#             detector_backend  = DETECTOR,
+#             enforce_detection = False,  # already cropped, skip re-detection
+#             align             = True,
+#         )
+
+#         print(f"   ✅ Embedding extracted from largest face")
+#         return result[0]["embedding"]
+
+#     except ValueError:
+#         raise
+#     except Exception as e:
+#         print(f"   DeepFace failed: {type(e).__name__}: {e}")
+#         raise ValueError(f"Face processing failed: {e}")
 
 def get_image_from_request() -> np.ndarray:
     if "photo" not in request.files:
@@ -4554,6 +5043,98 @@ def delete_face_data(account_no):
         except:
             pass
 
+
+@app.route("/api/browser_approvals", methods=["GET"])
+def get_browser_approvals():
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            # 👇 Notice 'd.device_name' is added to this SELECT statement below
+            query = """
+                SELECT 
+                    d.id, d.user_id, d.device_id, d.device_name, d.status, d.created_at, 
+                    u.emailid, u.fname, u.lname 
+                FROM tbl_device_approvals d
+                JOIN tblusers u ON d.user_id = u.id
+                ORDER BY d.status = 'pending' DESC, d.created_at DESC
+            """
+            cursor.execute(query)
+            approvals = cursor.fetchall()
+            return jsonify(approvals), 200
+
+    except Exception as e:
+        print(f"Error fetching approvals: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+    finally:
+        connection.close()
+
+
+# Update the status (Approve / Reject)
+@app.route("/api/browser_approvals/<int:approval_id>", methods=["PUT"])
+def update_browser_approval(approval_id):
+    # IMPORTANT: Verify admin access here as well
+    
+    data = request.get_json()
+    new_status = data.get("status")
+
+    if new_status not in ["approved", "rejected", "pending"]:
+        return jsonify({"error": "Invalid status"}), 400
+
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            query = "UPDATE tbl_device_approvals SET status = %s WHERE id = %s"
+            cursor.execute(query, (new_status, approval_id))
+            connection.commit()
+            
+            if cursor.rowcount == 0:
+                return jsonify({"error": "Approval request not found"}), 404
+                
+            return jsonify({"message": f"Device successfully {new_status}"}), 200
+
+    except Exception as e:
+        print(f"Error updating approval: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+    finally:
+        connection.close()
+
+# NEW ENDPOINT: Only for updating the device name
+@app.route("/api/browser_approvals/<int:approval_id>/name", methods=["PUT"])
+def update_browser_name(approval_id):
+    data = request.get_json()
+    
+    # We use .get() and allow empty strings if the admin wants to clear the name
+    new_name = data.get("device_name", "")
+
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Failed to connect to the database"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            query = "UPDATE tbl_device_approvals SET device_name = %s WHERE id = %s"
+            cursor.execute(query, (new_name, approval_id))
+            connection.commit()
+            
+            if cursor.rowcount == 0:
+                # Check if the record actually exists
+                cursor.execute("SELECT id FROM tbl_device_approvals WHERE id = %s", (approval_id,))
+                if not cursor.fetchone():
+                    return jsonify({"error": "Approval request not found"}), 404
+                
+            return jsonify({"message": "Device name updated successfully"}), 200
+
+    except Exception as e:
+        print(f"Error updating device name: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+    finally:
+        connection.close()
 
 # ── Call at module level so it runs on startup ────────────────────
 startup_load_embeddings()

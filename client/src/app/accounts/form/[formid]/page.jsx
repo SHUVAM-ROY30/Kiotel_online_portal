@@ -1,6 +1,6 @@
 // It is for third party equipment form which i have build -> the sollution for it.
 
-
+// Cuurently on halt -> working on differently.
 
 "use client";
 
