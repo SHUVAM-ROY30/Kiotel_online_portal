@@ -839,6 +839,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 
 const PLANS = {
@@ -889,6 +890,7 @@ const fmt = (amount) => {
 };
 
 export default function CustomerDashboard() {
+  const router = useRouter();
   const [userFname, setUserFname] = useState("");
   const [userRole, setUserRole] = useState(null);
   const [userEmail, setUserEmail] = useState("");
@@ -914,11 +916,6 @@ export default function CustomerDashboard() {
   const [loadingAgent, setLoadingAgent] = useState(false);
 
   const [propertyLinks, setPropertyLinks] = useState(null);
-
-  // New states for Reports feature
-  const [showReportsModal, setShowReportsModal] = useState(false);
-  const [reports, setReports] = useState([]);
-  const [loadingReports, setLoadingReports] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -1043,61 +1040,13 @@ export default function CustomerDashboard() {
     }
   };
 
-  // const fetchReports = async () => {
-  //   setLoadingReports(true);
-  //   try {
-  //     const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
-      
-  //     const res = await axios.get(
-  //       `${process.env.NEXT_PUBLIC_URL_ext}api/v1/external/transaction-reports`,
-  //       {
-  //         headers: { Authorization: `Bearer ${externalApiToken}` },
-  //         params: { limit: 10 }
-  //       }
-  //     );
-  //     setReports(res.data.data || []);
-  //   } catch (err) {
-  //     console.error("Failed to fetch reports:", err);
-  //   } finally {
-  //     setLoadingReports(false);
-  //   }
-  // };
-
-
-    const fetchReports = async () => {
-    // Prevent making the request if we don't have a property ID yet
-    if (!selectedProperty?.property_id) {
-      console.warn("No property selected. Cannot fetch reports.");
-      return;
-    }
-
-    setLoadingReports(true);
-    try {
-      const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
-      
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_URL_ext}api/v1/external/transaction-reports`,
-        {
-          headers: { Authorization: `Bearer ${externalApiToken}` },
-          params: { 
-            // Map the API's device_id to your property_id
-            device_id: selectedProperty.property_id, 
-            limit: 10 
-          }
-        }
-      );
-      setReports(res.data.data || []);
-    } catch (err) {
-      // Log the specific backend validation error if it still fails
-      console.error("Failed to fetch reports:", err.response?.data || err.message);
-    } finally {
-      setLoadingReports(false);
-    }
-  };
-
   const handleOpenReports = () => {
-    setShowReportsModal(true);
-    fetchReports();
+    if (!selectedProperty?.property_id) return;
+    const params = new URLSearchParams({
+      device_id: selectedProperty.property_id,
+      property_name: selectedProperty.property_name || "",
+    });
+    router.push(`/customer/transaction-reports?${params.toString()}`);
   };
 
   const handleRequestChange = async () => {
@@ -1746,48 +1695,6 @@ export default function CustomerDashboard() {
         </div>
       )}
 
-      {/* ========== TRANSACTION REPORTS MODAL ========== */}
-      {showReportsModal && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowReportsModal(false)}>
-          <div className="bg-white rounded-xl max-w-2xl w-full overflow-hidden max-h-[85vh] flex flex-col shadow-xl border border-slate-200" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900">Transaction Reports</h3>
-              <button onClick={() => setShowReportsModal(false)} className="w-7 h-7 rounded-md hover:bg-slate-100 flex items-center justify-center transition-colors">
-                <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="p-5 overflow-y-auto">
-              {loadingReports ? (
-                <div className="text-center py-10">
-                  <div className="w-7 h-7 border-[3px] border-blue-100 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
-                  <p className="text-xs text-slate-400">Loading reports...</p>
-                </div>
-              ) : reports.length > 0 ? (
-                <div className="space-y-3">
-                  {reports.map((report) => (
-                    <div key={report.session_id} className="bg-slate-50 border border-slate-100 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-slate-900">{report.session_id}</span>
-                        <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${report.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                          {report.status}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500">Device ID: <span className="font-medium text-slate-700">{report.device_id}</span></p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-10">
-                  <p className="text-sm text-slate-500">No transaction reports found.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
