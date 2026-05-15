@@ -1,13 +1,8 @@
-
-
-
-
-"use client";
-
 import React, { useState } from "react";
 import axios from "axios";
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
+const API_BASE2 = process.env.NEXT_PUBLIC_URL_ext || 'http://localhost:3001/api';
 
 const AddTaskModal = ({ userUniqueId, properties, onClose, onTaskCreated }) => {
   const [title, setTitle] = useState("");
@@ -71,9 +66,12 @@ const AddTaskModal = ({ userUniqueId, properties, onClose, onTaskCreated }) => {
     try {
       // Determine which devices to process
       const devicesToSubmit = selectAllDevices ? ['ALL'] : selectedDevices;
+      const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
 
       // Loop through selected devices and create a task for each
       for (const devId of devicesToSubmit) {
+        
+        // 1. Call Internal API
         await axios.post(`${API_BASE}/v1/internal/tasks`, {
           customer_id: userUniqueId, 
           created_by: userUniqueId, 
@@ -84,6 +82,24 @@ const AddTaskModal = ({ userUniqueId, properties, onClose, onTaskCreated }) => {
           kind: type === "recurring" ? "recurring" : "one_time",
           recurring_days: type === "recurring" ? recurringDays : []
         }, { withCredentials: true });
+
+        // 2. Call External API
+        try {
+          await axios.post(`${API_BASE2}v1/external/tasks`, {
+            device_id: devId,
+            title,
+            description,
+            priority_level: priority,
+            kind: type === "recurring" ? "recurring" : "one_time"
+          }, { 
+            headers: { Authorization: `Bearer ${externalApiToken}` }
+          });
+        } catch (extErr) {
+          console.error(`Failed to create external task for device ${devId}:`, extErr.response?.data || extErr.message);
+          // Optional: If you want a failure in the external API to stop the whole process, 
+          // you can throw the error here. Otherwise, it just logs it and continues.
+        }
+
       }
 
       onTaskCreated(); 
@@ -95,7 +111,6 @@ const AddTaskModal = ({ userUniqueId, properties, onClose, onTaskCreated }) => {
       setIsSubmitting(false);
     }
   };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl flex flex-col max-h-[90vh]">
