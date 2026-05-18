@@ -28,7 +28,7 @@ const DIRECT_SHIFT_EMAILS = [
 ];
 
 // 🔴 ADD YOUR SPECIFIC EMPLOYEE IDs HERE 🔴
-const QA_TEAM_IDS = ["1QD211Q", "J9CI294", "L48FR84"]; // Replace with actual QA employee IDs
+const QA_TEAM_IDS = ["1QD211Q", "J9CI294", "L48FR84","P0623XZ"]; // Replace with actual QA employee IDs
 const OFFICE_ADMIN_IDS = ["8P4YX26", "16YM0V6"]; // Replace with actual Office Admin IDs
 
 export default function ClockPage() {
