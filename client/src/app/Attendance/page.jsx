@@ -67,7 +67,8 @@ export default function ClockPage() {
   const [pendingEmployee, setPendingEmployee] = useState(null);
 
   const [isMobile, setIsMobile] = useState(false);
-
+// Add these near your other state variables
+  const [adminSelectedDate, setAdminSelectedDate] = useState(null);
   // Add this useEffect to detect screen size
   useEffect(() => {
     const checkScreenSize = () => {
@@ -568,6 +569,13 @@ export default function ClockPage() {
         setClockInTime(null);
         setClockOutTime(null);
         setPhotoType("clock_in");
+
+                // ---- NEW: Admin Date Prompt Interception ----
+        if (targetShift.shift_name === 'ADMIN') {
+          setMessage(`Please select the attendance date for this shift.`);
+          setStep("admin_date_prompt"); // Go to new step instead of action
+          return;
+        }
         
         if (status === "clocked_in" && currentStatus === "not_clocked_in") {
           setMessage(`Previous clock-out missed. Ready to clock in for ${targetShift.shift_name}`);
@@ -592,6 +600,7 @@ export default function ClockPage() {
       setFrequentShift(null);
       setMessage("");
       setPhotoCaptured(false);
+      setAdminSelectedDate(null);
       setPhotoData(null);
       setIsClockedIn(false);
       setClockInTime(null);
@@ -632,6 +641,8 @@ export default function ClockPage() {
   const handleSubmitPhoto = async (directImgData) => {
     const dataToSubmit = typeof directImgData === 'string' ? directImgData : photoData;
     if (!dataToSubmit || !selectedShift) return;
+
+    
     
     setLoading(true);
     setMessage("");
@@ -643,7 +654,11 @@ export default function ClockPage() {
       formData.append("account_no",        accountNo);
       formData.append("photo_type",        photoType);
       formData.append("selected_shift_id", selectedShift.id);
-
+      
+      // ✅ This passes the selected date specifically for ADMIN clock-ins
+      if (adminSelectedDate && photoType === "clock_in") {
+        formData.append("admin_attendance_date", adminSelectedDate);
+      }
       const res  = await fetch(
         `${API_BASE_URL}/clockin/attendance/clock?account_no=${encodeURIComponent(accountNo)}&photo_type=${photoType}`,
         { method: "POST", body: formData }
@@ -1831,6 +1846,57 @@ export default function ClockPage() {
       </div>
     );
   }
+
+    // ═══════════════════════════════════════════════════════════
+  // STEP: Admin Date Prompt
+  // ═══════════════════════════════════════════════════════════
+  if (step === "admin_date_prompt") {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const todayStr = today.toISOString().split("T")[0];
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+    const handleDateSelect = (dateStr) => {
+      setAdminSelectedDate(dateStr);
+      setMessage(`Ready to clock in for ADMIN shift on ${dateStr}`);
+      setStep("action");
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex items-center justify-center p-4">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-200/50 text-center max-w-md w-full">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Select Attendance Date</h2>
+          <p className="text-gray-600 mb-6">For which date are you clocking in?</p>
+          
+          <div className="space-y-4">
+            <button
+              onClick={() => handleDateSelect(yesterdayStr)}
+              className="w-full bg-white border-2 border-blue-200 hover:bg-blue-50 text-blue-700 font-bold py-4 rounded-xl transition-all shadow-sm"
+            >
+              Previous Date ({yesterdayStr})
+            </button>
+            <button
+              onClick={() => handleDateSelect(todayStr)}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-md"
+            >
+              Current Date ({todayStr})
+            </button>
+          </div>
+          
+          <button
+            onClick={() => setStep("shift")}
+            className="mt-6 w-full px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+
 
     // ═══════════════════════════════════════════════════════════
   // STEP: Action (Photo capture step)
