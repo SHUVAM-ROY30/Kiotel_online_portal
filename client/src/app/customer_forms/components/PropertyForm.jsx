@@ -213,9 +213,9 @@ export default function PropertyForm({ onBack }) {
 
           {/* SECTION 2: Owner's Information */}
           <fieldset className="border border-gray-200 rounded-lg p-6 bg-gray-50/50">
-            <legend className="text-lg font-semibold text-gray-800 px-3 bg-white border border-gray-200 rounded-md py-1 shadow-sm">Owner's Information</legend>
+            <legend className="text-lg font-semibold text-gray-800 px-3 bg-white border border-gray-200 rounded-md py-1 shadow-sm">Owner Information</legend>
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Owner's Name <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Owners Name <span className="text-red-500">*</span></label>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                 <input type="text" name="ownerTitle" placeholder="Title" defaultValue={initialData.ownerTitle} required className="block w-full rounded-md border-gray-300 p-2 border shadow-sm focus:border-blue-500 focus:ring-blue-500" />
                 <input type="text" name="ownerFirst" placeholder="First" defaultValue={initialData.ownerFirst} required className="block w-full rounded-md border-gray-300 p-2 border shadow-sm focus:border-blue-500 focus:ring-blue-500" />

@@ -373,7 +373,7 @@ def get_user_email():
             cursor.execute("SELECT * FROM tblusers WHERE id = %s", (user_id,))
             user = cursor.fetchone()
             if user:
-                return jsonify({"fname": user['fname'],"lname": user['lname'], "role": user["role_id"],"email": user['emailid'],"id": user['id'],"link": user['link'],"unique_id":user["account_no"],"profile_pic":user["profile_pic"]})
+                return jsonify({"fname": user['fname'],"lname": user['lname'], "role": user["role_id"],"email": user['emailid'],"id": user['id'],"link": user['link'],"unique_id":user["account_no"],"profile_pic":user["profile_pic"],"agent_id":user["agent_id"]})
             else:
                 return jsonify({"error": "User not found"}), 404
     except pymysql.MySQLError as e:
@@ -1900,6 +1900,91 @@ def update_user_byid(user_id):
         cursor.close()
         connection.close()
 
+# @app.route('/api/user/update_new/<int:user_id>', methods=['POST'])
+# def update_user_byid2(user_id):
+#     connection = create_connection()
+#     cursor = connection.cursor()
+
+#     try:
+#         data = request.json
+
+#         # Validate required fields
+#         required_fields = ["emailid", "fname", "lname", "dob", "address", "account_no", "mobileno", "role_id"]
+#         if not all(field in data for field in required_fields):
+#             return jsonify({"error": "Missing required fields"}), 400
+
+#         # Safely parse role_id
+#         if not data['role_id']:
+#             return jsonify({"error": "Role ID is required"}), 400
+#         new_role_id = int(data['role_id'])
+        
+#         AGENT_TRAINEE_ROLE_ID = 7
+#         last_training_input = data.get('last_training')
+
+#         # 1. Fetch the user's CURRENT state from the database
+#         cursor.execute("SELECT role_id, last_training FROM tblusers WHERE id = %s", (user_id,))
+#         current_user = cursor.fetchone()
+        
+#         if not current_user:
+#             return jsonify({"error": "User not found"}), 404
+
+#         # Safely handle both Dictionary cursors and Tuple cursors
+#         if isinstance(current_user, dict):
+#             current_role_id = current_user.get('role_id')
+#             existing_last_training = current_user.get('last_training')
+#         else:
+#             current_role_id = current_user[0]
+#             existing_last_training = current_user[1]
+
+#         # 2. Apply the new business logic
+#         if current_role_id == AGENT_TRAINEE_ROLE_ID and new_role_id != AGENT_TRAINEE_ROLE_ID:
+#             if not last_training_input:
+#                 return jsonify({"error": "last_training is required when promoting from Agent Trainee"}), 400
+#             last_training = last_training_input
+#         else:
+#             last_training = last_training_input if last_training_input else existing_last_training
+
+#         # 3. Perform the update
+#         query = """
+#             UPDATE tblusers SET
+#                 emailid       = %s,
+#                 fname         = %s,
+#                 lname         = %s,
+#                 dob           = %s,
+#                 address       = %s,
+#                 account_no    = %s,
+#                 mobileno      = %s,
+#                 role_id       = %s,
+#                 last_training = %s
+#             WHERE id = %s
+#         """
+
+#         values = (
+#             data['emailid'],
+#             data['fname'],
+#             data['lname'],
+#             data['dob'],
+#             data['address'],
+#             data['account_no'],
+#             data['mobileno'],
+#             new_role_id,
+#             last_training,
+#             user_id
+#         )
+
+#         cursor.execute(query, values)
+#         connection.commit()
+
+#         return jsonify({"message": "User updated successfully"}), 200
+
+#     except Exception as e:
+#         # Check your backend terminal for this exact print statement!
+#         print(f"CRITICAL ERROR updating user {user_id}: {str(e)}")
+#         return jsonify({"error": str(e)}), 500  # temporarily send error to frontend so you can see it in network tab
+#     finally:
+#         cursor.close()
+#         connection.close()
+
 @app.route('/api/user/update_new/<int:user_id>', methods=['POST'])
 def update_user_byid2(user_id):
     connection = create_connection()
@@ -1920,6 +2005,9 @@ def update_user_byid2(user_id):
         
         AGENT_TRAINEE_ROLE_ID = 7
         last_training_input = data.get('last_training')
+        
+        # Extract agent_id (it will be None if empty, which maps to NULL in MySQL)
+        agent_id = data.get('agent_id')
 
         # 1. Fetch the user's CURRENT state from the database
         cursor.execute("SELECT role_id, last_training FROM tblusers WHERE id = %s", (user_id,))
@@ -1955,7 +2043,8 @@ def update_user_byid2(user_id):
                 account_no    = %s,
                 mobileno      = %s,
                 role_id       = %s,
-                last_training = %s
+                last_training = %s,
+                agent_id      = %s
             WHERE id = %s
         """
 
@@ -1969,6 +2058,7 @@ def update_user_byid2(user_id):
             data['mobileno'],
             new_role_id,
             last_training,
+            agent_id,       # Pass agent_id to query
             user_id
         )
 
@@ -1978,12 +2068,13 @@ def update_user_byid2(user_id):
         return jsonify({"message": "User updated successfully"}), 200
 
     except Exception as e:
-        # Check your backend terminal for this exact print statement!
         print(f"CRITICAL ERROR updating user {user_id}: {str(e)}")
-        return jsonify({"error": str(e)}), 500  # temporarily send error to frontend so you can see it in network tab
+        return jsonify({"error": str(e)}), 500  
     finally:
         cursor.close()
         connection.close()
+
+
 #------------------------MODULE 2 (Customer module)-------------------------#
 @app.route("/api/submit", methods=["POST"])
 def hotel_information():

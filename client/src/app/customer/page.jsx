@@ -1278,7 +1278,7 @@ export default function CustomerDashboard() {
               </svg>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Properties Found</h3>
-            <p className="text-gray-500 max-w-sm">You currently don't have any properties assigned. Please contact support to configure your account.</p>
+            <p className="text-gray-500 max-w-sm">You currently do not have any properties assigned. Please contact support to configure your account.</p>
           </div>
         ) : (
           <>
