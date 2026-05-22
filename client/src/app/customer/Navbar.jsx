@@ -142,7 +142,7 @@ export default function Navbar({ userFname }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-gray-900 tracking-tight">TechCorp<span className="text-blue-600">.</span></h2>
+        <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kiotel<span className="text-blue-600">.</span></h2>
       </div>
 
       <div className="flex items-center gap-6">
