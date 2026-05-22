@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
+import ShellLayout from "../../../ShellLayout";
 
 const PAGE_LIMIT = 25;
 const COLLECTED_TYPES = ["STACKED", "STORED"];
@@ -956,14 +957,29 @@ function SessionDetailContent() {
   );
 }
 
+// export default function SessionDetailPage() {
+//   return (
+//     <Suspense fallback={
+//       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+//         <div className="w-8 h-8 border-[3px] border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+//       </div>
+//     }>
+//       <SessionDetailContent />
+//     </Suspense>
+//   );
+// }
+
+
 export default function SessionDetailPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-[3px] border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-      </div>
-    }>
-      <SessionDetailContent />
-    </Suspense>
+    <ShellLayout>
+      <Suspense fallback={
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <div className="w-8 h-8 border-[3px] border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+        </div>
+      }>
+        <SessionDetailContent />
+      </Suspense>
+    </ShellLayout>
   );
 }

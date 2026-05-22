@@ -54,7 +54,25 @@ const SignIn = () => {
         { withCredentials: true }
       );
 
-      if (res.status === 200 && res.data) {
+      // if (res.status === 200 && res.data) {
+      //   const { id, email, account_no, fname, lname, role_id } = res.data;
+        
+      //   // Store in localStorage for frontend access
+      //   localStorage.setItem("userId", id);
+      //   localStorage.setItem("email", email);
+      //   localStorage.setItem("uniqueId", account_no);
+      //   if (fname) localStorage.setItem("fname", fname);
+      //   if (lname) localStorage.setItem("lname", lname);
+      //   if (role_id) localStorage.setItem("role_id", role_id);
+        
+      //   // 🔄 Redirect based on user email
+      //   if (isClockinUser) {
+      //     router.push("/Attendance");
+      //   } else {
+      //     router.push("/Dashboard");
+      //   }
+      // }
+            if (res.status === 200 && res.data) {
         const { id, email, account_no, fname, lname, role_id } = res.data;
         
         // Store in localStorage for frontend access
@@ -65,9 +83,11 @@ const SignIn = () => {
         if (lname) localStorage.setItem("lname", lname);
         if (role_id) localStorage.setItem("role_id", role_id);
         
-        // 🔄 Redirect based on user email
+        // 🔄 Redirect based on user email and role
         if (isClockinUser) {
           router.push("/Attendance");
+        } else if (String(role_id) === "4") {
+          router.push("/customer");
         } else {
           router.push("/Dashboard");
         }

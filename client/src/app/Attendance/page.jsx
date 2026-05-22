@@ -25,6 +25,7 @@ const DIRECT_SHIFT_EMAILS = [
   "bhuvnesh.s@kiotel.co",
   "tushars@kiotel.co",
   "vishals@kiotel.co",
+  "adityas@kiotel.co",
 ];
 
 // 🔴 ADD YOUR SPECIFIC EMPLOYEE IDs HERE 🔴

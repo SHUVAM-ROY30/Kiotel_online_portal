@@ -1,3 +1,5 @@
+
+
 // "use client";
 // import { useEffect, useState, useRef } from "react";
 // import Link from "next/link";
@@ -308,9 +310,7 @@
 //   const [assignmentSuccess, setAssignmentSuccess] = useState(null);
 
 //   const [isManageAllGroupsModalOpen, setIsManageAllGroupsModalOpen] = useState(false);
-
-//   // Add these state variables after your existing state declarations
-// const [isShiftManagementOpen, setIsShiftManagementOpen] = useState(false);
+//   const [isShiftManagementOpen, setIsShiftManagementOpen] = useState(false);
 
 //   // Close profile menu on outside click
 //   useEffect(() => {
@@ -340,7 +340,7 @@
 //     fetchAllGroups();
 //   }, []);
 
-//   // NEW: Fetch All Shifts
+//   // Fetch All Shifts
 //   useEffect(() => {
 //     const fetchAllShifts = async () => {
 //       try {
@@ -353,6 +353,7 @@
 //     fetchAllShifts();
 //   }, []);
 
+//   // Fetch User Role and Users
 //   useEffect(() => {
 //     const fetchUserData = async () => {
 //       try {
@@ -362,6 +363,7 @@
 //         );
 //         setUserFname(response.data.fname);
 //         setUserRole(response.data.role);
+
 //         const usersResponse = await axios.get(
 //           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`,
 //           { withCredentials: true }
@@ -442,7 +444,7 @@
 //     setIsManageGroupsModalOpen(true);
 //   };
 
-//   // NEW: Batch Shift Assignment
+//   // Batch Shift Assignment
 //   const assignShiftToUsers = async () => {
 //     if (selectedUserIds.size === 0) {
 //       alert("Please select at least one user");
@@ -459,40 +461,28 @@
 //     setAssignmentSuccess(null);
     
 //     try {
-//       // Optimistic UI update
 //       const newShiftName = allShifts.find(s => s.id === parseInt(selectedShiftId))?.shift_name || 'No Shift';
       
 //       setUsers(prev => prev.map(user => 
-//         selectedUserIds.has(user.id) 
-//           ? { ...user, shift_name: newShiftName }
-//           : user
+//         selectedUserIds.has(user.id) ? { ...user, shift_name: newShiftName } : user
 //       ));
       
 //       setFilteredUsers(prev => prev.map(user => 
-//         selectedUserIds.has(user.id) 
-//           ? { ...user, shift_name: newShiftName }
-//           : user
+//         selectedUserIds.has(user.id) ? { ...user, shift_name: newShiftName } : user
 //       ));
       
-//       // API call with all selected user IDs
 //       const response = await axios.post(
 //         `${process.env.NEXT_PUBLIC_BACKEND_URL}/clockin/users/assign-shift`,
-//         { 
-//           user_ids: Array.from(selectedUserIds), 
-//           shift_id: selectedShiftId 
-//         },
+//         { user_ids: Array.from(selectedUserIds), shift_id: selectedShiftId },
 //         { withCredentials: true }
 //       );
       
 //       setAssignmentSuccess(`${response.data.assigned_count} user(s) updated successfully!`);
-      
-//       // Clear selections after successful assignment
 //       setSelectedUserIds(new Set());
       
 //     } catch (err) {
 //       console.error("Error assigning shifts:", err);
 //       setShiftError("Failed to assign shifts");
-//       // Revert optimistic update
 //       const usersResponse = await axios.get(
 //         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`,
 //         { withCredentials: true }
@@ -504,25 +494,19 @@
 //     }
 //   };
 
-//   // Toggle user selection
 //   const toggleUserSelection = (userId) => {
 //     setSelectedUserIds(prev => {
 //       const newSet = new Set(prev);
-//       if (newSet.has(userId)) {
-//         newSet.delete(userId);
-//       } else {
-//         newSet.add(userId);
-//       }
+//       if (newSet.has(userId)) newSet.delete(userId);
+//       else newSet.add(userId);
 //       return newSet;
 //     });
 //   };
 
-//   // Clear all selections
 //   const clearSelections = () => {
 //     setSelectedUserIds(new Set());
 //   };
 
-//   // Save Group Assignments
 //   const saveUserGroups = async (userId, groupOperations) => {
 //     setIsSavingGroups(true);
 //     setGroupsError(null);
@@ -554,10 +538,29 @@
 //     }
 //   };
 
-//   // Columns configuration with selection column
+//   // Restrict access for non-admin users (Role 1 or 8)
+//   if (!loading && userRole && String(userRole) !== '1' && String(userRole) !== '8') {
+//     return (
+//       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+//         <div className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md w-full border border-gray-200">
+//           <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
+//             <FaTimes className="h-8 w-8 text-red-600" />
+//           </div>
+//           <h2 className="text-2xl font-bold text-gray-900 mb-3">Access Denied</h2>
+//           <p className="text-gray-600 mb-8">You do not have permission to access the User & Group Management dashboard.</p>
+//           <button 
+//             onClick={() => router.push('/Dashboard')} 
+//             className="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
+//           >
+//             Return to Dashboard
+//           </button>
+//         </div>
+//       </div>
+//     );
+//   }
+
 //   const columns = [
-//     // Selection Column (only visible in assignment mode)
-//     ...(isAssignShiftPanelOpen ? [{
+//     ...(isAssignShiftPanelOpen && String(userRole) === '1' ? [{
 //       name: "Select",
 //       width: "60px",
 //       cell: (row) => (
@@ -570,7 +573,6 @@
 //       ),
 //       ignoreRowClick: true,
 //     }] : []),
-    
 //     {
 //       name: "ID",
 //       selector: (row) => row.account_no,
@@ -595,7 +597,6 @@
 //       sortable: true,
 //       width: "120px",
 //     },
-//     // Shift Column
 //     {
 //       name: "Shift",
 //       selector: (row) => row.shift_name,
@@ -651,7 +652,6 @@
 //     },
 //   ];
 
-//   // Handler for when groups are changed
 //   const handleGroupsChange = () => {
 //     const fetchUserData = async () => {
 //       try {
@@ -668,7 +668,6 @@
 //     fetchUserData();
 //   };
 
-//   // Search handler
 //   const handleSearch = (e) => {
 //     const query = e.target.value.toLowerCase();
 //     setSearchQuery(query);
@@ -748,44 +747,48 @@
             
 //             {/* Control Buttons */}
 //             <div className="flex flex-wrap gap-3">
-//               {/* Assign Shifts Button */}
-//               <button
-//                 onClick={() => {
-//                   setIsAssignShiftPanelOpen(!isAssignShiftPanelOpen);
-//                   if (isAssignShiftPanelOpen) {
-//                     setSelectedUserIds(new Set());
-//                     setSelectedShiftId('');
-//                     setAssignmentSuccess(null);
-//                     setShiftError(null);
-//                   }
-//                 }}
-//                 className={`flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg shadow-sm transition-all duration-300 ${
-//                   isAssignShiftPanelOpen 
-//                     ? 'bg-red-600 hover:bg-red-700 text-white shadow-md' 
-//                     : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow'
-//                 }`}
-//               >
-//                 {isAssignShiftPanelOpen ? (
-//                   <>
-//                     <FaTimes className="mr-2" /> Close Assignment
-//                   </>
-//                 ) : (
-//                   <>
-//                     <FaCalendarAlt className="mr-2" /> Assign Shifts
-//                   </>
-//                 )}
-//               </button>
-
-//               {/* Shift Management Button */}
-//   <button
-//     onClick={() => setIsShiftManagementOpen(true)}
-//     className="flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-medium rounded-lg shadow-sm hover:from-orange-600 hover:to-orange-700 shadow transition-all duration-300"
-//   >
-//     <FaCalendarAlt className="mr-2" />
-//     Shift Management
-//   </button>
               
-//               {/* Manage All Groups Button */}
+//               {/* Only show Shift-related actions to Role 1 */}
+//               {String(userRole) === '1' && (
+//                 <>
+//                   <button
+//                     onClick={() => {
+//                       setIsAssignShiftPanelOpen(!isAssignShiftPanelOpen);
+//                       if (isAssignShiftPanelOpen) {
+//                         setSelectedUserIds(new Set());
+//                         setSelectedShiftId('');
+//                         setAssignmentSuccess(null);
+//                         setShiftError(null);
+//                       }
+//                     }}
+//                     className={`flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg shadow-sm transition-all duration-300 ${
+//                       isAssignShiftPanelOpen 
+//                         ? 'bg-red-600 hover:bg-red-700 text-white shadow-md' 
+//                         : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow'
+//                     }`}
+//                   >
+//                     {isAssignShiftPanelOpen ? (
+//                       <>
+//                         <FaTimes className="mr-2" /> Close Assignment
+//                       </>
+//                     ) : (
+//                       <>
+//                         <FaCalendarAlt className="mr-2" /> Assign Shifts
+//                       </>
+//                     )}
+//                   </button>
+
+//                   <button
+//                     onClick={() => setIsShiftManagementOpen(true)}
+//                     className="flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-medium rounded-lg shadow-sm hover:from-orange-600 hover:to-orange-700 shadow transition-all duration-300"
+//                   >
+//                     <FaCalendarAlt className="mr-2" />
+//                     Shift Management
+//                   </button>
+//                 </>
+//               )}
+              
+//               {/* Manage All Groups Button - Available to both 1 and 8 */}
 //               <button
 //                 onClick={() => setIsManageAllGroupsModalOpen(true)}
 //                 className="flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-medium rounded-lg shadow-sm hover:from-emerald-700 hover:to-teal-700 shadow transition-all duration-300"
@@ -794,7 +797,7 @@
 //                 Manage All Groups
 //               </button>
               
-//               {/* Create New User Button */}
+//               {/* Create New User Button - Available to both 1 and 8 */}
 //               <Link
 //                 href="/components/Create_new_user"
 //                 className="flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg shadow-sm hover:from-blue-700 hover:to-indigo-700 shadow transition-all duration-300"
@@ -805,8 +808,8 @@
 //             </div>
 //           </div>
           
-//           {/* Inline Shift Assignment Panel */}
-//           {isAssignShiftPanelOpen && (
+//           {/* Inline Shift Assignment Panel (Only available to role 1) */}
+//           {isAssignShiftPanelOpen && String(userRole) === '1' && (
 //             <div className="mt-5 p-5 bg-blue-50 border border-blue-200 rounded-xl animate-fadeIn">
 //               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
 //                 <div>
@@ -852,10 +855,6 @@
 //                   </select>
 //                 </div>
                 
-
-                
-
-
 //                 <button
 //                   onClick={assignShiftToUsers}
 //                   disabled={isSavingShift || selectedUserIds.size === 0 || !selectedShiftId}
@@ -867,7 +866,7 @@
 //                 >
 //                   {isSavingShift ? (
 //                     <>
-//                       <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+//                       <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 //                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
 //                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 //                       </svg>
@@ -891,7 +890,6 @@
 //         </div>
         
 //         {/* User Table */}
-        
 //         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
 //           {loading ? (
 //             <div className="flex justify-center items-center h-64">
@@ -943,12 +941,13 @@
 //         </div>
 //       </div>
       
-//       {/* Shift Management Modal */}
-// {isShiftManagementOpen && (
-//   <ShiftManagement
-//     onClose={() => setIsShiftManagementOpen(false)}
-//   />
-// )}
+//       {/* Shift Management Modal (Role 1 Only) */}
+//       {isShiftManagementOpen && String(userRole) === '1' && (
+//         <ShiftManagement
+//           onClose={() => setIsShiftManagementOpen(false)}
+//         />
+//       )}
+
 //       {/* Manage Groups Modal */}
 //       <ManageGroupsModal
 //         isOpen={isManageGroupsModalOpen}
@@ -1561,6 +1560,12 @@ function Dashboard() {
       width: "110px",
     },
     {
+      name: "Agent ID",
+      selector: (row) => row.agent_id || "-",
+      sortable: true,
+      width: "120px",
+    },
+    {
       name: "Name",
       selector: (row) => `${row.fname} ${row.lname}`,
       sortable: true,
@@ -1654,6 +1659,7 @@ function Dashboard() {
     setSearchQuery(query);
     const filtered = users.filter((user) => {
       const idMatch = user.account_no?.toLowerCase().includes(query);
+      const agentIdMatch = String(user.agent_id || "")?.toLowerCase().includes(query);
       const nameMatch =
         (user.fname?.toLowerCase().includes(query) || '') ||
         (user.lname?.toLowerCase().includes(query) || '');
@@ -1662,7 +1668,7 @@ function Dashboard() {
       const groupMatch = user.groups?.some(group =>
         group?.toLowerCase().includes(query)
       );
-      return idMatch || nameMatch || emailMatch || roleMatch || groupMatch;
+      return idMatch || agentIdMatch || nameMatch || emailMatch || roleMatch || groupMatch;
     });
     setFilteredUsers(filtered);
   };

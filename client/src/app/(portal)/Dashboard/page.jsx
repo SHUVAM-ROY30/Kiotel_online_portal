@@ -22,6 +22,7 @@ const ATTENDANCE_WITH_OTHER_TABS_EMAILS = [
   "bhuvnesh.s@kiotel.co",
   "vishals@kiotel.co",
   "tushars@kiotel.co",
+  "adityas@kiotel.co",
 ];
 
 /**
