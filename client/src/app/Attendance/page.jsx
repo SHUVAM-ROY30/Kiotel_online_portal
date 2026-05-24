@@ -1,3 +1,725 @@
+// "use client";
+// import { useState, useEffect } from "react";
+// import { useRouter } from "next/navigation";
+// import axios from "axios";
+// import PhotoCapture from "./PhotoCapture";
+// import FaceScan from "./FaceScan";
+// import FaceRegister from "./FaceRegister";
+// import {
+//   FaUser,
+//   FaClock,
+//   FaCheckCircle,
+//   FaSignInAlt,
+//   FaSignOutAlt,
+//   FaIdCard,
+//   FaCalendarAlt,
+//   FaCamera,
+// } from "react-icons/fa";
+// import { format } from "date-fns";
+
+// const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
+// const ALLOWED_EMAIL = "Clockin@kiotel.co";
+
+// const DIRECT_SHIFT_EMAILS = [
+//   "shuvam.r@kiotel.co",
+//   "bhuvnesh.s@kiotel.co",
+//   "tushars@kiotel.co",
+//   "vishals@kiotel.co",
+//   "adityas@kiotel.co",
+// ];
+
+// // 🔴 ADD YOUR SPECIFIC EMPLOYEE IDs HERE 🔴
+// const QA_TEAM_IDS = ["1QD211Q", "J9CI294", "L48FR84","P0623XZ"]; // Replace with actual QA employee IDs
+// const OFFICE_ADMIN_IDS = ["8P4YX26", "16YM0V6"]; // Replace with actual Office Admin IDs
+
+// export default function ClockPage() {
+//   const router = useRouter();
+//   const [isAuthorized, setIsAuthorized] = useState(false);
+//   const [authChecked, setAuthChecked] = useState(false);
+//   const [step, setStep] = useState("face_scan");
+//   const [accountNo, setAccountNo] = useState("");
+//   const [employee, setEmployee] = useState(null);
+//   const [allShifts, setAllShifts] = useState([]);
+//   const [selectedShift, setSelectedShift] = useState(null);
+//   const [frequentShift, setFrequentShift] = useState(null); // Added state for frequent shift
+//   const [loading, setLoading] = useState(false);
+//   const [message, setMessage] = useState("");
+//   const [isClockedIn, setIsClockedIn] = useState(false);
+//   const [clockInTime, setClockInTime] = useState(null);
+//   const [clockOutTime, setClockOutTime] = useState(null);
+//   const [photoCaptured, setPhotoCaptured] = useState(false);
+//   const [photoData, setPhotoData] = useState(null);
+//   const [photoType, setPhotoType] = useState("clock_in");
+  
+//   const [showFaceRegister, setShowFaceRegister] = useState(false);
+//   const [isNewFaceUser, setIsNewFaceUser] = useState(false);
+  
+//   // Toggle tab for general users
+//   const [shiftTab, setShiftTab] = useState("General");
+
+//   const [loggedInUser, setLoggedInUser] = useState(null);
+//   const [userEmail, setUserEmail] = useState("");
+//   const [userUniqueID, setUserUniqueID] = useState("");
+//   const [userFname, setUserFname] = useState("");
+//   const [userRole, setUserRole] = useState(null);
+//   const [isDirectShiftUser, setIsDirectShiftUser] = useState(false);
+
+//   // Temporarily holds the scanned user until they click "Yes, that's me"
+//   const [pendingEmployee, setPendingEmployee] = useState(null);
+
+//   const [isMobile, setIsMobile] = useState(false);
+// // Add these near your other state variables
+//   const [adminSelectedDate, setAdminSelectedDate] = useState(null);
+//   // Add this useEffect to detect screen size
+//   useEffect(() => {
+//     const checkScreenSize = () => {
+//       setIsMobile(window.innerWidth < 1024); // 1024px is Tailwind's 'lg' breakpoint
+//     };
+    
+//     // Check immediately on load
+//     checkScreenSize();
+    
+//     // Update if the user resizes the window
+//     window.addEventListener("resize", checkScreenSize);
+//     return () => window.removeEventListener("resize", checkScreenSize);
+//   }, []);
+
+//   const wakeupSpeechEngine = () => {
+//     if (typeof window !== "undefined" && "speechSynthesis" in window) {
+//       const u = new SpeechSynthesisUtterance("");
+//       u.volume = 0;
+//       window.speechSynthesis.speak(u);
+//     }
+//   };
+
+//   useEffect(() => {
+//     if (typeof window !== "undefined" && "speechSynthesis" in window) {
+//       window.speechSynthesis.getVoices();
+//     }
+
+//     const checkAuth = async () => {
+//       try {
+//         const res = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+//           { withCredentials: true }
+//         );
+        
+//         const userData = res.data;
+//         const email = userData.email;
+        
+//         setUserEmail(email);
+//         setUserFname(userData.fname);
+//         setUserRole(userData.role);
+//         setUserUniqueID(userData.unique_id);
+//         setLoggedInUser(userData);
+        
+//         if (email !== ALLOWED_EMAIL && !DIRECT_SHIFT_EMAILS.includes(email)) {
+//           router.push("/sign-in?error=access_denied");
+//           return;
+//         }
+        
+//         setIsAuthorized(true);
+        
+//         if (DIRECT_SHIFT_EMAILS.includes(email)) {
+//           setIsDirectShiftUser(true);
+//           setAccountNo(userData.unique_id);
+          
+//           try {
+//             const empRes = await fetch(
+//               `${API_BASE_URL}/clockin/employee/by-unique-id?account_no=${encodeURIComponent(userData.unique_id)}`
+//             );
+//             const empDataResponse = await empRes.json();
+            
+//             if (empRes.ok && empDataResponse.success) {
+//               const empData = empDataResponse.data;
+//               setEmployee(empData);
+
+//               if (isNewFaceUser) {
+//                 setShowFaceRegister(true);
+//                 setStep("face_register");
+//               } else if (
+//                 empData.current_attendance &&
+//                 empData.current_attendance.clock_in &&
+//                 !empData.current_attendance.clock_out &&
+//                 empData.current_shift
+//               ) {
+//                 setSelectedShift(empData.current_shift);
+//                 setClockInTime(empData.current_attendance.clock_in);
+//                 setIsClockedIn(true);
+//                 setPhotoType("clock_out");
+//                 setMessage(`Currently clocked in. Ready to clock out.`);
+//                 setStep("action");
+//               } else {
+//                 if (empData.frequent_shift) {
+//                   setFrequentShift(empData.frequent_shift);
+//                   setStep("frequent_shift_prompt");
+//                 } else {
+//                   setStep("shift");
+//                 }
+//               }
+//             } else {
+//               setMessage("Employee data not found. Please contact administrator.");
+//               setStep("face_scan");
+//             }
+//           } catch (err) {
+//             console.error("Failed to fetch employee data:", err);
+//             setMessage("Failed to load employee data.");
+//             setStep("face_scan");
+//           }
+//         } else {
+//           setStep("face_scan");
+//         }
+        
+//       } catch (err) {
+//         console.error("Auth check failed:", err);
+//         router.push("/sign-in?error=session_expired");
+//       } finally {
+//         setAuthChecked(true);
+//       }
+//     };
+//     checkAuth();
+//   }, [router]);
+
+//   useEffect(() => {
+//     if (!isAuthorized) return;
+//     const fetchShifts = async () => {
+//       try {
+//         const res = await fetch(`${API_BASE_URL}/clockin/shifts`);
+//         const data = await res.json();
+//         if (res.ok && Array.isArray(data)) {
+//           setAllShifts(data);
+//         } else {
+//           setAllShifts([]);
+//         }
+//       } catch (err) {
+//         console.error("Fetch shifts error", err);
+//         setAllShifts([]);
+//       }
+//     };
+//     fetchShifts();
+//   }, [isAuthorized]);
+
+//   // ═══════════════════════════════════════════════════════════
+//   // 🔄 NEW AUTOMATIC SHIFT FILTERING LOGIC
+//   // ═══════════════════════════════════════════════════════════
+//   const isGeneralUser = employee && !QA_TEAM_IDS.includes(String(employee.unique_id)) && !OFFICE_ADMIN_IDS.includes(String(employee.unique_id));
+
+//   const availableShifts = allShifts.filter((shift) => {
+//     if (!employee) return false;
+//     const empId = String(employee.unique_id);
+
+//     if (QA_TEAM_IDS.includes(empId)) {
+//       return shift.category_id === 2;
+//     } 
+    
+//     if (OFFICE_ADMIN_IDS.includes(empId)) {
+//       return shift.shift_name === 'ADMIN';
+//     } 
+    
+//     // Remaining users see general & non-general shifts (category 1 and 3)
+//     return (shift.category_id === 1 || shift.category_id === 3) && shift.shift_name !== 'ADMIN';
+//   });
+
+//   const generalShifts = availableShifts.filter(shift => shift.category_id === 1);
+//   const nonGeneralShifts = availableShifts.filter(shift => shift.category_id === 3);
+
+//   // Decide which shifts to render based on the current user type and tab
+//   const displayedShifts = isGeneralUser 
+//     ? (shiftTab === "General" ? generalShifts : nonGeneralShifts) 
+//     : availableShifts;
+
+//   const handleFaceMatched = async (employeeId) => {
+//     wakeupSpeechEngine();
+//     setLoading(true);
+//     setMessage("");
+//     setAccountNo(employeeId);
+
+//     try {
+//       const res = await fetch(
+//         `${API_BASE_URL}/clockin/employee/by-unique-id?account_no=${encodeURIComponent(employeeId)}`
+//       );
+//       const data = await res.json();
+
+//       if (!res.ok || !data.success) {
+//         setMessage("Employee not found. Please try entering your ID manually.");
+//         setStep("id");
+//         return;
+//       }
+
+//       const empData = data.data;
+      
+//       // Save data temporarily and show the confirmation screen directly
+//       setPendingEmployee(empData);
+//       setStep("confirm_identity");
+
+//     } catch (err) {
+//       setMessage("Network error. Please try again.");
+//       setStep("id");
+//       console.error(err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const handleConfirmIdentity = () => {
+//     setEmployee(pendingEmployee);
+//     setIsNewFaceUser(false);
+
+//     // Proceed to shift action
+//     if (
+//       pendingEmployee.current_attendance &&
+//       pendingEmployee.current_attendance.clock_in &&
+//       !pendingEmployee.current_attendance.clock_out &&
+//       pendingEmployee.current_shift
+//     ) {
+//       setSelectedShift(pendingEmployee.current_shift);
+//       setClockInTime(pendingEmployee.current_attendance.clock_in);
+//       setIsClockedIn(true);
+//       setPhotoType("clock_out");
+//       setMessage(`Currently clocked in. Ready to clock out.`);
+//       setStep("action");
+//     } else {
+//       if (pendingEmployee.frequent_shift) {
+//         setFrequentShift(pendingEmployee.frequent_shift);
+//         setStep("frequent_shift_prompt");
+//       } else {
+//         setStep("shift");
+//       }
+//     }
+//   };
+
+//   const handleCancelIdentity = () => {
+//     setPendingEmployee(null);
+//     setAccountNo("");
+//     setStep("face_scan");
+//   };
+
+//  const handleFaceNoMatch = () => {
+//     setIsNewFaceUser(true);
+//     setStep("id");
+//   };
+
+//   const handleFaceScanError = (error) => {
+//     console.error("Face scan error:", error);
+//     setStep("id");
+//   };
+
+//   const handleIdSubmit = async (e, forceRegister = false) => {
+//     e.preventDefault();
+//     wakeupSpeechEngine();
+//     if (!accountNo.trim()) return;
+//     setLoading(true);
+//     setMessage("");
+//     try {
+//       const res = await fetch(
+//         `${API_BASE_URL}/clockin/employee/by-unique-id?account_no=${encodeURIComponent(accountNo)}`
+//       );
+//       const data = await res.json();
+
+//       if (!res.ok || !data.success) {
+//         setMessage(data.message || "Employee not found");
+//         return;
+//       }
+
+//       const empData = data.data;
+//       setEmployee(empData);
+
+//       if (isNewFaceUser || forceRegister) {
+//         setShowFaceRegister(true);
+//         setStep("face_register");
+//       } else if (
+//         empData.current_attendance &&
+//         empData.current_attendance.clock_in &&
+//         !empData.current_attendance.clock_out &&
+//         empData.current_shift
+//       ) {
+//         setSelectedShift(empData.current_shift);
+//         setClockInTime(empData.current_attendance.clock_in);
+//         setIsClockedIn(true);
+//         setPhotoType("clock_out");
+//         setMessage(`Currently clocked in. Ready to clock out.`);
+//         setStep("action");
+//       } else {
+//         if (empData.frequent_shift) {
+//           setFrequentShift(empData.frequent_shift);
+//           setStep("frequent_shift_prompt");
+//         } else {
+//           setStep("shift");
+//         }
+//       }
+//     } catch (err) {
+//       setMessage("Network error. Please try again.");
+//       console.error(err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const handleFaceRegistered = () => {
+//     setShowFaceRegister(false);
+//     if (
+//       employee?.current_attendance &&
+//       employee.current_attendance.clock_in &&
+//       !employee.current_attendance.clock_out &&
+//       employee?.current_shift
+//     ) {
+//       setSelectedShift(employee.current_shift);
+//       setClockInTime(employee.current_attendance.clock_in);
+//       setIsClockedIn(true);
+//       setPhotoType("clock_out");
+//       setMessage(`Currently clocked in. Ready to clock out.`);
+//       setStep("action");
+//     } else {
+//       if (employee?.frequent_shift) {
+//         setFrequentShift(employee.frequent_shift);
+//         setStep("frequent_shift_prompt");
+//       } else {
+//         setStep("shift");
+//       }
+//     }
+//   };
+
+//   const handleFaceRegisterSkip = () => {
+//     setShowFaceRegister(false);
+//     if (
+//       employee?.current_attendance &&
+//       employee.current_attendance.clock_in &&
+//       !employee.current_attendance.clock_out &&
+//       employee?.current_shift
+//     ) {
+//       setSelectedShift(employee.current_shift);
+//       setClockInTime(employee.current_attendance.clock_in);
+//       setIsClockedIn(true);
+//       setPhotoType("clock_out");
+//       setMessage(`Currently clocked in. Ready to clock out.`);
+//       setStep("action");
+//     } else {
+//       if (employee?.frequent_shift) {
+//         setFrequentShift(employee.frequent_shift);
+//         setStep("frequent_shift_prompt");
+//       } else {
+//         setStep("shift");
+//       }
+//     }
+//   };
+
+//   const handleShiftSelection = (shift) => {
+//     setSelectedShift(shift);
+//   };
+
+//   const handlePhotoCapture = (dataUrl) => {
+//     setPhotoData(dataUrl);
+//     handleSubmitPhoto(dataUrl);
+//   };
+
+//   const handlePhotoRetake = () => {
+//     setPhotoData(null);
+//   };
+
+//   const formatTime = (value) => {
+//     if (!value) return "—";
+//     try {
+//       let timeStr = null;
+//       if (typeof value === "string" && value.includes("T")) {
+//         timeStr = value.split("T")[1].replace("Z", "").split(".")[0];
+//       } else if (typeof value === "string" && value.includes(" ") && value.includes(":")) {
+//         timeStr = value.split(" ")[1];
+//       } else if (typeof value === "string" && value.includes(":")) {
+//         timeStr = value;
+//       }
+//       if (timeStr) {
+//         const parts = timeStr.split(":");
+//         let hours   = parseInt(parts[0], 10);
+//         const mins  = (parts[1] || "00").padStart(2, "0");
+//         if (isNaN(hours)) return "—";
+//         const ampm = hours >= 12 ? "PM" : "AM";
+//         hours = hours % 12 || 12;
+//         return `${hours}:${mins} ${ampm}`;
+//       }
+//     } catch (e) {
+//       console.error("formatTime error:", e);
+//     }
+//     return "—";
+//   };
+
+//   const handleConfirmShift = async (overrideShift = null) => {
+//     wakeupSpeechEngine();
+    
+//     // Use the passed shift if available, otherwise fallback to the selected shift in state
+//     const targetShift = overrideShift || selectedShift;
+    
+//     if (!targetShift || !accountNo) {
+//       setMessage("Please select a shift and ensure your ID is entered.");
+//       return;
+//     }
+//     setLoading(true);
+//     setMessage("");
+//     try {
+//       const currentDate = new Date().toISOString().split("T")[0];
+//       const resStatus = await fetch(
+//         `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(accountNo)}&date=${currentDate}&shift_id=${targetShift.id}`
+//       );
+//       const dataStatus = await resStatus.json();
+
+//       const extractTime = (datetime) => {
+//         if (!datetime) return null;
+//         if (typeof datetime === "string" && datetime.length <= 8 && !datetime.includes("T")) {
+//           return datetime;
+//         }
+//         if (typeof datetime === "string" && datetime.includes("T")) {
+//           return datetime.split("T")[1].replace("Z", "").split(".")[0];
+//         }
+//         if (typeof datetime === "string" && datetime.includes(" ")) {
+//           return datetime.split(" ")[1];
+//         }
+//         return datetime;
+//       };
+
+//       if (!resStatus.ok || !dataStatus.success) {
+//         setIsClockedIn(false);
+//         setClockInTime(null);
+//         setClockOutTime(null);
+//         setPhotoType("clock_in");
+//         setMessage(`Ready to clock in for ${targetShift.shift_name}`);
+//         setStep("action");
+//         return;
+//       }
+
+//       const status   = dataStatus.data.status;
+//       const clockIn  = dataStatus.data.clock_in;
+//       const clockOut = dataStatus.data.clock_out;
+      
+//       let currentStatus = status; 
+
+//       if (targetShift.shift_name !== 'ADMIN') {
+//         const now = new Date();
+//         const [startH, startM] = targetShift.start_time.split(':').map(Number);
+//         const [endH, endM] = targetShift.end_time.split(':').map(Number);
+
+//         let closestStartDiff = Infinity;
+//         let closestEndDiff = Infinity;
+
+//         [-1, 0, 1].forEach(offset => {
+//           const tempStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, startH, startM, 0);
+//           const tempEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, endH, endM, 0);
+          
+//           if (endH < startH || targetShift.is_cross_midnight === 1) {
+//             tempEnd.setDate(tempEnd.getDate() + 1);
+//           }
+
+//           const sDiff = (now - tempStart) / (1000 * 60 * 60); 
+//           if (Math.abs(sDiff) < Math.abs(closestStartDiff)) {
+//             closestStartDiff = sDiff;
+//           }
+
+//           const eDiff = (now - tempEnd) / (1000 * 60 * 60); 
+//           if (Math.abs(eDiff) < Math.abs(closestEndDiff)) {
+//             closestEndDiff = eDiff;
+//           }
+//         });
+
+//         if (currentStatus === "clocked_in" && closestEndDiff > 6) {
+//           currentStatus = "not_clocked_in";
+//         }
+
+//         if (currentStatus === "not_clocked_in" || currentStatus === "clocked_out") {
+//           if (closestStartDiff < -2) {
+//             setMessage(`🚫 Cannot clock in yet. Clock-in opens 2 hours before your shift starts (${formatTime(targetShift.start_time)}). Please Contact Admin!`);
+//             setLoading(false);
+//             return;
+//           }
+//           if (closestStartDiff > 2) {
+//             setMessage(`🚫 Clock-in closed. You are more than 2 hours late for your shift (${formatTime(targetShift.start_time)}). Please Contact Admin!`);
+//             setLoading(false);
+//             return;
+//           }
+//         }
+//       }
+
+//       if (currentStatus === "clocked_in") {
+
+//          // ---- NEW: 15 MINUTE CLOCK-OUT RESTRICTION ----
+//         if (clockIn) {
+//           const clockInDate = new Date(clockIn);
+//           const diffMins = (new Date() - clockInDate) / (1000 * 60);
+          
+//           if (diffMins >= 0 && diffMins < 15) {
+//             const remaining = Math.ceil(15 - diffMins);
+//             setMessage(`🚫 Cannot clock out yet. Please wait ${remaining} more minute(s).`);
+//             setLoading(false);
+//             return;
+//           }
+//         }
+
+
+//         setIsClockedIn(true);
+//         setClockInTime(extractTime(clockIn));
+//         setClockOutTime(null);
+//         setPhotoType("clock_out");
+//         setMessage("Currently clocked in. Ready to clock out.");
+//         setStep("action");
+//       } else if (currentStatus === "clocked_out") {
+//         setIsClockedIn(false);
+//         setClockInTime(extractTime(clockIn));
+//         setClockOutTime(extractTime(clockOut));
+//         setPhotoType("clock_in");
+//         setMessage("Already clocked out. Ready to clock in again.");
+//         setStep("action");
+//       } else {
+//         setIsClockedIn(false);
+//         setClockInTime(null);
+//         setClockOutTime(null);
+//         setPhotoType("clock_in");
+
+//                 // ---- NEW: Admin Date Prompt Interception ----
+//         if (targetShift.shift_name === 'ADMIN') {
+//           setMessage(`Please select the attendance date for this shift.`);
+//           setStep("admin_date_prompt"); // Go to new step instead of action
+//           return;
+//         }
+        
+//         if (status === "clocked_in" && currentStatus === "not_clocked_in") {
+//           setMessage(`Previous clock-out missed. Ready to clock in for ${targetShift.shift_name}`);
+//         } else {
+//           setMessage(`Ready to clock in for ${targetShift.shift_name}`);
+//         }
+        
+//         setStep("action");
+//       }
+//     } catch (err) {
+//       setMessage("Failed to check attendance status. Please try again.");
+//       console.error(err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const resetSession = () => {
+//     if (isDirectShiftUser) {
+//       setStep("shift");
+//       setSelectedShift(null);
+//       setFrequentShift(null);
+//       setMessage("");
+//       setPhotoCaptured(false);
+//       setAdminSelectedDate(null);
+//       setPhotoData(null);
+//       setIsClockedIn(false);
+//       setClockInTime(null);
+//       setClockOutTime(null);
+//       setPhotoType("clock_in");
+//       setShiftTab("General");
+//     } else {
+//       setStep("face_scan");
+//       setAccountNo("");
+//       setEmployee(null);
+//       setPendingEmployee(null);
+//       setSelectedShift(null);
+//       setFrequentShift(null);
+//       setMessage("");
+//       setPhotoCaptured(false);
+//       setPhotoData(null);
+//       setIsClockedIn(false);
+//       setClockInTime(null);
+//       setClockOutTime(null);
+//       setPhotoType("clock_in");
+//       setIsNewFaceUser(false);
+//       setShowFaceRegister(false);
+//       setShiftTab("General");
+//     }
+//   };
+
+//   const speakMessage = (text) => {
+//     if (typeof window !== "undefined" && "speechSynthesis" in window) {
+//       window.speechSynthesis.cancel(); 
+//       const utterance = new SpeechSynthesisUtterance(text);
+//       utterance.rate = 1;
+//       utterance.pitch = 1;
+//       utterance.volume = 1;
+//       window.speechSynthesis.speak(utterance);
+//     }
+//   };
+
+//   const handleSubmitPhoto = async (directImgData) => {
+//     const dataToSubmit = typeof directImgData === 'string' ? directImgData : photoData;
+//     if (!dataToSubmit || !selectedShift) return;
+
+    
+    
+//     setLoading(true);
+//     setMessage("");
+//     try {
+//       const response = await fetch(dataToSubmit);
+//       const blob     = await response.blob();
+//       const formData = new FormData();
+//       formData.append("photo",             blob, "photo.jpg");
+//       formData.append("account_no",        accountNo);
+//       formData.append("photo_type",        photoType);
+//       formData.append("selected_shift_id", selectedShift.id);
+      
+//       // ✅ This passes the selected date specifically for ADMIN clock-ins
+//       if (adminSelectedDate && photoType === "clock_in") {
+//         formData.append("admin_attendance_date", adminSelectedDate);
+//       }
+//       const res  = await fetch(
+//         `${API_BASE_URL}/clockin/attendance/clock?account_no=${encodeURIComponent(accountNo)}&photo_type=${photoType}`,
+//         { method: "POST", body: formData }
+//       );
+//       const data = await res.json();
+
+//       if (!res.ok || !data.success) {
+//         setMessage(data.message || "Action failed");
+//         return;
+//       }
+
+//       const extractTime = (datetime) => {
+//         if (!datetime) return null;
+//         if (typeof datetime === "string" && datetime.length <= 8 && !datetime.includes("T")) {
+//           return datetime;
+//         }
+//         if (typeof datetime === "string" && datetime.includes("T")) {
+//           return datetime.split("T")[1].replace("Z", "").split(".")[0];
+//         }
+//         if (typeof datetime === "string" && datetime.includes(" ")) {
+//           return datetime.split(" ")[1];
+//         }
+//         return datetime;
+//       };
+
+//       const safeClockIn  = extractTime(data.data?.clock_in);
+//       const safeClockOut = extractTime(data.data?.clock_out);
+
+//       if (safeClockOut) {
+//         setClockInTime(safeClockIn);
+//         setClockOutTime(safeClockOut);
+//         setIsClockedIn(false);
+//         setPhotoType("clock_in");
+//         setMessage("✅ Clocked out successfully! Redirecting...");
+//         setPhotoCaptured(true);
+//         speakMessage("Good bye");
+//         // speakMessage("Clock out successful");
+//         setTimeout(() => {
+//           resetSession();
+//         }, 2500);
+//       } else {
+//         setClockInTime(safeClockIn);
+//         setClockOutTime(null);
+//         setIsClockedIn(true);
+//         setPhotoType("clock_out");
+//         setMessage("✅ Clocked in successfully! Redirecting...");
+//         setPhotoCaptured(true);
+//         speakMessage("Hi, looking good.");
+//         // speakMessage("Clock in successful");
+//         setTimeout(() => {
+//           resetSession();
+//         }, 2500);
+//       }
+//     } catch (err) {
+//       setMessage("Failed to process. Please try again.");
+//       console.error(err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -29,8 +751,8 @@ const DIRECT_SHIFT_EMAILS = [
 ];
 
 // 🔴 ADD YOUR SPECIFIC EMPLOYEE IDs HERE 🔴
-const QA_TEAM_IDS = ["1QD211Q", "J9CI294", "L48FR84","P0623XZ"]; // Replace with actual QA employee IDs
-const OFFICE_ADMIN_IDS = ["8P4YX26", "16YM0V6"]; // Replace with actual Office Admin IDs
+const QA_TEAM_IDS = ["1QD211Q", "J9CI294", "L48FR84", "P0623XZ"];
+const OFFICE_ADMIN_IDS = ["8P4YX26", "16YM0V6"];
 
 export default function ClockPage() {
   const router = useRouter();
@@ -41,7 +763,7 @@ export default function ClockPage() {
   const [employee, setEmployee] = useState(null);
   const [allShifts, setAllShifts] = useState([]);
   const [selectedShift, setSelectedShift] = useState(null);
-  const [frequentShift, setFrequentShift] = useState(null); // Added state for frequent shift
+  const [frequentShift, setFrequentShift] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isClockedIn, setIsClockedIn] = useState(false);
@@ -50,11 +772,10 @@ export default function ClockPage() {
   const [photoCaptured, setPhotoCaptured] = useState(false);
   const [photoData, setPhotoData] = useState(null);
   const [photoType, setPhotoType] = useState("clock_in");
-  
+
   const [showFaceRegister, setShowFaceRegister] = useState(false);
   const [isNewFaceUser, setIsNewFaceUser] = useState(false);
-  
-  // Toggle tab for general users
+
   const [shiftTab, setShiftTab] = useState("General");
 
   const [loggedInUser, setLoggedInUser] = useState(null);
@@ -64,22 +785,17 @@ export default function ClockPage() {
   const [userRole, setUserRole] = useState(null);
   const [isDirectShiftUser, setIsDirectShiftUser] = useState(false);
 
-  // Temporarily holds the scanned user until they click "Yes, that's me"
   const [pendingEmployee, setPendingEmployee] = useState(null);
 
   const [isMobile, setIsMobile] = useState(false);
-// Add these near your other state variables
+
   const [adminSelectedDate, setAdminSelectedDate] = useState(null);
-  // Add this useEffect to detect screen size
+
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 1024); // 1024px is Tailwind's 'lg' breakpoint
+      setIsMobile(window.innerWidth < 1024);
     };
-    
-    // Check immediately on load
     checkScreenSize();
-    
-    // Update if the user resizes the window
     window.addEventListener("resize", checkScreenSize);
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
@@ -99,37 +815,38 @@ export default function ClockPage() {
 
     const checkAuth = async () => {
       try {
-        const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
-          { withCredentials: true }
-        );
-        
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`, {
+          withCredentials: true,
+        });
+
         const userData = res.data;
         const email = userData.email;
-        
+
         setUserEmail(email);
         setUserFname(userData.fname);
         setUserRole(userData.role);
         setUserUniqueID(userData.unique_id);
         setLoggedInUser(userData);
-        
+
         if (email !== ALLOWED_EMAIL && !DIRECT_SHIFT_EMAILS.includes(email)) {
           router.push("/sign-in?error=access_denied");
           return;
         }
-        
+
         setIsAuthorized(true);
-        
+
         if (DIRECT_SHIFT_EMAILS.includes(email)) {
           setIsDirectShiftUser(true);
           setAccountNo(userData.unique_id);
-          
+
           try {
             const empRes = await fetch(
-              `${API_BASE_URL}/clockin/employee/by-unique-id?account_no=${encodeURIComponent(userData.unique_id)}`
+              `${API_BASE_URL}/clockin/employee/by-unique-id?account_no=${encodeURIComponent(
+                userData.unique_id
+              )}`
             );
             const empDataResponse = await empRes.json();
-            
+
             if (empRes.ok && empDataResponse.success) {
               const empData = empDataResponse.data;
               setEmployee(empData);
@@ -169,7 +886,6 @@ export default function ClockPage() {
         } else {
           setStep("face_scan");
         }
-        
       } catch (err) {
         console.error("Auth check failed:", err);
         router.push("/sign-in?error=session_expired");
@@ -199,10 +915,10 @@ export default function ClockPage() {
     fetchShifts();
   }, [isAuthorized]);
 
-  // ═══════════════════════════════════════════════════════════
-  // 🔄 NEW AUTOMATIC SHIFT FILTERING LOGIC
-  // ═══════════════════════════════════════════════════════════
-  const isGeneralUser = employee && !QA_TEAM_IDS.includes(String(employee.unique_id)) && !OFFICE_ADMIN_IDS.includes(String(employee.unique_id));
+  const isGeneralUser =
+    employee &&
+    !QA_TEAM_IDS.includes(String(employee.unique_id)) &&
+    !OFFICE_ADMIN_IDS.includes(String(employee.unique_id));
 
   const availableShifts = allShifts.filter((shift) => {
     if (!employee) return false;
@@ -210,22 +926,22 @@ export default function ClockPage() {
 
     if (QA_TEAM_IDS.includes(empId)) {
       return shift.category_id === 2;
-    } 
-    
+    }
+
     if (OFFICE_ADMIN_IDS.includes(empId)) {
-      return shift.shift_name === 'ADMIN';
-    } 
-    
-    // Remaining users see general & non-general shifts (category 1 and 3)
-    return (shift.category_id === 1 || shift.category_id === 3) && shift.shift_name !== 'ADMIN';
+      return shift.shift_name === "ADMIN";
+    }
+
+    return (shift.category_id === 1 || shift.category_id === 3) && shift.shift_name !== "ADMIN";
   });
 
-  const generalShifts = availableShifts.filter(shift => shift.category_id === 1);
-  const nonGeneralShifts = availableShifts.filter(shift => shift.category_id === 3);
+  const generalShifts = availableShifts.filter((shift) => shift.category_id === 1);
+  const nonGeneralShifts = availableShifts.filter((shift) => shift.category_id === 3);
 
-  // Decide which shifts to render based on the current user type and tab
-  const displayedShifts = isGeneralUser 
-    ? (shiftTab === "General" ? generalShifts : nonGeneralShifts) 
+  const displayedShifts = isGeneralUser
+    ? shiftTab === "General"
+      ? generalShifts
+      : nonGeneralShifts
     : availableShifts;
 
   const handleFaceMatched = async (employeeId) => {
@@ -247,11 +963,9 @@ export default function ClockPage() {
       }
 
       const empData = data.data;
-      
-      // Save data temporarily and show the confirmation screen directly
+
       setPendingEmployee(empData);
       setStep("confirm_identity");
-
     } catch (err) {
       setMessage("Network error. Please try again.");
       setStep("id");
@@ -265,7 +979,6 @@ export default function ClockPage() {
     setEmployee(pendingEmployee);
     setIsNewFaceUser(false);
 
-    // Proceed to shift action
     if (
       pendingEmployee.current_attendance &&
       pendingEmployee.current_attendance.clock_in &&
@@ -294,7 +1007,7 @@ export default function ClockPage() {
     setStep("face_scan");
   };
 
- const handleFaceNoMatch = () => {
+  const handleFaceNoMatch = () => {
     setIsNewFaceUser(true);
     setStep("id");
   };
@@ -429,8 +1142,8 @@ export default function ClockPage() {
       }
       if (timeStr) {
         const parts = timeStr.split(":");
-        let hours   = parseInt(parts[0], 10);
-        const mins  = (parts[1] || "00").padStart(2, "0");
+        let hours = parseInt(parts[0], 10);
+        const mins = (parts[1] || "00").padStart(2, "0");
         if (isNaN(hours)) return "—";
         const ampm = hours >= 12 ? "PM" : "AM";
         hours = hours % 12 || 12;
@@ -444,10 +1157,9 @@ export default function ClockPage() {
 
   const handleConfirmShift = async (overrideShift = null) => {
     wakeupSpeechEngine();
-    
-    // Use the passed shift if available, otherwise fallback to the selected shift in state
+
     const targetShift = overrideShift || selectedShift;
-    
+
     if (!targetShift || !accountNo) {
       setMessage("Please select a shift and ensure your ID is entered.");
       return;
@@ -457,7 +1169,9 @@ export default function ClockPage() {
     try {
       const currentDate = new Date().toISOString().split("T")[0];
       const resStatus = await fetch(
-        `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(accountNo)}&date=${currentDate}&shift_id=${targetShift.id}`
+        `${API_BASE_URL}/clockin/attendance/status?account_no=${encodeURIComponent(
+          accountNo
+        )}&date=${currentDate}&shift_id=${targetShift.id}`
       );
       const dataStatus = await resStatus.json();
 
@@ -485,34 +1199,34 @@ export default function ClockPage() {
         return;
       }
 
-      const status   = dataStatus.data.status;
-      const clockIn  = dataStatus.data.clock_in;
+      const status = dataStatus.data.status;
+      const clockIn = dataStatus.data.clock_in;
       const clockOut = dataStatus.data.clock_out;
-      
-      let currentStatus = status; 
 
-      if (targetShift.shift_name !== 'ADMIN') {
+      let currentStatus = status;
+
+      if (targetShift.shift_name !== "ADMIN") {
         const now = new Date();
-        const [startH, startM] = targetShift.start_time.split(':').map(Number);
-        const [endH, endM] = targetShift.end_time.split(':').map(Number);
+        const [startH, startM] = targetShift.start_time.split(":").map(Number);
+        const [endH, endM] = targetShift.end_time.split(":").map(Number);
 
         let closestStartDiff = Infinity;
         let closestEndDiff = Infinity;
 
-        [-1, 0, 1].forEach(offset => {
+        [-1, 0, 1].forEach((offset) => {
           const tempStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, startH, startM, 0);
           const tempEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, endH, endM, 0);
-          
+
           if (endH < startH || targetShift.is_cross_midnight === 1) {
             tempEnd.setDate(tempEnd.getDate() + 1);
           }
 
-          const sDiff = (now - tempStart) / (1000 * 60 * 60); 
+          const sDiff = (now - tempStart) / (1000 * 60 * 60);
           if (Math.abs(sDiff) < Math.abs(closestStartDiff)) {
             closestStartDiff = sDiff;
           }
 
-          const eDiff = (now - tempEnd) / (1000 * 60 * 60); 
+          const eDiff = (now - tempEnd) / (1000 * 60 * 60);
           if (Math.abs(eDiff) < Math.abs(closestEndDiff)) {
             closestEndDiff = eDiff;
           }
@@ -524,12 +1238,20 @@ export default function ClockPage() {
 
         if (currentStatus === "not_clocked_in" || currentStatus === "clocked_out") {
           if (closestStartDiff < -2) {
-            setMessage(`🚫 Cannot clock in yet. Clock-in opens 2 hours before your shift starts (${formatTime(targetShift.start_time)}). Please Contact Admin!`);
+            setMessage(
+              `🚫 Cannot clock in yet. Clock-in opens 2 hours before your shift starts (${formatTime(
+                targetShift.start_time
+              )}). Please Contact Admin!`
+            );
             setLoading(false);
             return;
           }
           if (closestStartDiff > 2) {
-            setMessage(`🚫 Clock-in closed. You are more than 2 hours late for your shift (${formatTime(targetShift.start_time)}). Please Contact Admin!`);
+            setMessage(
+              `🚫 Clock-in closed. You are more than 2 hours late for your shift (${formatTime(
+                targetShift.start_time
+              )}). Please Contact Admin!`
+            );
             setLoading(false);
             return;
           }
@@ -537,12 +1259,13 @@ export default function ClockPage() {
       }
 
       if (currentStatus === "clocked_in") {
-
-         // ---- NEW: 15 MINUTE CLOCK-OUT RESTRICTION ----
+        // ✅ 15-minute restriction (UI) using IST parsing
         if (clockIn) {
-          const clockInDate = new Date(clockIn);
-          const diffMins = (new Date() - clockInDate) / (1000 * 60);
-          
+          const inStr = String(clockIn).replace(" ", "T"); // "YYYY-MM-DDTHH:mm:ss"
+          const inIST = new Date(inStr + "+05:30"); // treat DB datetime as IST
+
+          const diffMins = (Date.now() - inIST.getTime()) / 60000;
+
           if (diffMins >= 0 && diffMins < 15) {
             const remaining = Math.ceil(15 - diffMins);
             setMessage(`🚫 Cannot clock out yet. Please wait ${remaining} more minute(s).`);
@@ -550,7 +1273,6 @@ export default function ClockPage() {
             return;
           }
         }
-
 
         setIsClockedIn(true);
         setClockInTime(extractTime(clockIn));
@@ -571,19 +1293,18 @@ export default function ClockPage() {
         setClockOutTime(null);
         setPhotoType("clock_in");
 
-                // ---- NEW: Admin Date Prompt Interception ----
-        if (targetShift.shift_name === 'ADMIN') {
+        if (targetShift.shift_name === "ADMIN") {
           setMessage(`Please select the attendance date for this shift.`);
-          setStep("admin_date_prompt"); // Go to new step instead of action
+          setStep("admin_date_prompt");
           return;
         }
-        
+
         if (status === "clocked_in" && currentStatus === "not_clocked_in") {
           setMessage(`Previous clock-out missed. Ready to clock in for ${targetShift.shift_name}`);
         } else {
           setMessage(`Ready to clock in for ${targetShift.shift_name}`);
         }
-        
+
         setStep("action");
       }
     } catch (err) {
@@ -630,7 +1351,7 @@ export default function ClockPage() {
 
   const speakMessage = (text) => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel(); 
+      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 1;
       utterance.pitch = 1;
@@ -640,28 +1361,28 @@ export default function ClockPage() {
   };
 
   const handleSubmitPhoto = async (directImgData) => {
-    const dataToSubmit = typeof directImgData === 'string' ? directImgData : photoData;
+    const dataToSubmit = typeof directImgData === "string" ? directImgData : photoData;
     if (!dataToSubmit || !selectedShift) return;
 
-    
-    
     setLoading(true);
     setMessage("");
     try {
       const response = await fetch(dataToSubmit);
-      const blob     = await response.blob();
+      const blob = await response.blob();
       const formData = new FormData();
-      formData.append("photo",             blob, "photo.jpg");
-      formData.append("account_no",        accountNo);
-      formData.append("photo_type",        photoType);
+      formData.append("photo", blob, "photo.jpg");
+      formData.append("account_no", accountNo);
+      formData.append("photo_type", photoType);
       formData.append("selected_shift_id", selectedShift.id);
-      
-      // ✅ This passes the selected date specifically for ADMIN clock-ins
+
       if (adminSelectedDate && photoType === "clock_in") {
         formData.append("admin_attendance_date", adminSelectedDate);
       }
-      const res  = await fetch(
-        `${API_BASE_URL}/clockin/attendance/clock?account_no=${encodeURIComponent(accountNo)}&photo_type=${photoType}`,
+
+      const res = await fetch(
+        `${API_BASE_URL}/clockin/attendance/clock?account_no=${encodeURIComponent(
+          accountNo
+        )}&photo_type=${photoType}`,
         { method: "POST", body: formData }
       );
       const data = await res.json();
@@ -685,7 +1406,7 @@ export default function ClockPage() {
         return datetime;
       };
 
-      const safeClockIn  = extractTime(data.data?.clock_in);
+      const safeClockIn = extractTime(data.data?.clock_in);
       const safeClockOut = extractTime(data.data?.clock_out);
 
       if (safeClockOut) {
@@ -696,7 +1417,6 @@ export default function ClockPage() {
         setMessage("✅ Clocked out successfully! Redirecting...");
         setPhotoCaptured(true);
         speakMessage("Good bye");
-        // speakMessage("Clock out successful");
         setTimeout(() => {
           resetSession();
         }, 2500);
@@ -708,7 +1428,6 @@ export default function ClockPage() {
         setMessage("✅ Clocked in successfully! Redirecting...");
         setPhotoCaptured(true);
         speakMessage("Hi, looking good.");
-        // speakMessage("Clock in successful");
         setTimeout(() => {
           resetSession();
         }, 2500);
@@ -720,6 +1439,7 @@ export default function ClockPage() {
       setLoading(false);
     }
   };
+
 
   if (!authChecked) {
     return (
