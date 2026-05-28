@@ -210,11 +210,11 @@ export default function AttendanceRecords({ uniqueId, employeeName }) {
             <p className="text-2xl font-bold text-gray-900">{attendanceData.summary.in_progress_sessions}</p>
             <p className="text-xs text-gray-500 font-medium">In Progress</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+          {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
             <div className="inline-flex items-center justify-center w-10 h-10 bg-purple-100 rounded-full mb-2"><FaClock className="text-purple-600" /></div>
             <p className="text-2xl font-bold text-gray-900">{attendanceData.summary.total_working_hours}</p>
             <p className="text-xs text-gray-500 font-medium">Total Hours</p>
-          </div>
+          </div> */}
         </div>
       )}
 
@@ -253,7 +253,7 @@ export default function AttendanceRecords({ uniqueId, employeeName }) {
                     <th className="px-5 py-4 text-center font-semibold">Late In</th>
                     <th className="px-5 py-4 text-center font-semibold">Early Out</th>
                     <th className="px-5 py-4 text-center font-semibold">Penalty</th>
-                    <th className="px-5 py-4 text-center font-semibold">Hours</th>
+                    {/* <th className="px-5 py-4 text-center font-semibold">Hours</th> */}
                     <th className="px-5 py-4 text-center font-semibold">Status</th>
                   </tr>
                 </thead>
@@ -303,7 +303,7 @@ export default function AttendanceRecords({ uniqueId, employeeName }) {
                           )}
                         </td>
 
-                        <td className="px-5 py-3.5 text-center font-semibold text-gray-800 whitespace-nowrap">{record.working_hours?.display || "—"}</td>
+                        {/* <td className="px-5 py-3.5 text-center font-semibold text-gray-800 whitespace-nowrap">{record.working_hours?.display || "—"}</td> */}
                         <td className="px-5 py-3.5 text-center whitespace-nowrap">
                           {record.status === "completed" ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold"><FaCheckCircle className="text-[10px]" />Done</span>
