@@ -176,7 +176,7 @@ export default function FloatingChatBox({ targetUser, onClose }) {
     formData.append("file", file);
 
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/upload-media`, formData, { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true });
+      const res = await axios.post(`${API_BASE_URL}/api/chat/api/upload-media`, formData, { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true });
       socket.emit("send_message", { receiverId: targetUser.userId, message: newMessage || "Sent an attachment", senderName: userFname, attachmentUrl: res.data.url, attachmentType: res.data.type });
       setNewMessage("");
       setShowEmojiPicker(false);
