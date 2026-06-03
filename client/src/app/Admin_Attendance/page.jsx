@@ -3003,7 +3003,7 @@ const exportMonthlyMissedClockInReport = async () => {
 
   try {
     const res = await fetch(
-      `${API_BASE}/clockin/admin/report/monthly-missed-clockin?year=${monthlyYear}&month=${monthlyMonth}&start_date=${monthlyStartDate}`
+      `${API_BASE}/clockin/admin/monthly-missed-clockin?year=${monthlyYear}&month=${monthlyMonth}&start_date=${monthlyStartDate}`
     );
     const result = await res.json();
 
@@ -3233,14 +3233,284 @@ const exportMonthlyMissedClockInReport = async () => {
 
 // ===== NEW report #2 (Excel): Penalty >= threshold =====
 // Improved: LATE/EARLY dates are UNIQUE (double shift safe)
+// const exportMonthlyPenaltyOverReport = async (threshold = 100) => {
+//   if (!canManage) return;
+
+//   try {
+//     // ✅ FIX 1: Use the NEW report API endpoint
+//     const res = await fetch(
+//       `${API_BASE}/clockin/admin/report/monthly-penalty-over?year=${monthlyYear}&month=${monthlyMonth}&start_date=${monthlyStartDate}&threshold=${threshold}`
+//     );
+//     const result = await res.json();
+
+//     if (!result.success || !result.data) {
+//       alert(result.message || 'Failed to fetch penalty report.');
+//       return;
+//     }
+
+//     const employees = result.data.employees || [];
+//     const endDate = result.data.end_date || '';
+//     const th = result.data.threshold ?? threshold;
+
+//     const wb = new ExcelJS.Workbook();
+//     wb.creator = 'KIOTEL Attendance System';
+
+//     const joinDatesWrapped = (dates) => {
+//       const perLine = 8;
+//       const chunks = [];
+//       for (let i = 0; i < dates.length; i += perLine) {
+//         chunks.push(dates.slice(i, i + perLine).join(', '));
+//       }
+//       return chunks.join('\n');
+//     };
+
+//     // -------------------------
+//     // Sheet 1: SUMMARY
+//     // -------------------------
+//     const wsSummary = wb.addWorksheet('Summary', {
+//       views: [{ state: 'frozen', ySplit: 4 }],
+//       pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
+//     });
+
+//     wsSummary.mergeCells('A1:I1');
+//     const title = wsSummary.getCell('A1');
+//     title.value = `KIOTEL — Monthly Penalty Report (≥ ${th} min) — Summary`;
+//     title.font = { size: 18, bold: true, color: { argb: COLORS.white } };
+//     title.fill = solidFill(COLORS.primary);
+//     title.alignment = { horizontal: 'center', vertical: 'middle' };
+//     wsSummary.getRow(1).height = 34;
+
+//     wsSummary.mergeCells('A2:I2');
+//     const subtitle = wsSummary.getCell('A2');
+//     subtitle.value = `${monthNames[monthlyMonth - 1]} ${monthlyYear} (From ${monthlyStartDate} to ${endDate})`;
+//     subtitle.font = { size: 11, bold: true, color: { argb: COLORS.gray700 } };
+//     subtitle.fill = solidFill(COLORS.primaryLight);
+//     subtitle.alignment = { horizontal: 'center', vertical: 'middle' };
+//     wsSummary.getRow(2).height = 22;
+
+//     wsSummary.addRow([]);
+
+//     const headers = [
+//       'Employee ID',
+//       'Name',
+//       'Total Penalty (min)',
+//       'Late Count (Days)',
+//       'Late Dates (ALL)',
+//       'Early Count (Days)',
+//       'Early Dates (ALL)',
+//       'Records (Shifts)',
+//       'Notes'
+//     ];
+
+//     const headerRow = wsSummary.addRow(headers);
+//     headerRow.eachCell((cell) => {
+//       cell.font = { bold: true, color: { argb: COLORS.white }, size: 10 };
+//       cell.fill = solidFill(COLORS.primaryDark);
+//       cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+//       cell.border = thinBorder(COLORS.primaryDark);
+//     });
+//     wsSummary.getRow(headerRow.number).height = 24;
+
+//     employees.forEach((emp) => {
+//       const rows = Array.isArray(emp.rows) ? emp.rows : [];
+//       if (rows.length === 0) return;
+
+//       // ✅ FIX 2: UNIQUE dates (double shift safe)
+//       const lateDateSet = new Set(
+//         rows
+//           .filter((r) => (Number(r.late_min) || 0) > 0)
+//           .map((r) => r.date)
+//           .filter(Boolean)
+//       );
+
+//       const earlyDateSet = new Set(
+//         rows
+//           .filter((r) => (Number(r.early_min) || 0) > 0)
+//           .map((r) => r.date)
+//           .filter(Boolean)
+//       );
+
+//       const lateDates = Array.from(lateDateSet).sort();
+//       const earlyDates = Array.from(earlyDateSet).sort();
+
+//       const lateDatesText = lateDates.length ? joinDatesWrapped(lateDates) : '—';
+//       const earlyDatesText = earlyDates.length ? joinDatesWrapped(earlyDates) : '—';
+
+//       const totalPenalty = Number(emp.total_penalty_min) || 0;
+
+//       const row = wsSummary.addRow([
+//         emp.employee_id,
+//         emp.name,
+//         totalPenalty,
+//         lateDates.length,   // ✅ count days
+//         lateDatesText,
+//         earlyDates.length,  // ✅ count days
+//         earlyDatesText,
+//         rows.length,        // ✅ number of penalized shift rows
+//         ''
+//       ]);
+
+//       row.eachCell((cell) => {
+//         cell.border = thinBorder(COLORS.gray200);
+//         cell.font = { size: 10, color: { argb: COLORS.gray900 } };
+//         cell.alignment = { vertical: 'top', horizontal: 'center', wrapText: true };
+//       });
+
+//       row.getCell(2).alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
+//       row.getCell(5).alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
+//       row.getCell(7).alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
+
+//       row.getCell(3).font = { bold: true, color: { argb: COLORS.purple }, size: 10 };
+//       row.getCell(3).fill = solidFill(COLORS.purpleLight);
+
+//       if (lateDates.length > 0) {
+//         row.getCell(4).font = { bold: true, color: { argb: COLORS.red }, size: 10 };
+//         row.getCell(4).fill = solidFill(COLORS.redLight);
+//         row.getCell(5).fill = solidFill(COLORS.redLight);
+//       }
+//       if (earlyDates.length > 0) {
+//         row.getCell(6).font = { bold: true, color: { argb: COLORS.orange }, size: 10 };
+//         row.getCell(6).fill = solidFill(COLORS.orangeLight);
+//         row.getCell(7).fill = solidFill(COLORS.orangeLight);
+//       }
+
+//       const linesLate = String(lateDatesText).split('\n').length;
+//       const linesEarly = String(earlyDatesText).split('\n').length;
+//       const lines = Math.max(linesLate, linesEarly, 1);
+//       wsSummary.getRow(row.number).height = Math.min(220, 18 + lines * 14);
+//     });
+
+//     wsSummary.columns = [
+//       { width: 14 },
+//       { width: 26 },
+//       { width: 18 },
+//       { width: 16 },
+//       { width: 45 },
+//       { width: 16 },
+//       { width: 45 },
+//       { width: 16 },
+//       { width: 18 }
+//     ];
+
+//     wsSummary.autoFilter = {
+//       from: { row: headerRow.number, column: 1 },
+//       to: { row: headerRow.number, column: headers.length }
+//     };
+
+//     // -------------------------
+//     // Sheet 2: DETAILS (same as yours)
+//     // -------------------------
+//     const wsDetails = wb.addWorksheet('Details', {
+//       views: [{ state: 'frozen', ySplit: 1 }],
+//       pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
+//     });
+
+//     const detailHeaders = [
+//       'Employee ID',
+//       'Name',
+//       'Total Penalty (min)',
+//       'Date',
+//       'Shift',
+//       'Clock In',
+//       'Clock Out',
+//       'Late (min)',
+//       'Early (min)',
+//       'Penalty (min)',
+//       'Waived Late?'
+//     ];
+
+//     const detailHeaderRow = wsDetails.addRow(detailHeaders);
+//     detailHeaderRow.eachCell((cell) => {
+//       cell.font = { bold: true, color: { argb: COLORS.white }, size: 10 };
+//       cell.fill = solidFill(COLORS.primaryDark);
+//       cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+//       cell.border = thinBorder(COLORS.primaryDark);
+//     });
+
+//     employees.forEach((emp) => {
+//       const rows = Array.isArray(emp.rows) ? emp.rows : [];
+//       if (rows.length === 0) return;
+
+//       rows.forEach((r, i) => {
+//         const row = wsDetails.addRow([
+//           emp.employee_id,
+//           emp.name,
+//           i === 0 ? (Number(emp.total_penalty_min) || 0) : '',
+//           r.date || '—',
+//           r.shift_name || '—',
+//           r.clock_in || '—',
+//           r.clock_out || '—',
+//           Number(r.late_min) || 0,
+//           Number(r.early_min) || 0,
+//           Number(r.penalty_min) || 0,
+//           r.is_late_waived ? 'Yes' : 'No'
+//         ]);
+
+//         row.eachCell((cell) => {
+//           cell.border = thinBorder(COLORS.gray200);
+//           cell.font = { size: 10, color: { argb: COLORS.gray900 } };
+//           cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+//         });
+
+//         row.getCell(2).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+//         if ((Number(r.late_min) || 0) > 0) {
+//           const c = row.getCell(8);
+//           c.font = { bold: true, color: { argb: COLORS.red }, size: 10 };
+//           c.fill = solidFill(COLORS.redLight);
+//         }
+//         if ((Number(r.early_min) || 0) > 0) {
+//           const c = row.getCell(9);
+//           c.font = { bold: true, color: { argb: COLORS.orange }, size: 10 };
+//           c.fill = solidFill(COLORS.orangeLight);
+//         }
+//         if ((Number(r.penalty_min) || 0) > 0) {
+//           const c = row.getCell(10);
+//           c.font = { bold: true, color: { argb: COLORS.purple }, size: 10 };
+//           c.fill = solidFill(COLORS.purpleLight);
+//         }
+//       });
+//     });
+
+//     wsDetails.columns = [
+//       { width: 14 },
+//       { width: 28 },
+//       { width: 18 },
+//       { width: 12 },
+//       { width: 18 },
+//       { width: 12 },
+//       { width: 12 },
+//       { width: 12 },
+//       { width: 12 },
+//       { width: 14 },
+//       { width: 12 }
+//     ];
+
+//     wsDetails.autoFilter = {
+//       from: { row: 1, column: 1 },
+//       to: { row: 1, column: detailHeaders.length }
+//     };
+
+//     const buffer = await wb.xlsx.writeBuffer();
+//     saveAs(
+//       new Blob([buffer]),
+//       `Attendance_Monthly_PenaltyOver_${th}_${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}.xlsx`
+//     );
+//   } catch (err) {
+//     console.error('Penalty export failed:', err);
+//     alert('Failed to export. Please try again.');
+//   }
+// };
+
+
 const exportMonthlyPenaltyOverReport = async (threshold = 100) => {
   if (!canManage) return;
 
   try {
-    // ✅ FIX 1: Use the NEW report API endpoint
     const res = await fetch(
       `${API_BASE}/clockin/admin/report/monthly-penalty-over?year=${monthlyYear}&month=${monthlyMonth}&start_date=${monthlyStartDate}&threshold=${threshold}`
     );
+
     const result = await res.json();
 
     if (!result.success || !result.data) {
@@ -3249,258 +3519,68 @@ const exportMonthlyPenaltyOverReport = async (threshold = 100) => {
     }
 
     const employees = result.data.employees || [];
-    const endDate = result.data.end_date || '';
     const th = result.data.threshold ?? threshold;
 
     const wb = new ExcelJS.Workbook();
     wb.creator = 'KIOTEL Attendance System';
 
-    const joinDatesWrapped = (dates) => {
-      const perLine = 8;
-      const chunks = [];
-      for (let i = 0; i < dates.length; i += perLine) {
-        chunks.push(dates.slice(i, i + perLine).join(', '));
-      }
-      return chunks.join('\n');
-    };
+    const ws = wb.addWorksheet('Penalty Report');
 
-    // -------------------------
-    // Sheet 1: SUMMARY
-    // -------------------------
-    const wsSummary = wb.addWorksheet('Summary', {
-      views: [{ state: 'frozen', ySplit: 4 }],
-      pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
-    });
+    const titleRow = ws.addRow([
+      `Monthly Penalty Report (≥ ${th} min)`
+    ]);
 
-    wsSummary.mergeCells('A1:I1');
-    const title = wsSummary.getCell('A1');
-    title.value = `KIOTEL — Monthly Penalty Report (≥ ${th} min) — Summary`;
-    title.font = { size: 18, bold: true, color: { argb: COLORS.white } };
-    title.fill = solidFill(COLORS.primary);
-    title.alignment = { horizontal: 'center', vertical: 'middle' };
-    wsSummary.getRow(1).height = 34;
+    titleRow.font = { bold: true, size: 14 };
 
-    wsSummary.mergeCells('A2:I2');
-    const subtitle = wsSummary.getCell('A2');
-    subtitle.value = `${monthNames[monthlyMonth - 1]} ${monthlyYear} (From ${monthlyStartDate} to ${endDate})`;
-    subtitle.font = { size: 11, bold: true, color: { argb: COLORS.gray700 } };
-    subtitle.fill = solidFill(COLORS.primaryLight);
-    subtitle.alignment = { horizontal: 'center', vertical: 'middle' };
-    wsSummary.getRow(2).height = 22;
+    ws.addRow([]);
 
-    wsSummary.addRow([]);
-
-    const headers = [
+    const headerRow = ws.addRow([
       'Employee ID',
       'Name',
-      'Total Penalty (min)',
-      'Late Count (Days)',
-      'Late Dates (ALL)',
-      'Early Count (Days)',
-      'Early Dates (ALL)',
-      'Records (Shifts)',
-      'Notes'
-    ];
+      'Penalty Minutes'
+    ]);
 
-    const headerRow = wsSummary.addRow(headers);
     headerRow.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: COLORS.white }, size: 10 };
-      cell.fill = solidFill(COLORS.primaryDark);
-      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      cell.border = thinBorder(COLORS.primaryDark);
+      cell.font = { bold: true };
+      cell.alignment = {
+        horizontal: 'center',
+        vertical: 'middle'
+      };
     });
-    wsSummary.getRow(headerRow.number).height = 24;
 
     employees.forEach((emp) => {
-      const rows = Array.isArray(emp.rows) ? emp.rows : [];
-      if (rows.length === 0) return;
-
-      // ✅ FIX 2: UNIQUE dates (double shift safe)
-      const lateDateSet = new Set(
-        rows
-          .filter((r) => (Number(r.late_min) || 0) > 0)
-          .map((r) => r.date)
-          .filter(Boolean)
-      );
-
-      const earlyDateSet = new Set(
-        rows
-          .filter((r) => (Number(r.early_min) || 0) > 0)
-          .map((r) => r.date)
-          .filter(Boolean)
-      );
-
-      const lateDates = Array.from(lateDateSet).sort();
-      const earlyDates = Array.from(earlyDateSet).sort();
-
-      const lateDatesText = lateDates.length ? joinDatesWrapped(lateDates) : '—';
-      const earlyDatesText = earlyDates.length ? joinDatesWrapped(earlyDates) : '—';
-
-      const totalPenalty = Number(emp.total_penalty_min) || 0;
-
-      const row = wsSummary.addRow([
-        emp.employee_id,
-        emp.name,
-        totalPenalty,
-        lateDates.length,   // ✅ count days
-        lateDatesText,
-        earlyDates.length,  // ✅ count days
-        earlyDatesText,
-        rows.length,        // ✅ number of penalized shift rows
-        ''
+      ws.addRow([
+        emp.employee_id || '',
+        emp.name || '',
+        Number(emp.total_penalty_min) || 0
       ]);
-
-      row.eachCell((cell) => {
-        cell.border = thinBorder(COLORS.gray200);
-        cell.font = { size: 10, color: { argb: COLORS.gray900 } };
-        cell.alignment = { vertical: 'top', horizontal: 'center', wrapText: true };
-      });
-
-      row.getCell(2).alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
-      row.getCell(5).alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
-      row.getCell(7).alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
-
-      row.getCell(3).font = { bold: true, color: { argb: COLORS.purple }, size: 10 };
-      row.getCell(3).fill = solidFill(COLORS.purpleLight);
-
-      if (lateDates.length > 0) {
-        row.getCell(4).font = { bold: true, color: { argb: COLORS.red }, size: 10 };
-        row.getCell(4).fill = solidFill(COLORS.redLight);
-        row.getCell(5).fill = solidFill(COLORS.redLight);
-      }
-      if (earlyDates.length > 0) {
-        row.getCell(6).font = { bold: true, color: { argb: COLORS.orange }, size: 10 };
-        row.getCell(6).fill = solidFill(COLORS.orangeLight);
-        row.getCell(7).fill = solidFill(COLORS.orangeLight);
-      }
-
-      const linesLate = String(lateDatesText).split('\n').length;
-      const linesEarly = String(earlyDatesText).split('\n').length;
-      const lines = Math.max(linesLate, linesEarly, 1);
-      wsSummary.getRow(row.number).height = Math.min(220, 18 + lines * 14);
     });
 
-    wsSummary.columns = [
-      { width: 14 },
-      { width: 26 },
-      { width: 18 },
-      { width: 16 },
-      { width: 45 },
-      { width: 16 },
-      { width: 45 },
-      { width: 16 },
-      { width: 18 }
+    ws.columns = [
+      { width: 20 },
+      { width: 35 },
+      { width: 20 }
     ];
 
-    wsSummary.autoFilter = {
-      from: { row: headerRow.number, column: 1 },
-      to: { row: headerRow.number, column: headers.length }
-    };
-
-    // -------------------------
-    // Sheet 2: DETAILS (same as yours)
-    // -------------------------
-    const wsDetails = wb.addWorksheet('Details', {
-      views: [{ state: 'frozen', ySplit: 1 }],
-      pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
-    });
-
-    const detailHeaders = [
-      'Employee ID',
-      'Name',
-      'Total Penalty (min)',
-      'Date',
-      'Shift',
-      'Clock In',
-      'Clock Out',
-      'Late (min)',
-      'Early (min)',
-      'Penalty (min)',
-      'Waived Late?'
-    ];
-
-    const detailHeaderRow = wsDetails.addRow(detailHeaders);
-    detailHeaderRow.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: COLORS.white }, size: 10 };
-      cell.fill = solidFill(COLORS.primaryDark);
-      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      cell.border = thinBorder(COLORS.primaryDark);
-    });
-
-    employees.forEach((emp) => {
-      const rows = Array.isArray(emp.rows) ? emp.rows : [];
-      if (rows.length === 0) return;
-
-      rows.forEach((r, i) => {
-        const row = wsDetails.addRow([
-          emp.employee_id,
-          emp.name,
-          i === 0 ? (Number(emp.total_penalty_min) || 0) : '',
-          r.date || '—',
-          r.shift_name || '—',
-          r.clock_in || '—',
-          r.clock_out || '—',
-          Number(r.late_min) || 0,
-          Number(r.early_min) || 0,
-          Number(r.penalty_min) || 0,
-          r.is_late_waived ? 'Yes' : 'No'
-        ]);
-
-        row.eachCell((cell) => {
-          cell.border = thinBorder(COLORS.gray200);
-          cell.font = { size: 10, color: { argb: COLORS.gray900 } };
-          cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-        });
-
-        row.getCell(2).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-
-        if ((Number(r.late_min) || 0) > 0) {
-          const c = row.getCell(8);
-          c.font = { bold: true, color: { argb: COLORS.red }, size: 10 };
-          c.fill = solidFill(COLORS.redLight);
-        }
-        if ((Number(r.early_min) || 0) > 0) {
-          const c = row.getCell(9);
-          c.font = { bold: true, color: { argb: COLORS.orange }, size: 10 };
-          c.fill = solidFill(COLORS.orangeLight);
-        }
-        if ((Number(r.penalty_min) || 0) > 0) {
-          const c = row.getCell(10);
-          c.font = { bold: true, color: { argb: COLORS.purple }, size: 10 };
-          c.fill = solidFill(COLORS.purpleLight);
-        }
-      });
-    });
-
-    wsDetails.columns = [
-      { width: 14 },
-      { width: 28 },
-      { width: 18 },
-      { width: 12 },
-      { width: 18 },
-      { width: 12 },
-      { width: 12 },
-      { width: 12 },
-      { width: 12 },
-      { width: 14 },
-      { width: 12 }
-    ];
-
-    wsDetails.autoFilter = {
-      from: { row: 1, column: 1 },
-      to: { row: 1, column: detailHeaders.length }
+    ws.autoFilter = {
+      from: { row: 3, column: 1 },
+      to: { row: 3, column: 3 }
     };
 
     const buffer = await wb.xlsx.writeBuffer();
+
     saveAs(
       new Blob([buffer]),
       `Attendance_Monthly_PenaltyOver_${th}_${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}.xlsx`
     );
+
   } catch (err) {
     console.error('Penalty export failed:', err);
     alert('Failed to export. Please try again.');
   }
 };
+
+
   const handleExport = async (type) => {
     if (!canManage) return;
 
