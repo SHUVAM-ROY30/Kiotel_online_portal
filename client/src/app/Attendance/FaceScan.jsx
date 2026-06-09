@@ -263,45 +263,102 @@ export default function FaceScan({ onEmployeeMatched, onNoMatch, onError }) {
     streamRef.current?.getTracks().forEach((t) => t.stop());
   };
 
-  const captureAndIdentify = async () => {
-    // Prevent multiple simultaneous scans
-    if (status !== "ready" || scanning) return;
+  // const captureAndIdentify = async () => {
+  //   // Prevent multiple simultaneous scans
+  //   if (status !== "ready" || scanning) return;
     
-    setScanning(true);
-    setStatus("scanning");
+  //   setScanning(true);
+  //   setStatus("scanning");
 
-    const canvas  = document.createElement("canvas");
-    canvas.width  = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    canvas.getContext("2d").drawImage(videoRef.current, 0, 0);
+  //   const canvas  = document.createElement("canvas");
+  //   canvas.width  = videoRef.current.videoWidth;
+  //   canvas.height = videoRef.current.videoHeight;
+  //   canvas.getContext("2d").drawImage(videoRef.current, 0, 0);
 
-    canvas.toBlob(async (blob) => {
-      const form = new FormData();
-      form.append("photo", blob, "face.jpg");
+  //   canvas.toBlob(async (blob) => {
+  //     const form = new FormData();
+  //     form.append("photo", blob, "face.jpg");
 
-      try {
-        const res  = await fetch(`${API_BASE_URL}/clockin/identify-face`, {
+  //     try {
+  //       const res  = await fetch(`${API_BASE_URL}/clockin/identify-face`, {
+  //         method: "POST",
+  //         body  : form,
+  //       });
+  //       const data = await res.json();
+
+  //       if (data.success) {
+  //         stopCamera();
+  //         setStatus("matched");
+  //         onEmployeeMatched(data.employee_id);
+  //       } else {
+  //         setStatus("no_match");
+  //         onNoMatch?.();
+  //       }
+  //     } catch {
+  //       setStatus("error");
+  //       onError?.("Network error");
+  //     } finally {
+  //       setScanning(false);
+  //     }
+  //   }, "image/jpeg", 0.92);
+  // };
+
+  const captureAndIdentify = async () => {
+  // Prevent multiple simultaneous scans
+  if (status !== "ready" || scanning) return;
+
+  setScanning(true);
+  setStatus("scanning");
+
+  const canvas = document.createElement("canvas");
+  canvas.width = videoRef.current.videoWidth;
+  canvas.height = videoRef.current.videoHeight;
+
+  canvas
+    .getContext("2d")
+    .drawImage(videoRef.current, 0, 0);
+
+  canvas.toBlob(async (blob) => {
+    const form = new FormData();
+
+    form.append("photo", blob, "face.jpg");
+
+    // Fetch device ID from localStorage
+    const browserDeviceId = localStorage.getItem("browser_device_id");
+
+    if (browserDeviceId) {
+      form.append("browser_device_id", browserDeviceId);
+    }
+
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/clockin/identify-face`,
+        {
           method: "POST",
-          body  : form,
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          stopCamera();
-          setStatus("matched");
-          onEmployeeMatched(data.employee_id);
-        } else {
-          setStatus("no_match");
-          onNoMatch?.();
+          body: form,
         }
-      } catch {
-        setStatus("error");
-        onError?.("Network error");
-      } finally {
-        setScanning(false);
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        stopCamera();
+        setStatus("matched");
+        onEmployeeMatched(data.employee_id);
+      } else {
+        setStatus("no_match");
+        onNoMatch?.();
       }
-    }, "image/jpeg", 0.92);
-  };
+    } catch (err) {
+      console.error(err);
+      setStatus("error");
+      onError?.("Network error");
+    } finally {
+      setScanning(false);
+    }
+  }, "image/jpeg", 0.92);
+};
+
 
   return (
     <div className="w-full">

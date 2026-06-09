@@ -845,13 +845,18 @@ export default function OpenedTickets() {
             )}
 
             {/* --- NEW BUTTON ADDED HERE --- */}
-            <button
+            {/* <button
               onClick={() => router.push('/activeTasks')}
               className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-teal-500 to-green-600 hover:from-teal-600 hover:to-green-700 text-white text-xs font-medium rounded shadow-sm transition-all focus:outline-none"
             >
               <FaTasks className="mr-1.5" /> Kiotel Tasks
-            </button>
-
+            </button> */}
+<button
+  onClick={() => router.push('/TaskManager/reocuuringTask')}
+  className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-medium rounded shadow-sm transition-all focus:outline-none"
+>
+  <FaCalendar className="mr-1.5" /> Recurring Task
+</button>
             <Link
               href="/TaskManager/newTask"
               className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-xs font-medium rounded shadow-sm transition-all focus:outline-none"
