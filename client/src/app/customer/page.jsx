@@ -111,18 +111,45 @@ export default function CustomerDashboard() {
     if (!selectedProperty) return;
     setLoadingAgent(true);
     try {
+      // Internal schedule — provides shift_start / shift_end (and a scheduled agent name)
       let internalData = {};
       try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer/agent-schedule`, { 
-          params: { property_id: selectedProperty.property_id }, 
-          withCredentials: true 
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/customer/agent-schedule`, {
+          params: { property_id: selectedProperty.property_id },
+          withCredentials: true
         });
         internalData = res.data || {};
       } catch (err) {
         console.warn("Internal agent fetch failed:", err);
       }
 
-      setActiveAgent(internalData && Object.keys(internalData).length ? internalData : null);
+      // External (kiotel dashboard) — is an agent remotely controlling this device right now?
+      let externalAgent = null;
+      try {
+        const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+        const extRes = await axios.get(
+          `${process.env.NEXT_PUBLIC_URL_ext}api/v1/external/devices/${encodeURIComponent(selectedProperty.property_id)}/active-agent`,
+          { headers: { Authorization: `Bearer ${externalApiToken}` } }
+        );
+        externalAgent = extRes.data;
+      } catch (err) {
+        console.warn("External active-agent fetch failed:", err?.response?.data || err.message);
+      }
+
+      if (externalAgent?.active) {
+        // A remote agent is live on this device — drive the panel from the external API
+        setActiveAgent({
+          status: "ACTIVE",
+          agent_id: externalAgent.agent_id,
+          agent_name: externalAgent.agent_name || internalData.agent_name || "Agent",
+          shift_start: internalData.shift_start,
+          shift_end: internalData.shift_end,
+        });
+      } else if (internalData && Object.keys(internalData).length) {
+        setActiveAgent(internalData);
+      } else {
+        setActiveAgent(null);
+      }
     } catch (err) {
       console.error("Failed to fetch active agent:", err);
       setActiveAgent(null);
@@ -377,18 +404,20 @@ hello no it should the status of the network in the sequence of the format in wh
                       </div>
                     </div>
                     
-                    <div className="rounded-xl border border-gray-100 bg-gray-50/80 p-5 mt-auto shadow-sm">
-                      <p className="text-[11px] font-bold text-gray-500 mb-4 uppercase tracking-widest">Shift Schedule</p>
-                      <div className="flex items-center justify-between text-sm font-bold text-gray-900">
-                        <span className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">{activeAgent.shift_start}</span>
-                        <div className="flex-1 mx-4 flex items-center">
-                          <div className="h-[2px] w-full bg-gray-200 rounded-full"></div>
-                          <div className="h-2 w-2 rounded-full bg-blue-500 mx-1 flex-shrink-0 shadow-sm"></div>
-                          <div className="h-[2px] w-full bg-gray-200 rounded-full"></div>
+                    {activeAgent.shift_start && activeAgent.shift_end && (
+                      <div className="rounded-xl border border-gray-100 bg-gray-50/80 p-5 mt-auto shadow-sm">
+                        <p className="text-[11px] font-bold text-gray-500 mb-4 uppercase tracking-widest">Shift Schedule</p>
+                        <div className="flex items-center justify-between text-sm font-bold text-gray-900">
+                          <span className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">{activeAgent.shift_start}</span>
+                          <div className="flex-1 mx-4 flex items-center">
+                            <div className="h-[2px] w-full bg-gray-200 rounded-full"></div>
+                            <div className="h-2 w-2 rounded-full bg-blue-500 mx-1 flex-shrink-0 shadow-sm"></div>
+                            <div className="h-[2px] w-full bg-gray-200 rounded-full"></div>
+                          </div>
+                          <span className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">{activeAgent.shift_end}</span>
                         </div>
-                        <span className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">{activeAgent.shift_end}</span>
                       </div>
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-12 flex-1 flex flex-col justify-center items-center">
