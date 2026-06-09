@@ -297,13 +297,6 @@ export default function CustomerDashboard() {
                   Active Remote Agent
                 </h2>
               </div>
-{/* Hello this is the way it should be having the same in the local value of the order to be performed  in the seen of the local overview of the networkig 
-int eh same leage of the work off in the metrix of the view int eh seen of periferals of the valks in the seen of the local stats of the logics in the seen 
-as they are the logical network in the seen of the periferals for the state to manage the seen in the local folks in the cabin of the management of the persistant in the seen fo the 
-hell no it should be possiblly the sessin logic of the network it is the state of which it should be having the same it <h1>
-hello no it should the status of the network in the sequence of the format in which it should be having the same of the week ends in the minimul of the network as it should be the seen of <thead></thead></h1> 
-
-*/}
               <div className="p-6 flex-1 flex flex-col">
                 {loadingAgent ? (
                   <div className="flex flex-col items-center justify-center py-12 flex-1">
