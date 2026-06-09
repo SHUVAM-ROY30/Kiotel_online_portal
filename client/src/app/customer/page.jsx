@@ -26,6 +26,8 @@ const fmt = (amount) => {
 };
 
 export default function CustomerDashboard() {
+  const { user, selectedProperty } = useGlobal();
+
   const [userFname, setUserFname] = useState("");
   const [userRole, setUserRole] = useState(null);
   const [userEmail, setUserEmail] = useState("");
@@ -119,6 +121,15 @@ export default function CustomerDashboard() {
       } catch (err) {
         console.warn("Internal agent fetch failed:", err);
       }
+
+      setActiveAgent(internalData && Object.keys(internalData).length ? internalData : null);
+    } catch (err) {
+      console.error("Failed to fetch active agent:", err);
+      setActiveAgent(null);
+    } finally {
+      setLoadingAgent(false);
+    }
+  };
 
   // const fetchReports = async () => {
   //   setLoadingReports(true);
@@ -639,6 +650,6 @@ hello no it should the status of the network in the sequence of the format in wh
           </div>
         </div>
       )}
-    </div>
+    </ShellLayout>
   );
 }

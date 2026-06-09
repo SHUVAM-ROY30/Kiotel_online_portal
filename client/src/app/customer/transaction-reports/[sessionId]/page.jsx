@@ -488,6 +488,511 @@ function CaptureImageModal({ capture, onClose }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Conversation Intelligence (audio recording + AI audit report)
+// ---------------------------------------------------------------------------
+
+function externalBase() {
+  const raw = process.env.NEXT_PUBLIC_URL_ext || "";
+  return raw.replace(/\/+$/, "");
+}
+
+function buildAudioHref(audioUrl) {
+  if (!audioUrl) return null;
+  if (audioUrl.startsWith("http")) return audioUrl;
+  return `${externalBase()}${audioUrl}`;
+}
+
+function auditStatusInfo(audit, rec) {
+  if (audit?.status === "analysis_completed") return { label: "Analysis completed", cls: "bg-emerald-100 text-emerald-700" };
+  if (audit?.status?.includes("error")) return { label: "Analysis error", cls: "bg-rose-100 text-rose-700" };
+  if (audit) return { label: "Analysis pending", cls: "bg-amber-100 text-amber-700" };
+  if (rec?.status === "failed") return { label: "Recording failed", cls: "bg-rose-100 text-rose-700" };
+  if (rec?.has_audio) return { label: "Audio available", cls: "bg-emerald-100 text-emerald-700" };
+  return { label: rec?.status || "-", cls: "bg-slate-100 text-slate-600" };
+}
+
+function FloatStars({ rating }) {
+  const rounded = Math.round(rating);
+  return (
+    <div className="mt-1 flex items-center gap-0.5">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <svg key={i} className={`w-4 h-4 ${i < rounded ? "text-amber-400" : "text-slate-200"}`} fill="currentColor" viewBox="0 0 20 20">
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.955a1 1 0 00.95.69h4.158c.969 0 1.371 1.24.588 1.81l-3.364 2.444a1 1 0 00-.364 1.118l1.286 3.955c.3.922-.755 1.688-1.539 1.118L10 14.347l-3.362 2.443c-.784.57-1.838-.196-1.539-1.118l1.286-3.955a1 1 0 00-.364-1.118L2.657 8.155c-.783-.57-.38-1.81.588-1.81h4.158a1 1 0 00.95-.69l1.286-3.955z" />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
+// --- AI report rendering (ported from admin ConversationReport) ---
+
+const REPORT_HEADER_RE = /^([A-Z0-9][A-Z0-9 ,/&()'’.\-]{2,}?):\s*(.*)$/;
+const REPORT_KEYWORD_RE = /(✓|✗|CRITICAL MISS|NOT COMPLETED|NOT APPLICABLE|PARTIALLY MISSED|PARTIALLY MISS|MISSED|CRITICAL|PARTIALLY)/g;
+const REPORT_BADGE_RE = /^(CRITICAL MISS|NOT COMPLETED|NOT APPLICABLE|PARTIALLY MISSED|PARTIALLY MISS|MISSED|CRITICAL|PARTIALLY)$/;
+
+function isMajorHeader(head) {
+  const letters = head.replace(/[^A-Za-z]/g, "");
+  return letters.length >= 3 && head === head.toUpperCase();
+}
+
+function parseReport(report) {
+  const lines = report.replace(/\r\n/g, "\n").split("\n");
+  const sections = [];
+  let current = { title: null, body: [] };
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    const match = line.match(REPORT_HEADER_RE);
+    if (match && isMajorHeader(match[1])) {
+      if (current.title !== null || current.body.length) sections.push(current);
+      current = { title: match[1].trim(), body: [] };
+      if (match[2] && match[2].trim()) current.body.push(match[2].trim());
+      continue;
+    }
+    current.body.push(line);
+  }
+  if (current.title !== null || current.body.length) sections.push(current);
+  return sections;
+}
+
+function renderReportInline(text, keyBase) {
+  return text.split(REPORT_KEYWORD_RE).map((part, i) => {
+    const key = `${keyBase}-${i}`;
+    if (part === "✓") return <span key={key} className="text-emerald-600 font-semibold">✓</span>;
+    if (part === "✗") return <span key={key} className="text-rose-600 font-semibold">✗</span>;
+    if (REPORT_BADGE_RE.test(part)) {
+      const soft = part.includes("PARTIALLY") || part === "NOT APPLICABLE";
+      const tone = soft ? "bg-amber-100 text-amber-800" : "bg-rose-100 text-rose-700";
+      return (
+        <span key={key} className={`mx-0.5 rounded px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone}`}>
+          {part}
+        </span>
+      );
+    }
+    return <span key={key}>{part}</span>;
+  });
+}
+
+function ReportLine({ line, keyBase }) {
+  const trimmed = line.trim();
+  if (!trimmed) return <div className="h-1.5" />;
+
+  const isSubHeader = /^[A-Za-z][^:]*:$/.test(trimmed) && !/^\d/.test(trimmed) && trimmed.length < 80;
+  if (isSubHeader) return <p className="mt-2 font-semibold text-slate-900">{trimmed}</p>;
+
+  const numbered = trimmed.match(/^(\d+)\.\s+(.*)$/);
+  if (numbered) {
+    return (
+      <div className="flex gap-2 pl-1">
+        <span className="text-slate-400 tabular-nums">{numbered[1]}.</span>
+        <span className="flex-1">{renderReportInline(numbered[2], keyBase)}</span>
+      </div>
+    );
+  }
+
+  const bullet = trimmed.match(/^[-•]\s+(.*)$/);
+  if (bullet) {
+    return (
+      <div className="flex gap-2 pl-1">
+        <span className="text-slate-400">•</span>
+        <span className="flex-1">{renderReportInline(bullet[1], keyBase)}</span>
+      </div>
+    );
+  }
+
+  return <p className="leading-relaxed">{renderReportInline(trimmed, keyBase)}</p>;
+}
+
+function ConversationReport({ report }) {
+  const sections = useMemo(() => parseReport(report), [report]);
+  if (!sections.length) {
+    return <p className="whitespace-pre-wrap text-sm text-slate-700">{report}</p>;
+  }
+  return (
+    <div className="space-y-5">
+      {sections.map((section, si) => (
+        <div key={si}>
+          {section.title && (
+            <h4 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-900">{section.title}</h4>
+          )}
+          <div className="space-y-1.5 text-sm text-slate-700">
+            {section.body.map((line, li) => (
+              <ReportLine key={li} line={line} keyBase={`${si}-${li}`} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function extractTranscript(raw) {
+  if (!raw) return null;
+  const collect = (arr) =>
+    arr
+      .map((x) => {
+        const o = x || {};
+        return {
+          speaker: o.speaker ?? o.speaker_role ?? o.diarization_speaker ?? o.role,
+          text: o.transcript ?? o.text ?? "",
+        };
+      })
+      .filter((s) => s.text);
+
+  if (Array.isArray(raw)) {
+    const segs = collect(raw);
+    return segs.length ? segs : null;
+  }
+  if (typeof raw === "object") {
+    const alt = raw?.results?.channels?.[0]?.alternatives?.[0];
+    if (alt?.transcript) return [{ text: alt.transcript }];
+    if (Array.isArray(raw.segments)) {
+      const segs = collect(raw.segments);
+      return segs.length ? segs : null;
+    }
+  }
+  return null;
+}
+
+function AuditEmpty({ text }) {
+  return <p className="py-10 text-center text-sm text-slate-400">{text}</p>;
+}
+
+function JsonBlock({ data, emptyText }) {
+  const isEmpty = data == null || (typeof data === "object" && Object.keys(data).length === 0);
+  if (isEmpty) return <AuditEmpty text={emptyText} />;
+  return (
+    <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-lg border border-slate-100 bg-slate-50 p-4 text-xs leading-relaxed text-slate-700">
+      {JSON.stringify(data, null, 2)}
+    </pre>
+  );
+}
+
+function AuditInfoRow({ label, value }) {
+  return (
+    <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
+      <div className="mt-1 break-words text-sm font-semibold text-slate-900">{value}</div>
+    </div>
+  );
+}
+
+function RecordingInfo({ rec, audit }) {
+  if (!rec) return <AuditEmpty text="No recording info available" />;
+  const rows = [
+    ["Session ID", <span key="sid" className="font-mono text-xs">{rec.session_id}</span>],
+    ["Device ID", <span key="did" className="font-mono text-xs">{rec.device_id}</span>],
+    ["Recording status", rec.status],
+    ["Audio available", rec.has_audio ? "Yes" : "No"],
+    ["Bytes received", Number(rec.bytes_received || 0).toLocaleString()],
+    ["Source IP", rec.source_ip ?? "—"],
+    ["Failure reason", rec.failure_reason ?? "—"],
+    ["Started", formatUTCWithFlag(rec.started_at)],
+    ["Ended", formatUTCWithFlag(rec.ended_at)],
+    ["Recording created", formatUTCWithFlag(rec.created_at)],
+  ];
+  if (audit) {
+    rows.push(
+      ["Audit status", audit.status],
+      ["Audit attempts", String(audit.attempt_count ?? "-")],
+      ["Audit error", audit.error_message ?? "—"],
+      ["Audit updated", formatUTCWithFlag(audit.updated_at)],
+    );
+  }
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {rows.map(([label, value], i) => (
+        <AuditInfoRow key={i} label={label} value={value} />
+      ))}
+    </div>
+  );
+}
+
+const AUDIT_TABS = [
+  { key: "report", label: "Report" },
+  { key: "transcript", label: "Transcript" },
+  { key: "acoustics", label: "Acoustics" },
+  { key: "recording", label: "Recording info" },
+  { key: "raw", label: "Raw JSON" },
+];
+
+function AuditDetailModal({ sessionId, audit, onClose }) {
+  const [activeTab, setActiveTab] = useState("report");
+  const [full, setFull] = useState(null);
+  const [loadingFull, setLoadingFull] = useState(true);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchFull = async () => {
+      setLoadingFull(true);
+      try {
+        const token = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_URL_ext}api/v1/external/transaction-reports/${encodeURIComponent(sessionId)}/audit`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!cancelled) setFull(res.data);
+      } catch {
+        if (!cancelled) setFull(null);
+      } finally {
+        if (!cancelled) setLoadingFull(false);
+      }
+    };
+    fetchFull();
+    return () => { cancelled = true; };
+  }, [sessionId]);
+
+  const rec = full?.recording ?? audit.recording;
+  const a = full?.audit ?? audit.audit;
+  const transcript = extractTranscript(a?.transcription);
+
+  return (
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-xl w-full max-w-4xl h-[88vh] flex flex-col shadow-xl border border-slate-200 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div className="flex items-center gap-3 min-w-0">
+            <h3 className="text-base font-bold text-slate-900">Conversation Audit</h3>
+            <span className="font-mono text-xs text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md truncate">
+              {sessionId}
+            </span>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-md hover:bg-slate-100 flex items-center justify-center transition-colors">
+            <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex gap-2 px-5 py-3 border-b border-slate-100 overflow-x-auto">
+          {AUDIT_TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`px-3 py-1 text-[11px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap transition-colors ${
+                activeTab === t.key ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+          {activeTab === "report" && (
+            a?.report ? <ConversationReport report={a.report} /> : <AuditEmpty text="No report available" />
+          )}
+          {activeTab === "transcript" && (
+            loadingFull ? <AuditEmpty text="Loading…" /> : transcript ? (
+              <div className="space-y-2">
+                {transcript.map((s, i) => (
+                  <div key={i} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-sm text-slate-700">
+                    {s.speaker && <span className="mr-2 font-semibold text-slate-900">{s.speaker}:</span>}
+                    <span>{s.text}</span>
+                  </div>
+                ))}
+              </div>
+            ) : <JsonBlock data={a?.transcription} emptyText="No transcript available" />
+          )}
+          {activeTab === "acoustics" && (
+            loadingFull ? <AuditEmpty text="Loading…" /> : <JsonBlock data={a?.acoustic_features} emptyText="No acoustic features available" />
+          )}
+          {activeTab === "recording" && <RecordingInfo rec={rec} audit={a} />}
+          {activeTab === "raw" && (
+            loadingFull ? <AuditEmpty text="Loading…" /> : <JsonBlock data={a?.llm_raw} emptyText="No raw analysis available" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConversationAuditSection({ audit, audioUrl, sessionId }) {
+  const [open, setOpen] = useState(false);
+
+  if (!audit) return null;
+  const rec = audit.recording;
+  const a = audit.audit;
+  const hasData = rec?.has_audio || !!a?.report || a?.agent_rating != null || !!a?.remark_for_agent;
+  if (!hasData) return null;
+
+  const href = buildAudioHref(audioUrl);
+  const status = auditStatusInfo(a, rec);
+  const linkClass =
+    "inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50";
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+        <h2 className="text-base font-bold text-slate-900">Conversation Intelligence</h2>
+        <button
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          View full audit
+        </button>
+      </div>
+      <div className="p-5 space-y-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Recording</p>
+            {href ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <a href={href} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  Open in new tab
+                </a>
+                <a href={href} download={`recording-${sessionId}.webm`} className={linkClass}>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download
+                </a>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-slate-500">No recording available</p>
+            )}
+            {href && (
+              <audio controls preload="none" src={href} className="mt-3 w-full">
+                Your browser does not support audio playback.
+              </audio>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Agent Rating</p>
+            {a?.agent_rating != null ? (
+              <>
+                <div className="text-lg font-bold text-slate-900">
+                  {a.agent_rating.toFixed(1)}
+                  <span className="ml-1 text-sm font-normal text-slate-400">/ 5</span>
+                </div>
+                <FloatStars rating={a.agent_rating} />
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-slate-500">Not rated</p>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Status</p>
+            <div className="mt-2">
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${status.cls}`}>
+                {status.label}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {a?.remark_for_agent && (
+          <div>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Remark for Agent</p>
+            <div className="whitespace-pre-wrap rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm leading-relaxed text-slate-700">
+              {a.remark_for_agent}
+            </div>
+          </div>
+        )}
+
+        {a?.report && (
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Report</p>
+              <button onClick={() => setOpen(true)} className="text-xs font-semibold text-blue-600 hover:text-blue-700">
+                View full report
+              </button>
+            </div>
+            <div className="relative max-h-72 overflow-hidden rounded-lg border border-slate-100 p-4">
+              <ConversationReport report={a.report} />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {open && (
+        <AuditDetailModal sessionId={sessionId} audit={audit} onClose={() => setOpen(false)} />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Session Command Events (events log)
+// ---------------------------------------------------------------------------
+
+const SESSION_EVENT_CONFIG = {
+  receipt: { label: "Print Receipt", cls: "bg-blue-100 text-blue-700" },
+  key_dispenser: { label: "Key Dispenser", cls: "bg-purple-100 text-purple-700" },
+  show_message: { label: "Show Message", cls: "bg-cyan-100 text-cyan-700" },
+  voice_over: { label: "Voice Over", cls: "bg-pink-100 text-pink-700" },
+};
+
+const SESSION_EVENT_ACTION_LABELS = {
+  printed: "Printed",
+  dispense_front: "Dispense to front",
+  capture: "Capture",
+  recycle: "Recycle",
+  displayed: "Displayed",
+  played: "Played",
+};
+
+function SessionEventDetails({ category, metadata }) {
+  const m = metadata && typeof metadata === "object" ? metadata : {};
+  if (category === "receipt") {
+    const printer = typeof m.printer_name === "string" ? m.printer_name : "";
+    const paper = typeof m.paper_type === "string" ? m.paper_type : "";
+    const variables = m.variables && typeof m.variables === "object" ? m.variables : null;
+    const hasVariables = !!variables && Object.keys(variables).length > 0;
+    return (
+      <div className="space-y-1">
+        {(printer || paper) && (
+          <div className="text-xs text-slate-400">
+            {[printer && `Printer: ${printer}`, paper && `Paper: ${paper}`].filter(Boolean).join(" · ")}
+          </div>
+        )}
+        {hasVariables && (
+          <div className="flex flex-wrap gap-1">
+            {Object.entries(variables).map(([k, v]) => (
+              <span key={k} className="inline-flex items-center rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700">
+                <span className="font-medium mr-1">{k}</span>{String(v)}
+              </span>
+            ))}
+          </div>
+        )}
+        {!printer && !paper && !hasVariables && <span className="text-slate-400">Receipt printed</span>}
+      </div>
+    );
+  }
+  if (category === "show_message" || category === "voice_over") {
+    const msg = typeof m.message === "string" ? m.message : typeof m.text === "string" ? m.text : "";
+    const lang = typeof m.language === "string" ? m.language : "";
+    return (
+      <div className="text-sm text-slate-700">
+        {msg ? <span className="whitespace-pre-wrap">{msg}</span> : <span className="text-slate-400">—</span>}
+        {lang && <span className="ml-2 text-xs text-slate-400">({lang})</span>}
+      </div>
+    );
+  }
+  return <span className="text-slate-400">—</span>;
+}
+
 function useSessionNeighbors({ deviceId, sessionId, page, status, start, end, enabled }) {
   const [state, setState] = useState({
     prevSessionId: null, prevPage: null,
@@ -685,7 +1190,7 @@ function SessionDetailContent() {
     );
   }
 
-  const { session = {}, guest = {}, rating, cashEvents = [], legalDocSubmissions = [], cameraCaptures = [], guestMessageInputs = [], scannedDocuments = [] } = data;
+  const { session = {}, guest = {}, rating, cashEvents = [], legalDocSubmissions = [], cameraCaptures = [], guestMessageInputs = [], sessionEvents = [], scannedDocuments = [], audioAudit = null, audio_url = null } = data;
   const hasGuest = Boolean(
     guest && (guest.guest_name || guest.room_no || guest.account_no || guest.currency || Number(guest.deposit_amount) || Number(guest.room_amount))
   );
@@ -749,6 +1254,8 @@ function SessionDetailContent() {
           <StarRating rating={rating} />
         </SectionCard>
 
+        <ConversationAuditSection audit={audioAudit} audioUrl={audio_url} sessionId={session.session_id || sessionId} />
+
         <SectionCard title="Cash Events" subtitle="Order: Latest to oldest">
           {cashEvents.length > 0 ? (
             <div className="overflow-x-auto">
@@ -785,6 +1292,41 @@ function SessionDetailContent() {
             <p className="text-sm text-slate-500 text-center py-4">No cash events for this session</p>
           )}
         </SectionCard>
+
+        {sessionEvents && sessionEvents.length > 0 && (
+          <SectionCard title="Session Command Events" subtitle="Order: Latest to oldest">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-100">
+                  <tr>
+                    <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                      Time <span className="ml-1 text-[10px] font-medium text-slate-400 normal-case">(UTC)</span>
+                    </th>
+                    <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Event</th>
+                    <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Action</th>
+                    <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {sessionEvents.map((e) => (
+                    <tr key={e.id}>
+                      <td className="px-4 py-2.5 text-xs text-slate-700 font-mono align-top whitespace-nowrap">{formatUTC(e.created_at)}</td>
+                      <td className="px-4 py-2.5 align-top">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${SESSION_EVENT_CONFIG[e.event_category]?.cls ?? "bg-slate-100 text-slate-700"}`}>
+                          {SESSION_EVENT_CONFIG[e.event_category]?.label ?? e.event_category}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-sm text-slate-700 align-top">{SESSION_EVENT_ACTION_LABELS[e.event_action] ?? e.event_action}</td>
+                      <td className="px-4 py-2.5 align-top">
+                        <SessionEventDetails category={e.event_category} metadata={e.metadata} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        )}
 
         {guestMessageInputs && guestMessageInputs.length > 0 && (
           <SectionCard title="Guest Messages">
@@ -930,11 +1472,6 @@ function SessionDetailContent() {
                             </svg>
                             View
                           </button>
-                          {doc.dnr_alert && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-700">
-                              DNR alert
-                            </span>
-                          )}
                         </div>
                       </td>
                       <td className="px-4 py-2.5 text-xs text-slate-700 font-mono">{formatUTCWithFlag(doc.created_at)}</td>
