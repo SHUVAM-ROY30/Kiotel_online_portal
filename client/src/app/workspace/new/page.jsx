@@ -113,6 +113,8 @@
 
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function NewWorkspaceFilePage() {
