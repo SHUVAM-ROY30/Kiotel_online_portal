@@ -186,6 +186,7 @@ function Dashboard() {
     { title: "HR", href: "/emp-dashboard", icon: FaUsers, gradient: "from-blue-500 to-blue-600", description: "Employee management", show: !isAttendanceOnlyUser && userRole !== 4 },
     { title: "Schedule", href: "/schedule", icon: FaCalendarAlt, gradient: "from-blue-600 to-blue-700", description: "View your schedule", show: !isAttendanceOnlyUser && userRole !== 4 },
     { title: "Task Manager", href: "/TaskManager/openTasks", icon: FaTasks, gradient: "from-blue-500 to-indigo-600", description: "Manage your tasks", show: !isAttendanceOnlyUser },
+    { title: "Work-Space", href: "/workspace", icon: FaCalendarAlt, gradient: "from-blue-600 to-blue-700", description: "Manage you work space", show: !isAttendanceOnlyUser && userRole !== 4 },
     { title: "Invoices", href: "/Customer_Portal", icon: FaChartLine, gradient: "from-indigo-500 to-blue-600", description: "", show: !isAttendanceOnlyUser && (userRole === 1 || userRole === 4) },
     { title: "Attendance", href: "/Attendance", icon: FaClipboardCheck, gradient: "from-blue-500 to-blue-600", description: "Clock in/out", show: isAttendanceOnlyUser || canSeeAttendanceWithOtherTabs },
     { title: "Customer Portal", href: "/customer", icon: FaBuilding, gradient: "from-blue-500 to-cyan-600", description: "Service Plan, Agents, Shared Folder", show: !isAttendanceOnlyUser && userRole === 4 },
@@ -198,6 +199,7 @@ function Dashboard() {
     
     { title: "Careers Admin", href: "/Admin_careers", icon: FaClipboardCheck, gradient: "from-fuchsia-600 to-pink-600", description: "Careers view", show: !isAttendanceOnlyUser && userRole === 1, isAdminCard: true },
     { title: "Admin Panel", href: "/components/Admin", icon: FaCog, gradient: "from-slate-600 to-slate-800", description: "System administration", show: !isAttendanceOnlyUser && (userRole === 1 || userRole === 8), isAdminCard: true },
+    { title: "Inventory Management", href: "/inventory", icon: FaCog, gradient: "from-slate-600 to-slate-800", description: "Manage Your Inventory", show: !isAttendanceOnlyUser && (userRole === 1 || userRole === 6), isAdminCard: true },
     { title: "Customer Admin", href: "/custAdmin", icon: FaUserTie, gradient: "from-indigo-600 to-blue-700", description: "Manage customers & plans", show: !isAttendanceOnlyUser && userRole === 1, isAdminCard: true },
     { title: "Active Agents", href: "/active-agents", icon: FaUsersCog, gradient: "from-purple-600 to-indigo-600", description: "Monitor currently active agents", show: !isAttendanceOnlyUser && userRole === 1, isAdminCard: true },
     { title: "Deactivated Users", href: "/deactivated_users", icon: FaUsersCog, gradient: "from-rose-500 to-red-600", description: "Manage disabled accounts", show: !isAttendanceOnlyUser && userRole === 1, isAdminCard: true },
