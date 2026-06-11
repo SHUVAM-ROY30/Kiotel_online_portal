@@ -54,7 +54,7 @@ setUser({
   const can = (action) => {
     if (userRole === "admin") return true;
     if (userRole === "manager") {
-      return ["add", "remove", "view_history", "view_list"].includes(action);
+      return ["add", "remove", "view_history", "view_list", "create"].includes(action);
     }
     return ["view_list", "view_history"].includes(action);
   };

@@ -21,7 +21,7 @@ export default function CreateItem() {
   const fileRef = useRef(null);
 
   // Redirect non-admins
-  if (!userLoading && userRole && userRole !== "admin") {
+  if (!userLoading && userRole && userRole !== "admin" && userRole !== "manager") {
     return (
       <InventoryLayout title="Create Item" subtitle="Add a new inventory item">
         <div className="ci-denied">
