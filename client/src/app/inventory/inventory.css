@@ -468,6 +468,9 @@
 .ih-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .ih-empty { text-align: center; padding: 48px 20px; color: #c0c0d8; font-size: 13.5px; }
 
+.ih-type-badge.destroy { background: #fee2e2; color: #dc2626; }
+.ih-qty-destroy { color: #dc2626; font-weight: 600; }
+
 /* ── Shared spinners ───────────────────────────────────────── */
 .inv-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: inv-spin 0.7s linear infinite; }
 @keyframes inv-spin { to { transform: rotate(360deg); } }

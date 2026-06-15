@@ -5,6 +5,36 @@ import { useEffect, useState } from "react";
 import { useInventoryUser } from "../_hooks/useInventoryUser";
 import "../inventory.css";
 
+// const NAV_ITEMS = [
+//   {
+//     href: "/inventory", label: "Dashboard", exact: true,
+//     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>,
+//     roles: ["admin", "manager", "employee"],
+//   },
+//   {
+//     href: "/inventory/list", label: "Inventory List",
+//     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>,
+//     roles: ["admin", "manager", "employee"],
+//   },
+//   {
+//     href: "/inventory/create-item", label: "Create Item",
+//     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>,
+//     roles: ["admin", "manager"],
+//   },
+//   {
+//     href: "/inventory/add", label: "Add Inventory",
+//     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>,
+//     roles: ["admin", "manager"],
+//   },
+//   {
+//     href: "/inventory/remove", label: "Remove Inventory",
+//     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>,
+//     roles: ["admin", "manager"],
+//   },
+// ];
+
+// Add this to the NAV_ITEMS array in InventoryLayout.jsx
+
 const NAV_ITEMS = [
   {
     href: "/inventory", label: "Dashboard", exact: true,
@@ -14,6 +44,36 @@ const NAV_ITEMS = [
   {
     href: "/inventory/list", label: "Inventory List",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>,
+    roles: ["admin", "manager", "employee"],
+  },
+  // {
+  //   href: "/inventory/properties", label: "Properties",
+  //   icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>,
+  //   roles: ["admin", "manager", "employee"],
+  // },
+  // {
+  //   href: "/inventory/create-item", label: "Create Item",
+  //   icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>,
+  //   roles: ["admin", "manager"],
+  // },
+  // {
+  //   href: "/inventory/add", label: "Add Inventory",
+  //   icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>,
+  //   roles: ["admin", "manager"],
+  // },
+  // {
+  //   href: "/inventory/remove", label: "Remove Inventory",
+  //   icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>,
+  //   roles: ["admin", "manager"],
+  // },
+    {
+    href: "/inventory/properties", label: "Properties",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>,
+    roles: ["admin", "manager", "employee"],
+  },
+  {
+    href: "/inventory/cabins", label: "Cabins",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="2" width="16" height="20" rx="2" /><line x1="9" y1="22" x2="9" y2="22.01" /><line x1="15" y1="22" x2="15" y2="22.01" /><line x1="9" y1="18" x2="9" y2="18.01" /><line x1="15" y1="18" x2="15" y2="18.01" /></svg>,
     roles: ["admin", "manager", "employee"],
   },
   {
@@ -27,11 +87,22 @@ const NAV_ITEMS = [
     roles: ["admin", "manager"],
   },
   {
-    href: "/inventory/remove", label: "Remove Inventory",
+    href: "/inventory/remove", label: "Assign/Remove",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>,
     roles: ["admin", "manager"],
   },
+  {
+    href: "/inventory/reassign", label: "Reassign",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" /></svg>,
+    roles: ["admin", "manager"],
+  },
+  {
+    href: "/inventory/destroy", label: "Destroy",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>,
+    roles: ["admin", "manager"],
+  },
 ];
+
 
 export default function InventoryLayout({ children, title, subtitle }) {
   const pathname = usePathname();

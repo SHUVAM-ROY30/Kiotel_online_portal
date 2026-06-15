@@ -294,9 +294,12 @@ useEffect(() => {
                       </div>
                     </td>
                     <td>
-                      <span className={`ih-type-badge ${tx.transaction_type}`}>
+                      {/* <span className={`ih-type-badge ${tx.transaction_type}`}>
                         {tx.transaction_type === "add" ? "↑ Added" : "↓ Removed"}
-                      </span>
+                      </span> */}
+                      <span className={`ih-type-badge ${tx.transaction_type}`}>
+  {tx.transaction_type === "add" ? "↑ Added" : tx.transaction_type === "destroy" ? " Destroyed" : "↓ Removed"}
+</span>
                     </td>
                     <td className={tx.transaction_type === "add" ? "ih-qty-add" : "ih-qty-remove"}>
                       {tx.transaction_type === "add" ? "+" : "−"}{tx.quantity}

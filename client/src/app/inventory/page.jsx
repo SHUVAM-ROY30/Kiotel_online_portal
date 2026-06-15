@@ -1,3 +1,5 @@
+// /inventory/page.js
+
 "use client";
 import "./inventory.css";
 import { useState, useEffect } from "react";
@@ -76,43 +78,6 @@ export default function InventoryDashboard() {
       title="Dashboard"
       subtitle={userLoading ? "" : `${greeting()}, ${user?.fname || ""}! Here's your inventory overview.`}
     >
-      {/* <style>{`
-        .dash-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
-        .dash-stat-card { background: #0f0f18; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 20px; display: flex; align-items: flex-start; gap: 14px; transition: border-color 0.2s; }
-        .dash-stat-card:hover { border-color: var(--accent, rgba(99,102,241,0.4)); }
-        .dash-stat-icon { width: 40px; height: 40px; border-radius: 10px; background: color-mix(in srgb, var(--accent, #6366f1) 15%, transparent); display: flex; align-items: center; justify-content: center; color: var(--accent, #a5b4fc); flex-shrink: 0; }
-        .dash-stat-value { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; color: #fff; line-height: 1; }
-        .dash-stat-label { font-size: 12.5px; color: #5a5a78; margin-top: 4px; }
-        .dash-stat-sub { font-size: 11px; color: #f87171; margin-top: 3px; }
-        .dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 900px) { .dash-row { grid-template-columns: 1fr; } }
-        .dash-section-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #3d3d58; margin-bottom: 12px; }
-        .dash-actions { display: flex; flex-direction: column; gap: 8px; }
-        .dash-action-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 10px; background: #0f0f18; border: 1px solid rgba(255,255,255,0.06); text-decoration: none; color: inherit; transition: all 0.15s ease; }
-        .dash-action-card:hover { border-color: color-mix(in srgb, var(--c, #6366f1) 40%, transparent); background: color-mix(in srgb, var(--c, #6366f1) 6%, #0f0f18); }
-        .dash-action-icon { width: 36px; height: 36px; border-radius: 8px; background: color-mix(in srgb, var(--c, #6366f1) 15%, transparent); display: flex; align-items: center; justify-content: center; color: var(--c, #a5b4fc); flex-shrink: 0; }
-        .dash-action-label { font-size: 13.5px; font-weight: 500; color: #d0d0e8; }
-        .dash-action-desc { font-size: 11.5px; color: #4a4a66; margin-top: 1px; }
-        .dash-action-arrow { margin-left: auto; color: #3a3a55; flex-shrink: 0; }
-        .dash-action-card:hover .dash-action-arrow { color: var(--c, #6366f1); }
-        .dash-tx-list { display: flex; flex-direction: column; gap: 6px; }
-        .dash-tx-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; background: #0f0f18; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; font-size: 13px; }
-        .dash-tx-type { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-        .dash-tx-type.add { background: rgba(16,185,129,0.12); color: #34d399; }
-        .dash-tx-type.remove { background: rgba(239,68,68,0.12); color: #f87171; }
-        .dash-tx-name { flex: 1; color: #b0b0cc; font-size: 13px; }
-        .dash-tx-qty { font-weight: 600; font-size: 13.5px; }
-        .dash-tx-qty.add { color: #34d399; }
-        .dash-tx-qty.remove { color: #f87171; }
-        .dash-tx-date { font-size: 11.5px; color: #3d3d55; }
-        .dash-low-list { display: flex; flex-direction: column; gap: 6px; }
-        .dash-low-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; background: #0f0f18; border: 1px solid rgba(245,158,11,0.1); border-radius: 8px; text-decoration: none; }
-        .dash-low-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; }
-        .dash-low-name { flex: 1; font-size: 13px; color: #b0b0cc; }
-        .dash-low-qty { font-size: 13px; font-weight: 600; color: #fcd34d; }
-        .dash-empty { text-align: center; padding: 32px 16px; color: #3a3a55; font-size: 13px; }
-      `}</style> */}
-
       <div className="dash-stats">
         <StatCard label="Total Items"       value={loadingStats ? null : stats?.total}      accent="#6366f1"
           icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" /></svg>} />
