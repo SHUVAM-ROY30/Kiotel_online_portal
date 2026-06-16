@@ -331,7 +331,7 @@ export default function ManageNonGeneralShifts({ onClose }) {
               <div className="border border-gray-200 rounded-xl max-h-[50vh] overflow-y-auto">
                 {filteredUsers.length === 0 ? (
                   <div className="p-8 text-center text-gray-500">
-                    No users found matching "{userSearchQuery}"
+                    No users found matching {userSearchQuery}
                   </div>
                 ) : (
                   filteredUsers.map((user) => (
