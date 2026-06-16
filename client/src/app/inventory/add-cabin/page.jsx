@@ -185,19 +185,7 @@ export default function AddCabin() {
   const [success, setSuccess] = useState(null);
   const [cabinError, setCabinError] = useState("");
 
-  if (!userLoading && userRole && userRole !== "admin" && userRole !== "manager") {
-    return (
-      <InventoryLayout title="Add Cabin" subtitle="Create a new cabin">
-        <div className="ci-denied">
-          <div className="ci-denied-icon">🔒</div>
-          <div className="ci-denied-title">Access Restricted</div>
-          <div className="ci-denied-sub">Only managers and admins can add cabins.</div>
-        </div>
-      </InventoryLayout>
-    );
-  }
-
-  useEffect(() => {
+    useEffect(() => {
     if (!user) return;
     const fetchProperties = async () => {
       try {
@@ -213,6 +201,20 @@ export default function AddCabin() {
     };
     fetchProperties();
   }, [user]);
+
+  if (!userLoading && userRole && userRole !== "admin" && userRole !== "manager") {
+    return (
+      <InventoryLayout title="Add Cabin" subtitle="Create a new cabin">
+        <div className="ci-denied">
+          <div className="ci-denied-icon">🔒</div>
+          <div className="ci-denied-title">Access Restricted</div>
+          <div className="ci-denied-sub">Only managers and admins can add cabins.</div>
+        </div>
+      </InventoryLayout>
+    );
+  }
+
+
 
   const validate = () => {
     let valid = true;
