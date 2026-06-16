@@ -983,13 +983,14 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { FaUserCircle, FaSearch, FaPlus, FaEdit, FaTrash, FaUsersCog, FaCalendarAlt, FaTimes } from "react-icons/fa";
+import { FaUserCircle, FaSearch, FaPlus, FaEdit, FaTrash, FaUsersCog, FaCalendarAlt, FaTimes, FaCalendarCheck } from "react-icons/fa";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "../../../context/ProtectedRoute";
 import DataTable from "react-data-table-component";
 import ManageAllGroupsModal from "../../../components/ManageAllGroupsModal";
 import ShiftManagement from './ShiftManagement';
+import ManageNonGeneralShifts from './ManageNonGeneralShifts';
 
 // --- Modern Professional Custom Styles for DataTable ---
 const customStyles = {
@@ -1291,6 +1292,7 @@ function Dashboard() {
 
   const [isManageAllGroupsModalOpen, setIsManageAllGroupsModalOpen] = useState(false);
   const [isShiftManagementOpen, setIsShiftManagementOpen] = useState(false);
+  const [isManageNonGeneralShiftsOpen, setIsManageNonGeneralShiftsOpen] = useState(false);
 
   // Close profile menu on outside click
   useEffect(() => {
@@ -1774,6 +1776,13 @@ function Dashboard() {
                   </button>
                 </>
               )}
+              <button
+  onClick={() => setIsManageNonGeneralShiftsOpen(true)}
+  className="flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-medium rounded-lg shadow-sm hover:from-purple-700 hover:to-indigo-700 shadow transition-all duration-300"
+>
+  <FaCalendarCheck className="mr-2" />
+  Manage Non-General Access
+</button>
               
               {/* Manage All Groups Button - Available to both 1 and 8 */}
               <button
@@ -1934,6 +1943,12 @@ function Dashboard() {
           onClose={() => setIsShiftManagementOpen(false)}
         />
       )}
+     
+{isManageNonGeneralShiftsOpen && (
+  <ManageNonGeneralShifts
+    onClose={() => setIsManageNonGeneralShiftsOpen(false)}
+  />
+)}
 
       {/* Manage Groups Modal */}
       <ManageGroupsModal
