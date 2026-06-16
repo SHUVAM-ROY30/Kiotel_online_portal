@@ -209,7 +209,7 @@ export default function CabinsList() {
                 </div>
               </Link>
               <div className="list-item-actions">
-                <Link href={`/inventory/cabin/${cabin.cabin_number}`} className="list-act-btn">
+                <Link href={`/inventory/cabins/${cabin.cabin_number}`} className="list-act-btn">
                   View Inventory
                 </Link>
               </div>
