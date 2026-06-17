@@ -590,7 +590,13 @@ export default function CreateItem() {
   const [success, setSuccess] = useState(null);
   const [nameError, setNameError] = useState("");
   const [prefixError, setPrefixError] = useState("");
+  const [performedByName, setPerformedByName] = useState("");
+// const [nameError, setNameError] = useState("");
   const fileRef = useRef(null);
+
+
+  // Add to validation
+
 
   if (!userLoading && userRole && userRole !== "admin" && userRole !== "manager") {
     return (
@@ -617,6 +623,11 @@ export default function CreateItem() {
 
   const validate = () => {
     let valid = true;
+    if (!performedByName.trim()) {
+  
+  setNameError("Please enter your name.");  // Use the setter function
+  valid = false;
+}
     if (!name.trim()) { setNameError("Item name is required."); valid = false; } 
     else if (name.trim().length > 255) { setNameError("Max 255 characters."); valid = false; } 
     else setNameError("");
@@ -635,6 +646,7 @@ export default function CreateItem() {
       formData.append("name", name.trim());
       formData.append("prefix", prefix.trim());
       formData.append("is_movable", isMovable ? "1" : "0"); // Append movable flag
+      formData.append("performed_by_name", performedByName.trim());
       if (image) formData.append("image", image);
 
       const res = await axios.post(
@@ -705,6 +717,19 @@ export default function CreateItem() {
             </div>
           )}
         </div>
+
+        {/* // Add to form JSX (place it near the top, after item/property selection) */}
+<div className="ri-form-group">
+  <label className="ri-label">Your Name <span className="ri-req">*</span></label>
+  <input
+    className={`ri-input${nameError ? " error" : ""}`}
+    placeholder="Enter your full name..."
+    value={performedByName}
+    onChange={(e) => { setPerformedByName(e.target.value); if (nameError) setNameError(""); }}
+  />
+  {nameError && <div className="ri-field-error">{nameError}</div>}
+  <div className="ri-hint">This name will be recorded in the audit log</div>
+</div>
 
         <div className="ci-actions">
           <button className="ci-btn-secondary" onClick={() => router.push("/inventory/list")} type="button">Cancel</button>

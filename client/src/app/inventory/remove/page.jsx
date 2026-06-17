@@ -1033,6 +1033,10 @@ function RemoveInventoryForm() {
   const [loadingItems, setLoadingItems] = useState(true);
   const [loadingLocations, setLoadingLocations] = useState(true);
   const [loadingUnits, setLoadingUnits] = useState(false);
+  const [performedByName, setPerformedByName] = useState("");
+const [nameError, setNameError] = useState("");
+  // Add to validation
+
 
   const fileRef = useRef(null);
   const debounceTimerRef = useRef(null);
@@ -1281,6 +1285,12 @@ function RemoveInventoryForm() {
 
   const validate = () => {
     const e = {};
+      let valid = true;  // ← This line was missing
+      if (!performedByName.trim()) {
+  
+  setNameError("Please enter your name.");  // Use the setter function
+  valid = false;
+}
     if (!selectedItem) e.item = "Please select an item.";
     if (!quantity || isNaN(quantity) || Number(quantity) <= 0)
       e.quantity = "Enter a valid quantity greater than 0.";
@@ -1316,6 +1326,7 @@ function RemoveInventoryForm() {
       formData.append("item_id", selectedItem);
       formData.append("quantity", quantity);
       formData.append("used_for", usedFor.trim());
+      formData.append("performed_by_name", performedByName.trim());
       if (notes.trim()) formData.append("notes", notes.trim());
       if (image) formData.append("image", image);
 
@@ -1696,6 +1707,19 @@ function RemoveInventoryForm() {
         )}
       </div>
 
+      {/* // Add to form JSX (place it near the top, after item/property selection) */}
+<div className="ri-form-group">
+  <label className="ri-label">Your Name <span className="ri-req">*</span></label>
+  <input
+    className={`ri-input${nameError ? " error" : ""}`}
+    placeholder="Enter your full name..."
+    value={performedByName}
+    onChange={(e) => { setPerformedByName(e.target.value); if (nameError) setNameError(""); }}
+  />
+  {nameError && <div className="ri-field-error">{nameError}</div>}
+  <div className="ri-hint">This name will be recorded in the audit log</div>
+</div>
+
       {/* Actions */}
       <div className="ri-actions">
         <button
@@ -1729,7 +1753,7 @@ function RemoveInventoryForm() {
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              Remove Inventory
+              Assign Inventory
             </>
           )}
         </button>
@@ -1741,7 +1765,7 @@ function RemoveInventoryForm() {
 export default function RemoveInventory() {
   return (
     <InventoryLayout
-      title="Remove Inventory"
+      title="Assign Inventory"
       subtitle="Reduce stock for an item with full audit trail"
     >
       <Suspense

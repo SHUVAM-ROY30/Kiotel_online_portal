@@ -201,6 +201,10 @@ export default function AddProperty() {
   const [success, setSuccess] = useState(null);
   const [codeError, setCodeError] = useState("");
   const [nameError, setNameError] = useState("");
+  const [performedByName, setPerformedByName] = useState("");
+// const [nameError, setNameError] = useState("");
+
+
 
   useEffect(() => {
     if (!user) return;
@@ -218,6 +222,11 @@ export default function AddProperty() {
 
   const validate = () => {
     let valid = true;
+    if (!performedByName.trim()) {
+  
+  setNameError("Please enter your name.");  // Use the setter function
+  valid = false;
+}
     if (!code.trim()) { setCodeError("Property code is required."); valid = false; }
     else if (code.trim().length > 50) { setCodeError("Max 50 characters."); valid = false; }
     else setCodeError("");
@@ -238,6 +247,7 @@ export default function AddProperty() {
       const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/inventory/properties`, {
         code: code.trim(),
         name: name.trim(),
+        performed_by_name: performedByName.trim(),
       }, {
         withCredentials: true,
         headers: { "Content-Type": "application/json", "x-user-id": user.id, "x-user-role": user.roleId, "x-user-email": user.email, "x-user-fname": user.fname, "x-user-unique-id": user.unique_id },
@@ -321,6 +331,18 @@ export default function AddProperty() {
           )}
           <div style={{ fontSize: 11, color: "#9898b0", marginTop: 4 }}>Hold Ctrl/Cmd to select multiple cabins</div>
         </div>
+{/* // Add to form JSX (place it near the top, after item/property selection) */}
+<div className="ri-form-group">
+  <label className="ri-label">Your Name <span className="ri-req">*</span></label>
+  <input
+    className={`ri-input${nameError ? " error" : ""}`}
+    placeholder="Enter your full name..."
+    value={performedByName}
+    onChange={(e) => { setPerformedByName(e.target.value); if (nameError) setNameError(""); }}
+  />
+  {nameError && <div className="ri-field-error">{nameError}</div>}
+  <div className="ri-hint">This name will be recorded in the audit log</div>
+</div>
 
         <div className="ci-actions">
           <button className="ci-btn-secondary" onClick={() => router.push("/inventory/properties")} type="button">Cancel</button>

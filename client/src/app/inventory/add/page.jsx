@@ -24,7 +24,16 @@ function AddInventoryForm() {
   const [success, setSuccess] = useState(null);
   const [errors, setErrors] = useState({});
   const [loadingItems, setLoadingItems] = useState(true);
+  const [performedByName, setPerformedByName] = useState("");
+const [nameError, setNameError] = useState("");
   const fileRef = useRef(null);
+
+
+  // Add to validation
+if (!performedByName.trim()) {
+  nameError("Please enter your name.");
+  valid = false;
+}
 
 useEffect(() => {
   if (!user) return;
@@ -98,6 +107,12 @@ useEffect(() => {
 
   const validate = () => {
     const e = {};
+      let valid = true;  // ← This line was missing
+    if (!performedByName.trim()) {
+  
+  setNameError("Please enter your name.");  // Use the setter function
+  valid = false;
+}
     if (!selectedItem) e.item = "Please select an item.";
     if (!quantity || isNaN(quantity) || Number(quantity) <= 0) e.quantity = "Enter a valid quantity greater than 0.";
     setErrors(e);
@@ -117,6 +132,7 @@ useEffect(() => {
       const formData = new FormData();
       formData.append("item_id", selectedItem);
       formData.append("quantity", quantity);
+      formData.append("performed_by_name", performedByName.trim());
       if (notes.trim()) formData.append("notes", notes.trim());
       if (image) formData.append("image", image);
 
@@ -265,6 +281,18 @@ useEffect(() => {
             </div>
           )}
         </div>
+        {/* // Add to form JSX (place it near the top, after item/property selection) */}
+<div className="ri-form-group">
+  <label className="ri-label">Your Name <span className="ri-req">*</span></label>
+  <input
+    className={`ri-input${nameError ? " error" : ""}`}
+    placeholder="Enter your full name..."
+    value={performedByName}
+    onChange={(e) => { setPerformedByName(e.target.value); if (nameError) setNameError(""); }}
+  />
+  {nameError && <div className="ri-field-error">{nameError}</div>}
+  <div className="ri-hint">This name will be recorded in the audit log</div>
+</div>
 
         {/* Actions */}
         <div className="ai-actions">

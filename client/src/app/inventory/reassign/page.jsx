@@ -25,7 +25,11 @@ export default function ReassignInventory() {
   const [loadingItems, setLoadingItems] = useState(true);
   const [loadingUnits, setLoadingUnits] = useState(false);
   const [loadingProperties, setLoadingProperties] = useState(true);  
-  const [loadingCabins, setLoadingCabins] = useState(true);          
+  const [loadingCabins, setLoadingCabins] = useState(true);    
+  const [performedByName, setPerformedByName] = useState("");
+const [nameError, setNameError] = useState("");
+
+
 
 //   useEffect(() => {
 //     if (!user) return;
@@ -171,6 +175,12 @@ useEffect(() => {
 // Update the validate function
 const validate = () => {
   const e = {};
+    let valid = true;  // ← This line was missing
+  if (!performedByName.trim()) {
+  
+  setNameError("Please enter your name.");  // Use the setter function
+  valid = false;
+}
   if (!selectedItem) e.item = "Please select an item.";
   if (selectedUnitIds.length === 0) e.units = "Please select at least one unit to reassign.";
   // Make both optional - at least one must be filled
@@ -194,6 +204,7 @@ const handleSubmit = async () => {
         unit_ids: selectedUnitIds,
         property_id: selectedProperty || null,
         cabin_id: selectedCabin || null,
+        performed_by_name: performedByName,
       },
       {
         withCredentials: true,

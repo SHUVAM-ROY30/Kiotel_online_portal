@@ -184,6 +184,11 @@ export default function AddCabin() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [cabinError, setCabinError] = useState("");
+  const [performedByName, setPerformedByName] = useState("");
+const [nameError, setNameError] = useState("");
+
+
+
 
     useEffect(() => {
     if (!user) return;
@@ -218,6 +223,11 @@ export default function AddCabin() {
 
   const validate = () => {
     let valid = true;
+    if (!performedByName.trim()) {
+  
+  setNameError("Please enter your name.");  // Use the setter function
+  valid = false;
+}
     if (!cabinNumber.trim()) { setCabinError("Cabin number is required."); valid = false; } 
     else if (cabinNumber.trim().length > 50) { setCabinError("Max 50 characters."); valid = false; } 
     else setCabinError("");
@@ -235,6 +245,7 @@ export default function AddCabin() {
         {
           cabin_number: cabinNumber.trim(),
           description: description.trim() || null,
+          performed_by_name: performedByName.trim(),
           property_ids: selectedPropertyIds.length > 0 ? selectedPropertyIds : null,
         },
         {
@@ -291,6 +302,19 @@ export default function AddCabin() {
           <label className="ci-label">Description <span style={{ color: "#3a3a55", marginLeft: 4, fontSize: 11 }}>(Optional)</span></label>
           <textarea className="ri-textarea" placeholder="e.g. First floor corner room..." value={description} maxLength={255} onChange={(e) => setDescription(e.target.value)} rows={3} />
         </div>
+
+        {/* // Add to form JSX (place it near the top, after item/property selection) */}
+<div className="ri-form-group">
+  <label className="ri-label">Your Name <span className="ri-req">*</span></label>
+  <input
+    className={`ri-input${nameError ? " error" : ""}`}
+    placeholder="Enter your full name..."
+    value={performedByName}
+    onChange={(e) => { setPerformedByName(e.target.value); if (nameError) setNameError(""); }}
+  />
+  {nameError && <div className="ri-field-error">{nameError}</div>}
+  <div className="ri-hint">This name will be recorded in the audit log</div>
+</div>
 
         <div className="ci-actions">
           <button className="ci-btn-secondary" onClick={() => router.push("/inventory/cabins")} type="button">Cancel</button>
