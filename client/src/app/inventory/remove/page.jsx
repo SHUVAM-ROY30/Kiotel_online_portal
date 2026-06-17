@@ -1344,7 +1344,7 @@ function RemoveInventoryForm() {
       );
       if (res.data?.success) {
         setSuccess(`Inventory removed! Remaining stock: ${newStock} units.`);
-        setTimeout(() => router.push("/inventory/list"), 1400);
+        setTimeout(() => router.push("/inventory/remove"), 1400);
       } else {
         setError(res.data?.message || "Failed to remove inventory.");
       }

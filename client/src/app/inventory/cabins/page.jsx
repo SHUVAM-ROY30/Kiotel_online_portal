@@ -191,7 +191,7 @@ export default function CabinsList() {
         <div className="list-grid">
           {filtered.map((cabin) => (
             <div key={cabin.id} className="list-item-card">
-              <Link href={`/inventory/cabin/${cabin.cabin_number}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+              <Link href={`/inventory/cabins/${cabin.cabin_number}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
                 <div className="list-item-body">
                   <div className="list-item-name">Cabin {cabin.cabin_number}</div>
                   <div style={{ fontSize: 13, color: "#9898b0", marginBottom: 8 }}>{cabin.code}</div>

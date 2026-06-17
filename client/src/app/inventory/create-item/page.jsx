@@ -645,7 +645,7 @@ export default function CreateItem() {
           headers: { "Content-Type": "multipart/form-data", "x-user-id": user.id, "x-user-role": user.roleId, "x-user-email": user.email, "x-user-fname": user.fname, "x-user-unique-id": user.unique_id },
         },
       );
-      if (res.data?.success) { setSuccess("Item created successfully!"); setTimeout(() => router.push("/inventory/list"), 1200); } 
+      if (res.data?.success) { setSuccess("Item created successfully!"); setTimeout(() => router.push("/inventory/create-item"), 1200); } 
       else { setError(res.data?.message || "Failed to create item."); }
     } catch (err) { setError(err.response?.data?.message || "Something went wrong."); } finally { setSubmitting(false); }
   };
