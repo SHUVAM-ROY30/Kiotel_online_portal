@@ -8,6 +8,7 @@ import axios from "axios";
 export default function Logs() {
   const { user, userRole, loading: userLoading } = useInventoryUser();
   const [logs, setLogs] = useState([]);
+  const [items, setItems] = useState({}); // Map of item_id -> item_name
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
@@ -43,6 +44,34 @@ export default function Logs() {
     fetchLogs();
   }, [user, page, filterAction]);
 
+  // Fetch items list to map IDs to names
+  useEffect(() => {
+    if (!user) return;
+    const fetchItems = async () => {
+      try {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/inventory/items?limit=1000`,
+          {
+            withCredentials: true,
+            headers: {
+              "x-user-id": user.id, "x-user-role": user.roleId,
+              "x-user-email": user.email, "x-user-fname": user.fname,
+              "x-user-unique-id": user.unique_id,
+            },
+          }
+        );
+        const itemsMap = {};
+        (res.data?.data || []).forEach(item => {
+          itemsMap[item.id] = item.name;
+        });
+        setItems(itemsMap);
+      } catch (err) {
+        console.error("Failed to fetch items:", err);
+      }
+    };
+    fetchItems();
+  }, [user]);
+
   const getActionLabel = (action) => {
     const labels = {
       'inventory.transaction.add': '📥 Added Inventory',
@@ -52,9 +81,9 @@ export default function Logs() {
       'property.create': '🏢 Created Property',
       'properties.import': '📥 Imported Properties',
       'cabin.create': '🚪 Created Cabin',
-      'cabins.import': ' Imported Cabins',
+      'cabins.import': '📥 Imported Cabins',
       'property_cabin.link': '🔗 Linked Property-Cabin',
-      'property_cabin.unlink': '️ Unlinked Property-Cabin',
+      'property_cabin.unlink': '🔓 Unlinked Property-Cabin',
       'item.create': '📦 Created Item',
     };
     return labels[action] || action;
@@ -65,7 +94,13 @@ export default function Logs() {
     try {
       const parsed = typeof meta === 'string' ? JSON.parse(meta) : meta;
       const parts = [];
-      if (parsed.item_id) parts.push(`Item: ${parsed.item_id}`);
+      
+      // ✅ Show item name instead of item_id
+      if (parsed.item_id) {
+        const itemName = items[parsed.item_id] || `Item #${parsed.item_id}`;
+        parts.push(`Item: ${itemName}`);
+      }
+      
       if (parsed.qty || parsed.quantity) parts.push(`Qty: ${parsed.qty || parsed.quantity}`);
       if (parsed.reason) parts.push(`Reason: ${parsed.reason}`);
       if (parsed.before !== undefined && parsed.after !== undefined) parts.push(`${parsed.before} → ${parsed.after}`);
@@ -73,6 +108,7 @@ export default function Logs() {
       if (parsed.imported) parts.push(`Imported: ${parsed.imported}`);
       if (parsed.property_id) parts.push(`Property: ${parsed.property_id}`);
       if (parsed.cabin_id) parts.push(`Cabin: ${parsed.cabin_id}`);
+      
       return parts.join(' · ') || JSON.stringify(parsed).substring(0, 100);
     } catch {
       return '—';
@@ -115,10 +151,10 @@ export default function Logs() {
                   <th style={{ padding: "12px 16px", textAlign: "left", color: "#6b6b8a", fontWeight: 600, borderBottom: "1px solid #e8eaf0" }}>Action</th>
                   <th style={{ padding: "12px 16px", textAlign: "left", color: "#6b6b8a", fontWeight: 600, borderBottom: "1px solid #e8eaf0" }}>User</th>
                   <th style={{ padding: "12px 16px", textAlign: "left", color: "#6b6b8a", fontWeight: 600, borderBottom: "1px solid #e8eaf0" }}>Details</th>
-                  <th style={{ padding: "12px 16px", textAlign: "left", color: "#6b6b8a", fontWeight: 600, borderBottom: "1px solid #e8eaf0" }}>IP Address</th>
+                  {/* <th style={{ padding: "12px 16px", textAlign: "left", color: "#6b6b8a", fontWeight: 600, borderBottom: "1px solid #e8eaf0" }}>IP Address</th> */}
                 </tr>
               </thead>
-              {/* <tbody>
+              <tbody>
                 {logs.map((log) => (
                   <tr key={log.id} style={{ borderBottom: "1px solid #f0f1f8" }}>
                     <td style={{ padding: "12px 16px", whiteSpace: "nowrap", color: "#6b6b8a", fontSize: 12 }}>
@@ -133,66 +169,41 @@ export default function Logs() {
                     <td style={{ padding: "12px 16px" }}>
                       <div style={{ color: "#2a2a3e", fontWeight: 500 }}>{log.fname || 'System'}</div>
                       <div style={{ fontSize: 11, color: "#9898b0" }}>{log.email || '—'}</div>
+                      
+                      {/* Display Performed By Name */}
+                      {(() => {
+                        try {
+                          const metaObj = typeof log.meta === 'string' ? JSON.parse(log.meta || '{}') : (log.meta || {});
+                          const performedBy = metaObj.performed_by;
+                          if (performedBy) {
+                            return (
+                              <div style={{ 
+                                fontSize: 11, 
+                                color: "#6366f1", 
+                                marginTop: 6, 
+                                fontWeight: 600,
+                                background: "#eef0fd",
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                display: "inline-block"
+                              }}>
+                                Performed by: {performedBy}
+                              </div>
+                            );
+                          }
+                        } catch (e) {}
+                        return null;
+                      })()}
                     </td>
                     <td style={{ padding: "12px 16px", color: "#6b6b8a", fontSize: 12, maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis" }}>
                       {formatMeta(log.meta)}
                     </td>
-                    <td style={{ padding: "12px 16px", color: "#9898b0", fontSize: 11, fontFamily: "monospace" }}>
+                    {/* <td style={{ padding: "12px 16px", color: "#9898b0", fontSize: 11, fontFamily: "monospace" }}>
                       {log.ip_address || '—'}
-                    </td>
+                    </td> */}
                   </tr>
                 ))}
-              </tbody> */}
-              <tbody>
-  {logs.map((log) => {
-    // Parse meta to get performed_by name
-    let performedBy = null;
-    try {
-      const metaObj = typeof log.meta === 'string' ? JSON.parse(log.meta || '{}') : (log.meta || {});
-      performedBy = metaObj.performed_by;
-    } catch (e) {}
-
-    return (
-      <tr key={log.id} style={{ borderBottom: "1px solid #f0f1f8" }}>
-        <td style={{ padding: "12px 16px", whiteSpace: "nowrap", color: "#6b6b8a", fontSize: 12 }}>
-          {new Date(log.created_at).toLocaleString("en-IN", {
-            day: "2-digit", month: "short", year: "numeric",
-            hour: "2-digit", minute: "2-digit"
-          })}
-        </td>
-        <td style={{ padding: "12px 16px", fontWeight: 500, color: "#2a2a3e" }}>
-          {getActionLabel(log.action)}
-        </td>
-        <td style={{ padding: "12px 16px" }}>
-          <div style={{ color: "#2a2a3e", fontWeight: 500 }}>{log.fname || 'System'}</div>
-          <div style={{ fontSize: 11, color: "#9898b0" }}>{log.email || '—'}</div>
-          
-          {/* ✅ NEW: Display Performed By Name */}
-          {performedBy && (
-            <div style={{ 
-              fontSize: 11, 
-              color: "#6366f1", 
-              marginTop: 6, 
-              fontWeight: 600,
-              background: "#eef0fd",
-              padding: "2px 6px",
-              borderRadius: 4,
-              display: "inline-block"
-            }}>
-              Performed by: {performedBy}
-            </div>
-          )}
-        </td>
-        <td style={{ padding: "12px 16px", color: "#6b6b8a", fontSize: 12, maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis" }}>
-          {formatMeta(log.meta)}
-        </td>
-        <td style={{ padding: "12px 16px", color: "#9898b0", fontSize: 11, fontFamily: "monospace" }}>
-          {log.ip_address || '—'}
-        </td>
-      </tr>
-    );
-  })}
-</tbody>
+              </tbody>
             </table>
           </div>
 
