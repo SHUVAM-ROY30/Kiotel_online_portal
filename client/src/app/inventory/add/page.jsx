@@ -29,11 +29,7 @@ const [nameError, setNameError] = useState("");
   const fileRef = useRef(null);
 
 
-  // Add to validation
-if (!performedByName.trim()) {
-  nameError("Please enter your name.");
-  valid = false;
-}
+
 
 useEffect(() => {
   if (!user) return;
