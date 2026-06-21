@@ -69,7 +69,8 @@ export default function ClockPage() {
 
   const [adminSelectedDate, setAdminSelectedDate] = useState(null);
 
-  const [allowedNonGeneralShiftIds, setAllowedNonGeneralShiftIds] = useState([]);
+  // const [allowedNonGeneralShiftIds, setAllowedNonGeneralShiftIds] = useState([]);
+  const [hasNonGeneralAccess, setHasNonGeneralAccess] = useState(false);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -88,25 +89,25 @@ export default function ClockPage() {
     }
   };
 
-  // Add this useEffect to fetch allowed shifts when employee is loaded
+// Add this useEffect to check access when employee is loaded
 useEffect(() => {
   if (employee?.unique_id && !isDirectShiftUser) {
-    const fetchAllowedShifts = async () => {
+    const checkAccess = async () => {
       try {
         const res = await fetch(
-          `${API_BASE_URL}/clockin/employee/allowed-non-general-shifts?account_no=${encodeURIComponent(employee.unique_id)}`
+          `${API_BASE_URL}/clockin/employee/has-non-general-access?account_no=${encodeURIComponent(employee.unique_id)}`
         );
         const data = await res.json();
         
         if (res.ok && data.success) {
-          setAllowedNonGeneralShiftIds(data.data.allowed_non_general_shift_ids || []);
+          setHasNonGeneralAccess(data.data.has_access);
         }
       } catch (err) {
-        console.error("Failed to fetch allowed non-general shifts:", err);
+        console.error("Failed to check non-general access:", err);
       }
     };
     
-    fetchAllowedShifts();
+    checkAccess();
   }
 }, [employee?.unique_id, isDirectShiftUser]);
 
@@ -237,7 +238,36 @@ useEffect(() => {
   //   return (shift.category_id === 1 || shift.category_id === 3) && shift.shift_name !== "ADMIN";
   // });
 
-  const availableShifts = allShifts.filter((shift) => {
+//   const availableShifts = allShifts.filter((shift) => {
+//   if (!employee) return false;
+//   const empId = String(employee.unique_id);
+
+//   // QA Team - No change
+//   if (QA_TEAM_IDS.includes(empId)) {
+//     return shift.category_id === 2;
+//   }
+
+//   // Office Admins - No change
+//   if (OFFICE_ADMIN_IDS.includes(empId)) {
+//     return shift.shift_name === "ADMIN";
+//   }
+
+//   // General Users
+//   // Always show General Shifts (Category 1)
+//   if (shift.category_id === 1 && shift.shift_name !== "ADMIN") {
+//     return true;
+//   }
+
+//   // Only show Non-General Shifts (Category 3) if explicitly assigned
+//   if (shift.category_id === 3 && shift.shift_name !== "ADMIN") {
+//     return allowedNonGeneralShiftIds.includes(shift.id);
+//   }
+
+//   return false;
+// });
+
+// Update the availableShifts filter
+const availableShifts = allShifts.filter((shift) => {
   if (!employee) return false;
   const empId = String(employee.unique_id);
 
@@ -257,14 +287,13 @@ useEffect(() => {
     return true;
   }
 
-  // Only show Non-General Shifts (Category 3) if explicitly assigned
+  // Only show Non-General Shifts (Category 3) if user has access
   if (shift.category_id === 3 && shift.shift_name !== "ADMIN") {
-    return allowedNonGeneralShiftIds.includes(shift.id);
+    return hasNonGeneralAccess;
   }
 
   return false;
 });
-
   const generalShifts = availableShifts.filter((shift) => shift.category_id === 1);
   const nonGeneralShifts = availableShifts.filter((shift) => shift.category_id === 3);
 
