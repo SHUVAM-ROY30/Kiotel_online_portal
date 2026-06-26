@@ -18,7 +18,40 @@ export default function CabinsList() {
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState(null);
+  
+  const [linkModal, setLinkModal] = useState({ open: false, cabin: null });
+  const [linkPropertyId, setLinkPropertyId] = useState("");
+  const [properties, setProperties] = useState([]);
   const fileInputRef = useRef(null);
+  
+// Fetch properties for the modal
+useEffect(() => {
+  if (!user) return;
+  axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/inventory/properties`, {
+    withCredentials: true,
+    headers: { "x-user-id": user.id, "x-user-role": user.roleId, "x-user-email": user.email, "x-user-fname": user.fname, "x-user-unique-id": user.unique_id },
+  }).then(res => setProperties(res.data?.data || [])).catch(() => {});
+}, [user]);
+
+const openLinkPropertyModal = (cabin) => {
+  setLinkModal({ open: true, cabin });
+  setLinkPropertyId("");
+};
+
+const handleLinkProperty = async () => {
+  if (!linkPropertyId) return;
+  try {
+    await axios.post(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/inventory/cabins/${linkModal.cabin.id}/link-property`,
+      { property_id: linkPropertyId },
+      { withCredentials: true, headers: { "x-user-id": user.id, "x-user-role": user.roleId, "x-user-email": user.email, "x-user-fname": user.fname, "x-user-unique-id": user.unique_id } }
+    );
+    setLinkModal({ open: false, cabin: null });
+    fetchCabins(); // Refresh
+  } catch (err) {
+    setError(err.response?.data?.message || "Failed to link.");
+  }
+};
 
   const fetchCabins = useCallback(async () => {
     if (!user) return;
@@ -189,7 +222,7 @@ export default function CabinsList() {
         </div>
       ) : (
         <div className="list-grid">
-          {filtered.map((cabin) => (
+          {/* {filtered.map((cabin) => (
             <div key={cabin.id} className="list-item-card">
               <Link href={`/inventory/cabins/${cabin.cabin_number}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
                 <div className="list-item-body">
@@ -214,7 +247,72 @@ export default function CabinsList() {
                 </Link>
               </div>
             </div>
-          ))}
+          ))} */}
+
+          {filtered.map((cabin) => (
+  <div key={cabin.id} className="list-item-card">
+    <Link href={`/inventory/cabins/${cabin.cabin_number}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+      <div className="list-item-body">
+        <div className="list-item-name">Cabin {cabin.cabin_number}</div>
+        <div style={{ fontSize: 13, color: "#9898b0", marginBottom: 8 }}>{cabin.code}</div>
+        {cabin.description && (
+          <div style={{ fontSize: 12, color: "#6b6b8a", marginBottom: 8, fontStyle: "italic" }}>
+            {cabin.description}
+          </div>
+        )}
+        
+        {/* Linked Properties Display */}
+        <div style={{ marginBottom: 8 }}>
+          {cabin.linked_properties_count > 0 ? (
+            <div style={{ 
+              display: "inline-flex", alignItems: "center", gap: 4,
+              padding: "3px 8px", background: "#dcfce7", borderRadius: 4,
+              fontSize: 11, color: "#16a34a", fontWeight: 500
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+              </svg>
+              {cabin.linked_properties}
+            </div>
+          ) : (
+            <div style={{ 
+              display: "inline-flex", alignItems: "center", gap: 4,
+              padding: "3px 8px", background: "#fee2e2", borderRadius: 4,
+              fontSize: 11, color: "#dc2626", fontWeight: 500
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+              No Property Linked
+            </div>
+          )}
+        </div>
+
+        <div className="list-item-footer">
+          <div>
+            <div className="list-item-qty">{cabin.assigned_units_count || 0}</div>
+            <div className="list-item-qty-label">units assigned</div>
+          </div>
+        </div>
+      </div>
+    </Link>
+    <div className="list-item-actions">
+      <Link href={`/inventory/cabins/${cabin.cabin_number}`} className="list-act-btn">View Inventory</Link>
+      {can("create") && (
+        <button
+          onClick={() => openLinkPropertyModal(cabin)}
+          style={{
+            padding: "4px 10px", background: "#6366f1", color: "#fff",
+            border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer"
+          }}
+        >
+          {cabin.linked_properties_count > 0 ? "Manage Links" : "Link Property"}
+        </button>
+      )}
+    </div>
+  </div>
+))}
         </div>
       )}
 
@@ -353,6 +451,22 @@ export default function CabinsList() {
                 )}
               </div>
             )}
+            {/* // Add modal JSX at the end of the component: */}
+{linkModal.open && (
+  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
+    <div style={{ background: "#fff", borderRadius: 12, padding: 24, maxWidth: 400, width: "100%" }}>
+      <h2 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700 }}>Link Property to Cabin {linkModal.cabin.cabin_number}</h2>
+      <select value={linkPropertyId} onChange={(e) => setLinkPropertyId(e.target.value)} className="ri-select" style={{ width: "100%", marginBottom: 16 }}>
+        <option value="">— Select Property —</option>
+        {properties.map(p => <option key={p.id} value={p.id}>{p.name} ({p.code})</option>)}
+      </select>
+      <div style={{ display: "flex", gap: 12 }}>
+        <button onClick={() => setLinkModal({ open: false, cabin: null })} className="ri-btn-secondary" style={{ flex: 1 }}>Cancel</button>
+        <button onClick={handleLinkProperty} disabled={!linkPropertyId} className="ri-btn-primary" style={{ flex: 1 }}>Link</button>
+      </div>
+    </div>
+  </div>
+)}
           </div>
         </div>
       )}
