@@ -1788,7 +1788,7 @@
 
 "use client";
 import "../inventory.css";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import InventoryLayout from "../_components/InventoryLayout";
 import { useInventoryUser } from "../_hooks/useInventoryUser";
@@ -2223,10 +2223,19 @@ function RemoveInventoryForm() {
   );
 }
 
+// export default function RemoveInventory() {
+//   return (
+//     <InventoryLayout title="Remove Inventory" subtitle="Reduce stock for an item with full audit trail">
+//       <RemoveInventoryForm />
+//     </InventoryLayout>
+//   );
+// }
+
 export default function RemoveInventory() {
   return (
     <InventoryLayout title="Remove Inventory" subtitle="Reduce stock for an item with full audit trail">
-      <RemoveInventoryForm />
+      <Suspense fallback={<div className="inv-skeleton" style={{ height: 44, borderRadius: 8 }} />}>
+        <RemoveInventoryForm />
+      </Suspense>
     </InventoryLayout>
-  );
-}
+  );}
