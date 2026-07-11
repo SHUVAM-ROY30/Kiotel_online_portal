@@ -26,11 +26,12 @@ const DIRECT_SHIFT_EMAILS = [
   "tushars@kiotel.co",
   "vishals@kiotel.co",
   "adityas@kiotel.co",
+  "arbaz.p@valianthotels.com",
 ];
 
 // 🔴 ADD YOUR SPECIFIC EMPLOYEE IDs HERE 🔴
 const QA_TEAM_IDS = ["1QD211Q", "J9CI294", "L48FR84", "P0623XZ"];
-const OFFICE_ADMIN_IDS = ["8P4YX26", "16YM0V6"];
+const OFFICE_ADMIN_IDS = ["8P4YX26", "16YM0V6", "FF39G61"];
 
 export default function ClockPage() {
   const router = useRouter();
