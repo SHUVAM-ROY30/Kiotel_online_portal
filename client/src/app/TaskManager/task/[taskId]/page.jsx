@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import Select from "react-select";
+import DOMPurify from "isomorphic-dompurify";
 import {
   FaTasks,
   FaUser,
@@ -68,6 +69,25 @@ export default function TicketDetails({ params }) {
     };
   }, []);
 
+  // attachment_urls comes back comma-separated (may be a JSON-encoded string,
+  // a plain "url1,url2" string, or an array). Normalise to a URL array.
+  const parseAttachmentUrls = (val) => {
+    if (!val) return [];
+    let s = val;
+    if (typeof s !== "string") {
+      if (Array.isArray(s)) return s.filter(Boolean);
+      s = String(s);
+    }
+    try {
+      const p = JSON.parse(s);
+      if (Array.isArray(p)) return p.filter(Boolean);
+      if (typeof p === "string") s = p;
+    } catch (_) {
+      /* not JSON — treat as plain comma-separated */
+    }
+    return s.split(",").map((x) => x.trim()).filter(Boolean);
+  };
+
   const isImage = (filename) => {
     if (!filename || typeof filename !== "string") {
       return false;
@@ -120,13 +140,13 @@ export default function TicketDetails({ params }) {
       try {
         const [ticketResponse, repliesResponse] = await Promise.all([
           axios.get(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${ticketId}`,
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/task/${ticketId}/v2`,
             {
               withCredentials: true,
             }
           ),
           axios.get(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${ticketId}/replies`,
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/task/${ticketId}/replies/v2`,
             {
               withCredentials: true,
             }
@@ -310,9 +330,9 @@ export default function TicketDetails({ params }) {
 
     try {
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_state`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/update_task_state/v2`,
         { status_id: statusId, ticketId },
-        { withCredentials: true }
+        { withCredentials: true, headers: { "x-user-id": user?.id } }
       );
     } catch (err) {
       console.error("🚨 Error updating status:", err);
@@ -390,7 +410,7 @@ export default function TicketDetails({ params }) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mb-4"></div>
           <p className="text-gray-700 font-medium">Loading task details...</p>
         </div>
       </div>
@@ -403,7 +423,7 @@ export default function TicketDetails({ params }) {
           <p className="text-gray-700 mb-4">Failed to load task details: {error}</p>
           <button
             onClick={() => router.back()}
-            className="w-full py-2 px-4 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             Go Back
           </button>
@@ -420,17 +440,17 @@ export default function TicketDetails({ params }) {
     );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-white">
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* --- UNIFIED MODERN HEADER CARD --- */}
-        <header className="bg-white shadow-sm rounded-2xl mb-8 p-6 border border-gray-200">
+        <header className="bg-white shadow-sm shadow-blue-100/60 rounded-2xl mb-8 p-6 border border-blue-100">
           {/* Top Row: Back Button & User/Logo */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b border-gray-100">
             <button
               onClick={() => router.push('/TaskManager/openTasks')}
-              className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 hover:text-indigo-600 rounded-lg transition-all duration-200 border border-gray-200 hover:border-indigo-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-all duration-200 border border-blue-100 hover:border-blue-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               <FaArrowLeft className="mr-2" /> Back to Tasks
             </button>
@@ -454,8 +474,8 @@ export default function TicketDetails({ params }) {
 
           {/* Bottom Row: Page Title */}
           <div className="flex items-center space-x-4">
-            <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-              <FaTasks className="h-7 w-7 text-indigo-600" />
+            <div className="p-3 bg-blue-600 rounded-xl shadow-md shadow-blue-200">
+              <FaTasks className="h-7 w-7 text-white" />
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Task Details</h1>
@@ -473,7 +493,7 @@ export default function TicketDetails({ params }) {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Task Information Card */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden border border-gray-200">
+            <div className="bg-white rounded-2xl shadow-sm shadow-blue-100/50 overflow-hidden border border-blue-100">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div>
@@ -496,7 +516,7 @@ export default function TicketDetails({ params }) {
                           )}`
                         )
                       }
-                      className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-sm font-medium rounded-lg shadow-sm hover:shadow transition-all duration-300 transform hover:-translate-y-0.5"
+                      className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-medium rounded-lg shadow-sm hover:shadow transition-all duration-300 transform hover:-translate-y-0.5"
                     >
                       <FaCommentDots className="mr-2" />
                       Reply
@@ -505,7 +525,7 @@ export default function TicketDetails({ params }) {
                       <button
                         type="button"
                         onClick={() => setIsAssignDropdownOpen(!isAssignDropdownOpen)}
-                        className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 text-white text-sm font-medium rounded-lg shadow-sm hover:shadow transition-all duration-300 transform hover:-translate-y-0.5"
+                        className="inline-flex items-center px-4 py-2 bg-white border border-blue-600 text-blue-700 hover:bg-blue-50 text-sm font-medium rounded-lg shadow-sm transition-all duration-300"
                       >
                         <FaUserPlus className="mr-2" />
                         Assign
@@ -526,7 +546,7 @@ export default function TicketDetails({ params }) {
                             className={`w-full py-2 px-4 rounded-lg shadow transition ${
                               !selectedUser
                                 ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-indigo-600 hover:bg-indigo-700 text-white transform hover:-translate-y-0.5 shadow-indigo-200/50"
+                                : "bg-blue-600 hover:bg-blue-700 text-white transform hover:-translate-y-0.5 shadow-blue-200/50"
                             }`}
                           >
                             Confirm Assignment
@@ -579,19 +599,32 @@ export default function TicketDetails({ params }) {
                   </div>
                 </div>
 
-                {/* Description */}
+                {/* Description (rich HTML from the editor, sanitized) */}
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <p className="whitespace-pre-line text-gray-700">{ticketDetails.description}</p>
-                  </div>
+                  <div
+                    className="task-html bg-gray-50 border border-gray-200 rounded-lg p-4 text-gray-700 text-sm leading-relaxed"
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(ticketDetails.description || ""),
+                    }}
+                  />
                 </div>
+                <style>{`
+                  .task-html p { margin: 0 0 0.5rem; }
+                  .task-html p:last-child { margin-bottom: 0; }
+                  .task-html ul { list-style: disc; padding-left: 1.25rem; margin: 0 0 0.5rem; }
+                  .task-html ol { list-style: decimal; padding-left: 1.25rem; margin: 0 0 0.5rem; }
+                  .task-html a { color: #2563eb; text-decoration: underline; }
+                  .task-html strong { font-weight: 600; }
+                  .task-html h1, .task-html h2, .task-html h3 { font-weight: 600; margin: 0.5rem 0; }
+                  .task-html pre { background: #0f172a; color: #e2e8f0; padding: 0.75rem; border-radius: 6px; overflow-x: auto; }
+                `}</style>
 
                 {/* Subtasks */}
                 {subtasks.length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-                      <FaTasks className="mr-2 text-indigo-500" />
+                      <FaTasks className="mr-2 text-blue-600" />
                       Subtasks
                     </h3>
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -611,84 +644,38 @@ export default function TicketDetails({ params }) {
                   </div>
                 )}
 
-                {/* Attachments */}
-                {(
-                  (ticketDetails.unique_name && ticketDetails.unique_name !== "") ||
-                  (Array.isArray(ticketDetails.unique_multi) && ticketDetails.unique_multi.length > 0)
-                ) && (
+                {/* Attachments (served from DigitalOcean Spaces via attachment_urls) */}
+                {parseAttachmentUrls(ticketDetails.attachment_urls).length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-                      <FaPaperclip className="mr-2 text-indigo-500" />
+                      <FaPaperclip className="mr-2 text-blue-600" />
                       Attachments
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                      {/* Single File */}
-                      {ticketDetails.unique_name && ticketDetails.unique_name !== "" && (
-                        isImage(ticketDetails.unique_name) ? (
-                          <div className="relative group overflow-hidden rounded-lg shadow-md">
-                            <a
-                              href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${ticketDetails.unique_name}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block"
-                            >
+                      {parseAttachmentUrls(ticketDetails.attachment_urls).map((url, idx) =>
+                        isImage(url) ? (
+                          <div key={idx} className="relative group overflow-hidden rounded-lg shadow-md">
+                            <a href={url} target="_blank" rel="noopener noreferrer" className="block">
                               <img
-                                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${ticketDetails.unique_name}`}
-                                alt="Task Attachment"
+                                src={url}
+                                alt={`Task Attachment ${idx + 1}`}
                                 className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105"
                               />
                             </a>
                           </div>
                         ) : (
-                          <button
-                            onClick={() =>
-                              handleDownload(
-                                `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${ticketDetails.unique_name}`,
-                                ticketDetails.unique_name
-                              )
-                            }
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg shadow transition transform hover:-translate-y-0.5"
+                          <a
+                            key={idx}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg shadow transition transform hover:-translate-y-0.5 flex items-center justify-center text-center"
                           >
                             Download File
-                          </button>
+                          </a>
                         )
                       )}
-
-                      {/* Multiple Files */}
-                      {(!ticketDetails.unique_name || ticketDetails.unique_name === "") &&
-                        Array.isArray(ticketDetails.unique_multi) &&
-                        ticketDetails.unique_multi.length > 0 &&
-                        ticketDetails.unique_multi.map((file, idx) => (
-                          <div key={idx}>
-                            {isImage(file) ? (
-                              <div className="relative group overflow-hidden rounded-lg shadow-md">
-                                <a
-                                  href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${file}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <img
-                                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${file}`}
-                                    alt={`Attachment ${idx}`}
-                                    className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105"
-                                  />
-                                </a>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() =>
-                                  handleDownload(
-                                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${file}`,
-                                    file
-                                  )
-                                }
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg shadow transition transform hover:-translate-y-0.5"
-                              >
-                                Download
-                              </button>
-                            )}
-                          </div>
-                        ))}
                     </div>
                   </div>
                 )}
@@ -696,10 +683,10 @@ export default function TicketDetails({ params }) {
             </div>
 
             {/* Replies Section */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden border border-gray-200">
+            <div className="bg-white rounded-2xl shadow-sm shadow-blue-100/50 overflow-hidden border border-blue-100">
               <div className="p-6">
                 <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                  <FaCommentDots className="mr-2 text-indigo-500" />
+                  <FaCommentDots className="mr-2 text-blue-600" />
                   Conversation ({replies.length})
                 </h3>
                 {replies.length === 0 ? (
@@ -712,7 +699,7 @@ export default function TicketDetails({ params }) {
                       <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center">
-                            <div className="bg-indigo-100 text-indigo-800 rounded-full w-10 h-10 flex items-center justify-center font-semibold text-sm mr-3">
+                            <div className="bg-blue-100 text-blue-800 rounded-full w-10 h-10 flex items-center justify-center font-semibold text-sm mr-3">
                               {reply.fname.charAt(0)}
                               {reply.lname?.charAt(0) || ""}
                             </div>
@@ -733,38 +720,34 @@ export default function TicketDetails({ params }) {
                         </div>
                         <p className="text-gray-700 mb-4">{reply.reply_text}</p>
                         
-                        {/* Reply Attachments */}
-                        {reply.unique_name && (
+                        {/* Reply Attachments (from Spaces via attachment_urls) */}
+                        {parseAttachmentUrls(reply.attachment_urls).length > 0 && (
                           <div>
                             <h4 className="text-sm font-medium text-gray-700 mb-2">Attachments:</h4>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                              {isImage(reply.unique_name) ? (
-                                <div className="relative group overflow-hidden rounded-lg shadow-md">
+                              {parseAttachmentUrls(reply.attachment_urls).map((url, i) =>
+                                isImage(url) ? (
+                                  <div key={i} className="relative group overflow-hidden rounded-lg shadow-md">
+                                    <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+                                      <img
+                                        src={url}
+                                        alt={`Reply Attachment ${i + 1}`}
+                                        className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105"
+                                      />
+                                    </a>
+                                  </div>
+                                ) : (
                                   <a
-                                    href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/replies/${reply.unique_name}`}
+                                    key={i}
+                                    href={url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="block"
+                                    download
+                                    className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg shadow transition transform hover:-translate-y-0.5 flex items-center justify-center text-center"
                                   >
-                                    <img
-                                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/replies/${reply.unique_name}`}
-                                      alt={`Reply Attachment`}
-                                      className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105"
-                                    />
+                                    Download Attachment
                                   </a>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() =>
-                                    handleDownload(
-                                      `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/replies/${reply.unique_name}`,
-                                      reply.unique_name
-                                    )
-                                  }
-                                  className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg shadow transition transform hover:-translate-y-0.5"
-                                >
-                                  Download Attachment
-                                </button>
+                                )
                               )}
                             </div>
                           </div>
@@ -780,10 +763,10 @@ export default function TicketDetails({ params }) {
           {/* Sidebar */}
           <div className="space-y-8">
             {/* Assignment Card */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden border border-gray-200">
+            <div className="bg-white rounded-2xl shadow-sm shadow-blue-100/50 overflow-hidden border border-blue-100">
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <FaUser className="mr-2 text-indigo-500" />
+                  <FaUser className="mr-2 text-blue-600" />
                   Assignment
                 </h3>
                 <div className="mb-4">
@@ -793,9 +776,9 @@ export default function TicketDetails({ params }) {
                       {assignedUsers.map((user, index) => (
                         <span
                           key={index}
-                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 border border-indigo-200"
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200"
                         >
-                          <FaUser className="mr-1 text-indigo-500" size="0.8em" />
+                          <FaUser className="mr-1 text-blue-600" size="0.8em" />
                           {user.fname} {user.lname?.charAt(0) || ''}
                         </span>
                       ))}
@@ -808,10 +791,10 @@ export default function TicketDetails({ params }) {
             </div>
 
             {/* Metadata Card */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden border border-gray-200">
+            <div className="bg-white rounded-2xl shadow-sm shadow-blue-100/50 overflow-hidden border border-blue-100">
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <FaTag className="mr-2 text-indigo-500" />
+                  <FaTag className="mr-2 text-blue-600" />
                   Metadata
                 </h3>
                 <div className="space-y-6">
@@ -822,7 +805,7 @@ export default function TicketDetails({ params }) {
                     <div className="relative" ref={statusDropdownRef}>
                       <button
                         onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                        className="w-full px-4 py-2 text-left bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 hover:border-gray-400 flex justify-between items-center"
+                        className="w-full px-4 py-2 text-left bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 hover:border-gray-400 flex justify-between items-center"
                       >
                         <span className="font-medium text-gray-800">{taskState?.status_name || "Select Status"}</span>
                         <div className="flex items-center">
@@ -851,7 +834,7 @@ export default function TicketDetails({ params }) {
                     <div className="relative" ref={priorityDropdownRef}>
                       <button
                         onClick={() => setIsPriorityDropdownOpen(!isPriorityDropdownOpen)}
-                        className="w-full px-4 py-2 text-left bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 hover:border-gray-400 flex justify-between items-center"
+                        className="w-full px-4 py-2 text-left bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 hover:border-gray-400 flex justify-between items-center"
                       >
                         <span className="font-medium text-gray-800">{taskPriority?.priority_name || "Select Priority"}</span>
                         <div className="flex items-center">
@@ -881,7 +864,7 @@ export default function TicketDetails({ params }) {
                       type="date"
                       value={ticketDetails.due_date ? new Date(ticketDetails.due_date).toISOString().split('T')[0] : ''}
                       onChange={handleDueDateChange}
-                      className="w-full px-4 py-2 text-left bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 hover:border-gray-400 text-gray-800"
+                      className="w-full px-4 py-2 text-left bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 hover:border-gray-400 text-gray-800"
                     />
                   </div>
                 </div>

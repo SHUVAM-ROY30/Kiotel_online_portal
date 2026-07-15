@@ -406,19 +406,66 @@ export default function OpenedTickets() {
   });
 
   const sortedFilteredTickets = [...filteredTickets].sort((a, b) => {
+    const createdA = new Date(ticketCreatedAt[a.task_id] || 0).getTime();
+    const createdB = new Date(ticketCreatedAt[b.task_id] || 0).getTime();
+    const titleA = (a.title || "").toLowerCase();
+    const titleB = (b.title || "").toLowerCase();
+    const dueA = ticketDueDate[a.task_id] ? new Date(ticketDueDate[a.task_id]).getTime() : null;
+    const dueB = ticketDueDate[b.task_id] ? new Date(ticketDueDate[b.task_id]).getTime() : null;
+
     switch (sortOption) {
-      case 'priority':
+      case 'priority': {
         const priorityA = ticketPriority[a.task_id]?.toLowerCase() || "not set";
         const priorityB = ticketPriority[b.task_id]?.toLowerCase() || "not set";
-        return priorityOrder[priorityB] - priorityOrder[priorityA]; 
-      case 'longest_created':
-        const dateA = new Date(ticketCreatedAt[a.task_id]);
-        const dateB = new Date(ticketCreatedAt[b.task_id]);
-        return dateA - dateB; 
+        return priorityOrder[priorityB] - priorityOrder[priorityA];
+      }
+      case 'longest_created': // Oldest first (up since longest)
+        return createdA - createdB;
+      case 'newest_created': // Newest first
+        return createdB - createdA;
+      case 'title_asc':
+        return titleA.localeCompare(titleB);
+      case 'title_desc':
+        return titleB.localeCompare(titleA);
+      case 'due_asc': // earliest due first; no-due-date last
+        if (dueA === null && dueB === null) return 0;
+        if (dueA === null) return 1;
+        if (dueB === null) return -1;
+        return dueA - dueB;
+      case 'due_desc': // latest due first; no-due-date last
+        if (dueA === null && dueB === null) return 0;
+        if (dueA === null) return 1;
+        if (dueB === null) return -1;
+        return dueB - dueA;
       default:
         return 0;
     }
   });
+
+  // Column-header sorting helpers (item 2). "upsince" maps to created_at.
+  const SORT_LABELS = {
+    priority: "Priority",
+    longest_created: "Oldest First",
+    newest_created: "Newest First",
+    title_asc: "Title A→Z",
+    title_desc: "Title Z→A",
+    due_asc: "Due ↑",
+    due_desc: "Due ↓",
+  };
+  const toggleSort = (key) => {
+    setSortOption((prev) => {
+      if (key === "title") return prev === "title_asc" ? "title_desc" : "title_asc";
+      if (key === "due") return prev === "due_asc" ? "due_desc" : "due_asc";
+      if (key === "upsince") return prev === "longest_created" ? "newest_created" : "longest_created";
+      return prev;
+    });
+  };
+  const sortArrow = (key) => {
+    if (key === "title") return sortOption === "title_asc" ? " ▲" : sortOption === "title_desc" ? " ▼" : "";
+    if (key === "due") return sortOption === "due_asc" ? " ▲" : sortOption === "due_desc" ? " ▼" : "";
+    if (key === "upsince") return sortOption === "longest_created" ? " ▲" : sortOption === "newest_created" ? " ▼" : "";
+    return "";
+  };
 
   const groupTicketsByStatus = () => {
     const statusGroups = {};
@@ -458,12 +505,12 @@ export default function OpenedTickets() {
       }));
 
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_state`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/update_task_state/v2`,
         {
           ticketId: draggedTicket.task_id,
           status_id: statusObj.Id,
         },
-        { withCredentials: true }
+        { withCredentials: true, headers: { "x-user-id": user?.id } }
       );
     } catch (error) {
       console.error("Error updating task status:", error);
@@ -618,12 +665,12 @@ export default function OpenedTickets() {
 
     try {
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_state`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/update_task_state/v2`,
         {
           ticketId: taskId,
           status_id: parseInt(newStateId),
         },
-        { withCredentials: true }
+        { withCredentials: true, headers: { "x-user-id": user?.id } }
       );
     } catch (error) {
       console.error("Error updating task state:", error);
@@ -905,7 +952,7 @@ export default function OpenedTickets() {
             <div className="relative" id="sort-dropdown">
               <button
                 className={`flex items-center px-2.5 py-1.5 text-xs font-medium rounded shadow-sm transition ${
-                  sortOption === 'longest_created'
+                  sortOption !== 'priority'
                     ? "bg-blue-600 text-white border border-blue-700"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                 }`}
@@ -918,7 +965,7 @@ export default function OpenedTickets() {
                 }}
               >
                 <FaSort className="mr-1.5" />
-                {sortOption === 'longest_created' ? 'Oldest First' : 'Priority'}
+                {SORT_LABELS[sortOption] || 'Priority'}
               </button>
               {openSortDropdown && (
                 <div
@@ -935,6 +982,17 @@ export default function OpenedTickets() {
                     }}
                   >
                     Priority (Default)
+                  </div>
+                  <div
+                    className={`px-3 py-2 text-xs rounded hover:bg-gray-50 cursor-pointer ${
+                      sortOption === 'newest_created' ? 'font-medium text-blue-600' : 'text-gray-700'
+                    }`}
+                    onClick={() => {
+                      setSortOption('newest_created');
+                      setOpenSortDropdown(false);
+                    }}
+                  >
+                    Newest First
                   </div>
                   <div
                     className={`px-3 py-2 text-xs rounded hover:bg-gray-50 cursor-pointer ${
@@ -1334,7 +1392,7 @@ export default function OpenedTickets() {
                   </th>
                   <th scope="col" className="relative group px-4 py-2 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider" style={{ width: columnWidths.title }}>
                     <div className="flex items-center justify-between">
-                      Task Title
+                      <span className="cursor-pointer select-none hover:text-blue-600" onClick={() => toggleSort('title')}>Task Title{sortArrow('title')}</span>
                       <div onMouseDown={(e) => startResizing('title', e)} className="absolute right-0 top-0 bottom-0 w-3 cursor-col-resize hover:bg-blue-300/20 active:bg-blue-400/30 transition">
                         <FaGripLinesVertical className="h-3 w-3 text-gray-400" />
                       </div>
@@ -1358,7 +1416,7 @@ export default function OpenedTickets() {
                   </th>
                   <th scope="col" className="relative group px-4 py-2 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider" style={{ width: columnWidths.dueDate }}>
                     <div className="flex items-center justify-between">
-                      Due Date
+                      <span className="cursor-pointer select-none hover:text-blue-600" onClick={() => toggleSort('due')}>Due Date{sortArrow('due')}</span>
                       <div onMouseDown={(e) => startResizing('dueDate', e)} className="absolute right-0 top-0 bottom-0 w-3 cursor-col-resize hover:bg-blue-300/20 active:bg-blue-400/30 transition">
                         <FaGripLinesVertical className="h-3 w-3 text-gray-400" />
                       </div>
@@ -1366,7 +1424,7 @@ export default function OpenedTickets() {
                   </th>
                   <th scope="col" className="relative group px-4 py-2 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider" style={{ width: columnWidths.upSince }}>
                     <div className="flex items-center justify-between">
-                      Up Since
+                      <span className="cursor-pointer select-none hover:text-blue-600" onClick={() => toggleSort('upsince')}>Up Since{sortArrow('upsince')}</span>
                       <div onMouseDown={(e) => startResizing('upSince', e)} className="absolute right-0 top-0 bottom-0 w-3 cursor-col-resize hover:bg-blue-300/20 active:bg-blue-400/30 transition">
                         <FaGripLinesVertical className="h-3 w-3 text-gray-400" />
                       </div>

@@ -45,6 +45,7 @@ export default function TicketCreateForm() {
   const [ticketState, setTicketState] = useState(""); 
   const [ticketPriority, setTicketPriority] = useState(""); 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   const [tags, setTags] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
@@ -96,6 +97,21 @@ export default function TicketCreateForm() {
   }, []);
 
   useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          { withCredentials: true }
+        );
+        setCurrentUserId(res.data.id);
+      } catch (err) {
+        console.error("Failed to fetch current user:", err);
+      }
+    };
+    fetchCurrentUser();
+  }, []);
+
+  useEffect(() => {
     const fetchTaskStates = async () => {
       try {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/taskstate`);
@@ -129,6 +145,9 @@ export default function TicketCreateForm() {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tags`);
         const tagOptions = response.data.map(tag => ({ value: tag.id, label: tag.tag }));
         setTags(tagOptions);
+        // Default-select "Tech support" (tag id 10) if present.
+        const defaultTag = tagOptions.find(t => Number(t.value) === 10);
+        if (defaultTag) setSelectedTags([defaultTag]);
       } catch (error) {
         toast.error("Failed to load tags.");
       }
@@ -218,6 +237,14 @@ export default function TicketCreateForm() {
       toast.error("Parent task is required for subtasks.");
       return;
     }
+    if (!isRecurring && !currentUserId) {
+      toast.error("Could not identify the current user. Please refresh and try again.");
+      return;
+    }
+    if (selectedTags.length === 0) {
+      toast.error("At least one tag is required.");
+      return;
+    }
 
     if (isRecurring) {
       if (recurrenceType === "weekly" && (weeklyDay < 0 || weeklyDay > 6)) return toast.error("Invalid day.");
@@ -237,7 +264,9 @@ export default function TicketCreateForm() {
 
     const allAssignedUserIds = [...new Set([...userIdsFromIndividuals, ...userIdsFromGroups])];
 
-    let apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task`;
+    // Non-recurring tasks now use the Node v2 API (attachments -> DigitalOcean Spaces).
+    // Recurring tasks still use the existing Flask endpoint (unchanged).
+    let apiUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/task/v2`;
     let formData = new FormData();
 
     if (isRecurring) {
@@ -268,8 +297,11 @@ export default function TicketCreateForm() {
     }
 
     try {
+      const headers = { "Content-Type": "multipart/form-data" };
+      // v2 (non-recurring) authenticates via the user's tblusers id.
+      if (!isRecurring) headers["x-user-id"] = currentUserId;
       const response = await axios.post(apiUrl, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers,
         withCredentials: true,
       });
 
