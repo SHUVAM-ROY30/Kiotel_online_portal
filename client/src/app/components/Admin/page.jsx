@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { FaUserCircle, FaSearch, FaPlus, FaEdit, FaTrash, FaUsersCog, FaCalendarAlt, FaTimes, FaCalendarCheck, FaUser, FaHistory } from "react-icons/fa";
+import { FaUserCircle, FaSearch, FaPlus, FaEdit, FaTrash, FaUsersCog, FaCalendarAlt, FaTimes, FaCalendarCheck, FaUser, FaHistory, FaUsers, FaLayerGroup, FaClock, FaChevronDown } from "react-icons/fa";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "../../../context/ProtectedRoute";
@@ -362,6 +362,43 @@ const Avatar = ({ src, name, size = "h-9 w-9" }) => {
       <FaUser className="h-1/2 w-1/2" />
     </div>
   );
+};
+
+// --- KPI stat card ---
+const STAT_TONES = {
+  indigo: "bg-indigo-50 text-indigo-600",
+  sky: "bg-sky-50 text-sky-600",
+  emerald: "bg-emerald-50 text-emerald-600",
+  amber: "bg-amber-50 text-amber-600",
+};
+const StatCard = ({ icon, label, value, tone = "indigo", onClick, highlight }) => {
+  const inner = (
+    <>
+      <div className={`h-12 w-12 flex-shrink-0 rounded-xl flex items-center justify-center text-lg ${STAT_TONES[tone] || STAT_TONES.indigo}`}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[26px] font-bold text-slate-900 leading-none" style={{ fontFamily: "var(--font-syne)" }}>{value}</p>
+        <p className="text-sm text-slate-500 mt-1.5 truncate">{label}</p>
+      </div>
+    </>
+  );
+  const base = `flex items-center gap-4 rounded-2xl bg-white border shadow-sm p-4 sm:p-5 transition-all duration-200 ${highlight ? "border-amber-200 ring-1 ring-amber-100" : "border-slate-200"}`;
+  return onClick
+    ? <button type="button" onClick={onClick} className={`${base} w-full text-left hover:shadow-md hover:-translate-y-0.5`}>{inner}</button>
+    : <div className={base}>{inner}</div>;
+};
+
+// --- Role badge color mapping ---
+const roleBadgeClass = (role) => {
+  const r = String(role || "").toLowerCase();
+  if (r.includes("admin")) return "bg-indigo-50 text-indigo-700 border-indigo-100";
+  if (r.includes("hr")) return "bg-violet-50 text-violet-700 border-violet-100";
+  if (r.includes("client")) return "bg-emerald-50 text-emerald-700 border-emerald-100";
+  if (r.includes("trainee")) return "bg-amber-50 text-amber-700 border-amber-100";
+  if (r.includes("operator")) return "bg-sky-50 text-sky-700 border-sky-100";
+  if (r.includes("agent")) return "bg-blue-50 text-blue-700 border-blue-100";
+  return "bg-slate-100 text-slate-700 border-slate-200";
 };
 
 // --- Modal: view employees scheduled for deletion (not yet deleted) ---
@@ -850,7 +887,7 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
       sortable: true,
       width: "130px",
       cell: (row) => (
-        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 capitalize">
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold border capitalize ${roleBadgeClass(row.role)}`}>
           {row.role || "—"}
         </span>
       ),
@@ -963,85 +1000,105 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
     .sort((a, b) => String(a.scheduled_date).localeCompare(String(b.scheduled_date)));
   const scheduledCount = scheduledUsers.length;
 
+  const toolbarBtn = "inline-flex items-center gap-2 h-11 px-4 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-slate-200 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-colors";
+  const primaryBtn = "inline-flex items-center gap-2 h-11 px-5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 shadow-sm shadow-indigo-600/30 hover:from-indigo-700 hover:to-violet-700 transition-colors";
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-50 to-slate-100 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl bg-white border border-gray-200 shadow-sm px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <h1
-              className="text-2xl sm:text-[28px] font-bold text-gray-900 tracking-tight leading-tight truncate"
-              style={{ fontFamily: 'var(--font-syne)' }}
-            >
-              {loading ? (
-                <span className="inline-block h-7 w-56 bg-gray-200 rounded-lg animate-pulse align-middle"></span>
-              ) : error ? (
-                "Error loading data"
-              ) : (
-                <>Welcome, <span className="text-indigo-600">{userFname}</span></>
-              )}
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">User &amp; Group Management</p>
+        {/* Top bar */}
+        <header className="mb-6 flex items-center justify-between gap-4 rounded-2xl bg-white/90 backdrop-blur border border-slate-200 shadow-sm px-5 py-4 sm:px-6">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="h-11 w-11 flex-shrink-0 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/25">
+              <FaUsersCog className="text-lg" />
+            </div>
+            <div className="min-w-0">
+              <h1
+                className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-none truncate"
+                style={{ fontFamily: 'var(--font-syne)' }}
+              >
+                User Management
+              </h1>
+              <p className="text-sm text-slate-500 mt-1.5 truncate">
+                {loading ? 'Loading…' : error ? 'Error loading data' : (
+                  <>Welcome back, <span className="font-semibold text-slate-700">{userFname}</span></>
+                )}
+              </p>
+            </div>
           </div>
 
-          <div className="hidden md:flex flex-1 justify-center">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <img
               src="/Kiotel logo.jpg"
               alt="Kiotel"
-              className="h-9 lg:h-11 w-auto cursor-pointer hover:opacity-90 transition-opacity duration-200"
               onClick={() => router.push('/Dashboard')}
+              className="hidden sm:block h-9 w-auto cursor-pointer opacity-90 hover:opacity-100 transition"
             />
-          </div>
-
-          <div className="relative flex-shrink-0" ref={profileMenuRef}>
-            <button
-              onClick={toggleProfileMenu}
-              className="flex items-center gap-2.5 rounded-full border border-gray-200 bg-white pl-1 pr-2 sm:pr-3.5 py-1 hover:bg-gray-50 hover:border-gray-300 transition-colors duration-200"
-            >
-              <span className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-sm">
-                {userFname ? userFname.charAt(0).toUpperCase() : <FaUserCircle className="text-lg" />}
-              </span>
-              <span className="hidden sm:block text-sm font-semibold text-gray-700 max-w-[120px] truncate">
-                {userFname || 'Account'}
-              </span>
-            </button>
-            {isProfileMenuOpen && (
-              <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-xl shadow-lg py-1.5 z-50">
-                <div className="px-4 py-2 border-b border-gray-100">
-                  <p className="text-sm font-semibold text-gray-800 truncate">{userFname || 'Account'}</p>
-                  <p className="text-xs text-gray-400">Administrator</p>
+            <div className="hidden sm:block h-8 w-px bg-slate-200" />
+            <div className="relative" ref={profileMenuRef}>
+              <button
+                onClick={toggleProfileMenu}
+                className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-white pl-1 pr-2 sm:pr-3 py-1 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+              >
+                <span className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center text-sm font-bold shadow-sm">
+                  {userFname ? userFname.charAt(0).toUpperCase() : <FaUserCircle className="text-lg" />}
+                </span>
+                <span className="hidden sm:block text-sm font-semibold text-slate-700 max-w-[110px] truncate">
+                  {userFname || 'Account'}
+                </span>
+                <FaChevronDown className="hidden sm:block text-xs text-slate-400" />
+              </button>
+              {isProfileMenuOpen && (
+                <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 z-50">
+                  <div className="px-4 py-2.5 border-b border-slate-100">
+                    <p className="text-sm font-semibold text-slate-800 truncate">{userFname || 'Account'}</p>
+                    <p className="text-xs text-slate-400">Administrator</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="mt-1 w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                  >
+                    Logout
+                  </button>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  className="mt-1 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
-                >
-                  Logout
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
+        </header>
+
+        {/* KPI stat cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <StatCard icon={<FaUsers />} tone="indigo" label="Total Users" value={loading ? '—' : users.length} />
+          <StatCard icon={<FaClock />} tone="sky" label="With Shift" value={loading ? '—' : users.filter((u) => u.shift_name).length} />
+          <StatCard icon={<FaLayerGroup />} tone="emerald" label="Groups" value={allGroups.length} />
+          <StatCard
+            icon={<FaHistory />}
+            tone="amber"
+            label="Scheduled Deletions"
+            value={scheduledCount}
+            onClick={() => setIsViewScheduledOpen(true)}
+            highlight={scheduledCount > 0}
+          />
         </div>
-        
+
         {/* Controls Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-5 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="relative flex-grow max-w-md">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
+            <div className="relative flex-grow lg:max-w-md">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <FaSearch className="text-gray-400 text-sm" />
+                <FaSearch className="text-slate-400 text-sm" />
               </div>
               <input
                 type="text"
-                placeholder="Search by ID, Name, Email, Role, or Group"
+                placeholder="Search users by ID, name, email, role or group…"
                 value={searchQuery}
                 onChange={handleSearch}
-                className="block w-full pl-10 pr-3 h-11 border border-gray-200 rounded-xl bg-gray-50/70 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 focus:bg-white transition duration-200"
+                className="block w-full pl-10 pr-3 h-11 border border-slate-200 rounded-xl bg-slate-50 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-400 focus:bg-white transition"
               />
             </div>
 
             {/* Control Buttons */}
-            <div className="flex flex-wrap items-center gap-2.5 md:justify-end">
-              
-              {/* Only show Shift-related actions to Role 1 */}
+            <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
               {String(userRole) === '1' && (
                 <>
                   <button
@@ -1054,88 +1111,53 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
                         setShiftError(null);
                       }
                     }}
-                    className={`flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${
-                      isAssignShiftPanelOpen
-                        ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm'
-                        : 'bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100'
-                    }`}
+                    className={isAssignShiftPanelOpen
+                      ? "inline-flex items-center gap-2 h-11 px-4 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-sm transition-colors"
+                      : toolbarBtn}
                   >
-                    {isAssignShiftPanelOpen ? (
-                      <>
-                        <FaTimes className="mr-2" /> Close Assignment
-                      </>
-                    ) : (
-                      <>
-                        <FaCalendarAlt className="mr-2" /> Assign Shifts
-                      </>
-                    )}
+                    {isAssignShiftPanelOpen
+                      ? <><FaTimes /> Close Assignment</>
+                      : <><FaCalendarAlt className="text-indigo-500" /> Assign Shifts</>}
                   </button>
 
-                  <button
-                    onClick={() => setIsShiftManagementOpen(true)}
-                    className="flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl bg-orange-50 text-orange-700 border border-orange-100 hover:bg-orange-100 transition-all duration-200"
-                  >
-                    <FaCalendarAlt className="mr-2" />
+                  <button onClick={() => setIsShiftManagementOpen(true)} className={toolbarBtn}>
+                    <FaCalendarAlt className="text-orange-500" />
                     Shift Management
                   </button>
                 </>
               )}
-              <button
-  onClick={() => setIsManageNonGeneralShiftsOpen(true)}
-  className="flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl bg-violet-50 text-violet-700 border border-violet-100 hover:bg-violet-100 transition-all duration-200"
->
-  <FaCalendarCheck className="mr-2" />
-  Manage Non-General Access
-</button>
-              
-              {/* Scheduled Deletions Viewer - Available to both 1 and 8 */}
-              <button
-                onClick={() => setIsViewScheduledOpen(true)}
-                className="relative flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100 transition-all duration-200"
-              >
-                <FaHistory className="mr-2" />
-                Scheduled Deletions
-                {scheduledCount > 0 && (
-                  <span className="ml-2 inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-amber-600 text-white text-xs font-bold">
-                    {scheduledCount}
-                  </span>
-                )}
+
+              <button onClick={() => setIsManageNonGeneralShiftsOpen(true)} className={toolbarBtn}>
+                <FaCalendarCheck className="text-violet-500" />
+                Non-General Access
               </button>
 
-              {/* Manage All Groups Button - Available to both 1 and 8 */}
-              <button
-                onClick={() => setIsManageAllGroupsModalOpen(true)}
-                className="flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 transition-all duration-200"
-              >
-                <FaUsersCog className="mr-2" />
-                Manage All Groups
+              <button onClick={() => setIsManageAllGroupsModalOpen(true)} className={toolbarBtn}>
+                <FaUsersCog className="text-emerald-500" />
+                Manage Groups
               </button>
-              
-              {/* Create New User Button - Available to both 1 and 8 */}
-              <Link
-                href="/components/Create_new_user"
-                className="flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-600/25 transition-all duration-200"
-              >
-                <FaPlus className="mr-2" />
-                Create New User
+
+              <Link href="/components/Create_new_user" className={primaryBtn}>
+                <FaPlus />
+                New User
               </Link>
             </div>
           </div>
           
           {/* Inline Shift Assignment Panel (Only available to role 1) */}
           {isAssignShiftPanelOpen && String(userRole) === '1' && (
-            <div className="mt-5 p-5 bg-blue-50 border border-blue-200 rounded-xl animate-fadeIn">
+            <div className="mt-5 p-5 bg-indigo-50/60 border border-indigo-100 rounded-2xl animate-fadeIn">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-blue-800">Batch Shift Assignment</h3>
-                  <p className="text-blue-600 mt-1">
+                  <h3 className="text-lg font-semibold text-slate-800" style={{ fontFamily: 'var(--font-syne)' }}>Batch Shift Assignment</h3>
+                  <p className="text-slate-500 mt-1 text-sm">
                     Select users using checkboxes and choose a shift to assign to all selected users.
                   </p>
                 </div>
-                
+
                 <div className="flex items-center gap-3">
-                  <div className="bg-white px-3 py-1.5 rounded-lg border border-blue-300">
-                    <span className="text-blue-700 font-medium text-sm">
+                  <div className="bg-white px-3 py-1.5 rounded-lg border border-indigo-200">
+                    <span className="text-indigo-700 font-semibold text-sm">
                       {selectedUserIds.size} user{selectedUserIds.size !== 1 ? 's' : ''} selected
                     </span>
                   </div>
