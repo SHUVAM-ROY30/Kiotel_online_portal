@@ -225,7 +225,7 @@ export default function PropertyInventory() {
   const fetchProperty = useCallback(async () => {
     if (!user) return;
     try {
-      const [propertyRes, propertyCabinRes, cabinsRes] = await Promise.all([
+      const [propertyRes, propertyCabinRes, cabinsRes, invRes] = await Promise.all([
         axios.get(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/inventory/properties/${id}`,
           {
@@ -264,6 +264,19 @@ export default function PropertyInventory() {
               "x-user-unique-id": user.unique_id,
             },
           }
+        ),
+        axios.get(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/inventory/properties/${id}/inventory`,
+          {
+            withCredentials: true,
+            headers: {
+              "x-user-id": user.id,
+              "x-user-role": user.roleId,
+              "x-user-email": user.email,
+              "x-user-fname": user.fname,
+              "x-user-unique-id": user.unique_id,
+            },
+          }
         )
       ]);
 
@@ -271,7 +284,7 @@ export default function PropertyInventory() {
       setLinkedCabins(propertyCabinRes.data?.data || []);
       setCabins(cabinsRes.data?.data || []);
       
-      const allInventory = propertyRes.data?.property?.inventory || [];
+      const allInventory = invRes.data?.data || [];
       setInventory(allInventory);
     } catch (err) {
       console.error(err);

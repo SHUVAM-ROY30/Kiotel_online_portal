@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { FaUserCircle, FaSearch, FaPlus, FaEdit, FaTrash, FaUsersCog, FaCalendarAlt, FaTimes, FaCalendarCheck } from "react-icons/fa";
+import { FaUserCircle, FaSearch, FaPlus, FaEdit, FaTrash, FaUsersCog, FaCalendarAlt, FaTimes, FaCalendarCheck, FaUser, FaHistory } from "react-icons/fa";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "../../../context/ProtectedRoute";
@@ -25,35 +25,36 @@ const customStyles = {
   head: {
     style: {
       backgroundColor: '#f8fafc',
-      borderBottom: '2px solid #e2e8f0'
+      borderBottom: '1px solid #e5e9f0'
     }
   },
   headCells: {
     style: {
-      fontSize: '0.875rem',
-      fontWeight: '600',
-      color: '#334155',
+      fontSize: '0.72rem',
+      fontWeight: '700',
+      color: '#64748b',
       paddingLeft: '16px',
       paddingRight: '16px',
-      paddingTop: '14px',
-      paddingBottom: '14px',
+      paddingTop: '15px',
+      paddingBottom: '15px',
       textTransform: 'uppercase',
-      letterSpacing: '0.5px'
+      letterSpacing: '0.06em'
     },
   },
   cells: {
     style: {
       fontSize: '0.875rem',
-      color: '#1e293b',
+      color: '#334155',
       paddingLeft: '16px',
       paddingRight: '16px',
       paddingTop: '14px',
       paddingBottom: '14px',
-      borderBottom: '1px solid #f1f5f9'
     },
   },
   rows: {
     style: {
+      minHeight: '64px',
+      fontWeight: '500',
       '&:hover': {
         backgroundColor: '#f8fafc',
         transition: 'background-color 0.2s ease'
@@ -345,6 +346,106 @@ const ScheduleDeletionModal = ({ isOpen, onClose, user, onSchedule, onCancelSche
     </div>
   );
 };
+// --- Reusable avatar (image or placeholder) ---
+const Avatar = ({ src, name, size = "h-9 w-9" }) => {
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name || "User"}
+        className={`${size} rounded-full object-cover ring-1 ring-gray-200`}
+      />
+    );
+  }
+  return (
+    <div className={`${size} rounded-full bg-gray-100 flex items-center justify-center text-gray-400`}>
+      <FaUser className="h-1/2 w-1/2" />
+    </div>
+  );
+};
+
+// --- Modal: view employees scheduled for deletion (not yet deleted) ---
+const ViewScheduledDeletionsModal = ({ isOpen, onClose, scheduledUsers, onCancelSchedule, isSaving }) => {
+  if (!isOpen) return null;
+  const todayMid = new Date();
+  todayMid.setHours(0, 0, 0, 0);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-gray-500 opacity-75" onClick={onClose}></div>
+      <div className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center">
+            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-amber-100 mr-3">
+              <FaHistory className="h-5 w-5 text-amber-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Scheduled Deletions</h3>
+              <p className="text-sm text-gray-500">Employees scheduled for deactivation but not yet deleted.</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100">
+            <FaTimes />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto p-6">
+          {scheduledUsers.length === 0 ? (
+            <div className="text-center py-10 text-gray-500">
+              <div className="mx-auto w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                <FaCalendarAlt className="h-6 w-6 text-gray-400" />
+              </div>
+              <p className="font-medium text-gray-900">No scheduled deletions</p>
+              <p className="text-sm">No employees are currently scheduled for deletion.</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {scheduledUsers.map((u) => {
+                const d = new Date(`${u.scheduled_date}T00:00:00`);
+                const days = Math.ceil((d - todayMid) / 86400000);
+                return (
+                  <li key={u.id} className="flex items-center justify-between py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar src={u.profile_pic} name={`${u.fname} ${u.lname}`} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{u.fname} {u.lname}</p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {u.account_no}{u.emailid ? ` · ${u.emailid}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-amber-700">{u.scheduled_date}</p>
+                        <p className="text-xs text-gray-500">
+                          {days > 0 ? `in ${days} day${days !== 1 ? "s" : ""}` : "due"}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => onCancelSchedule(u)}
+                        disabled={isSaving}
+                        className="text-xs font-medium text-red-600 hover:text-red-800 border border-red-200 hover:bg-red-50 px-2.5 py-1.5 rounded-lg disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 rounded-b-xl flex justify-end">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function Dashboard() {
   const [userFname, setUserFname] = useState(null);
   const [userRole, setUserRole] = useState(null);
@@ -381,6 +482,7 @@ function Dashboard() {
 const [selectedUserForSchedule, setSelectedUserForSchedule] = useState(null);
 const [isSavingSchedule, setIsSavingSchedule] = useState(false);
 const [scheduledMap, setScheduledMap] = useState({}); // { [user_id]: 'YYYY-MM-DD' }
+const [isViewScheduledOpen, setIsViewScheduledOpen] = useState(false); // scheduled-deletions viewer
 
 
 const fetchScheduledDeletions = async () => {
@@ -701,40 +803,63 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
       ignoreRowClick: true,
     }] : []),
     {
+      name: "",
+      width: "64px",
+      center: true,
+      cell: (row) => (
+        <Avatar src={row.profile_pic} name={`${row.fname} ${row.lname}`} size="h-9 w-9" />
+      ),
+      ignoreRowClick: true,
+    },
+    {
       name: "ID",
       selector: (row) => row.account_no,
       sortable: true,
-      width: "110px",
+      width: "105px",
+      cell: (row) => <span className="font-semibold text-gray-800">{row.account_no}</span>,
     },
     {
       name: "Agent ID",
       selector: (row) => row.agent_id || "-",
       sortable: true,
-      width: "120px",
+      width: "105px",
     },
     {
       name: "Name",
       selector: (row) => `${row.fname} ${row.lname}`,
       sortable: true,
       grow: 1,
+      cell: (row) => (
+        <span className="font-semibold text-gray-900 truncate" title={`${row.fname} ${row.lname}`}>
+          {row.fname} {row.lname}
+        </span>
+      ),
     },
     {
       name: "Email",
       selector: (row) => row.emailid,
       sortable: true,
       grow: 1,
+      cell: (row) => (
+        <span className="text-gray-500 truncate" title={row.emailid}>{row.emailid}</span>
+      ),
     },
     {
       name: "Role",
       selector: (row) => row.role,
       sortable: true,
-      width: "120px",
+      width: "130px",
+      cell: (row) => (
+        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 capitalize">
+          {row.role || "—"}
+        </span>
+      ),
     },
     {
       name: "Shift",
       selector: (row) => row.shift_name,
       sortable: false,
-      width: "160px",
+      width: "140px",
       cell: (row) => (
         <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
           row.shift_name 
@@ -755,7 +880,7 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
     {
       name: "Actions",
       button: true,
-      width: "170px",
+      width: "160px",
       cell: (row) => (
         <div className="flex space-x-2.5">
           <button
@@ -831,41 +956,64 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
     setFilteredUsers(filtered);
   };
 
+  // Users scheduled for deletion (pending) — joined with full user records.
+  const scheduledUsers = users
+    .filter((u) => scheduledMap[u.id])
+    .map((u) => ({ ...u, scheduled_date: scheduledMap[u.id] }))
+    .sort((a, b) => String(a.scheduled_date).localeCompare(String(b.scheduled_date)));
+  const scheduledCount = scheduledUsers.length;
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-50 to-slate-100 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+        <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl bg-white border border-gray-200 shadow-sm px-5 py-4 sm:px-6 sm:py-5">
+          <div className="min-w-0">
+            <h1
+              className="text-2xl sm:text-[28px] font-bold text-gray-900 tracking-tight leading-tight truncate"
+              style={{ fontFamily: 'var(--font-syne)' }}
+            >
               {loading ? (
-                <div className="h-7 w-64 bg-gray-200 rounded animate-pulse"></div>
+                <span className="inline-block h-7 w-56 bg-gray-200 rounded-lg animate-pulse align-middle"></span>
               ) : error ? (
                 "Error loading data"
               ) : (
-                `Welcome, ${userFname}`
+                <>Welcome, <span className="text-indigo-600">{userFname}</span></>
               )}
             </h1>
-            <p className="text-gray-600 mt-1">Manage users and their groups</p>
+            <p className="text-sm text-gray-500 mt-1">User &amp; Group Management</p>
           </div>
-          <div className="my-3 sm:my-0 flex-grow text-center">
+
+          <div className="hidden md:flex flex-1 justify-center">
             <img
               src="/Kiotel logo.jpg"
-              alt="Dashboard Logo"
-              className="h-10 sm:h-12 w-auto mx-auto cursor-pointer hover:opacity-90 transition-opacity duration-200"
+              alt="Kiotel"
+              className="h-9 lg:h-11 w-auto cursor-pointer hover:opacity-90 transition-opacity duration-200"
               onClick={() => router.push('/Dashboard')}
             />
           </div>
-          <div className="relative" ref={profileMenuRef}>
-            <FaUserCircle
-              className="cursor-pointer text-2xl text-gray-700 hover:text-gray-900 transition-colors duration-200"
+
+          <div className="relative flex-shrink-0" ref={profileMenuRef}>
+            <button
               onClick={toggleProfileMenu}
-            />
+              className="flex items-center gap-2.5 rounded-full border border-gray-200 bg-white pl-1 pr-2 sm:pr-3.5 py-1 hover:bg-gray-50 hover:border-gray-300 transition-colors duration-200"
+            >
+              <span className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-sm">
+                {userFname ? userFname.charAt(0).toUpperCase() : <FaUserCircle className="text-lg" />}
+              </span>
+              <span className="hidden sm:block text-sm font-semibold text-gray-700 max-w-[120px] truncate">
+                {userFname || 'Account'}
+              </span>
+            </button>
             {isProfileMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1.5 z-50">
+              <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-xl shadow-lg py-1.5 z-50">
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <p className="text-sm font-semibold text-gray-800 truncate">{userFname || 'Account'}</p>
+                  <p className="text-xs text-gray-400">Administrator</p>
+                </div>
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors duration-150"
+                  className="mt-1 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
                 >
                   Logout
                 </button>
@@ -875,23 +1023,23 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
         </div>
         
         {/* Controls Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-5 mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="relative flex-grow max-w-md">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaSearch className="text-gray-400" />
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <FaSearch className="text-gray-400 text-sm" />
               </div>
               <input
                 type="text"
                 placeholder="Search by ID, Name, Email, Role, or Group"
                 value={searchQuery}
                 onChange={handleSearch}
-                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                className="block w-full pl-10 pr-3 h-11 border border-gray-200 rounded-xl bg-gray-50/70 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 focus:bg-white transition duration-200"
               />
             </div>
-            
+
             {/* Control Buttons */}
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-2.5 md:justify-end">
               
               {/* Only show Shift-related actions to Role 1 */}
               {String(userRole) === '1' && (
@@ -906,10 +1054,10 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
                         setShiftError(null);
                       }
                     }}
-                    className={`flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg shadow-sm transition-all duration-300 ${
-                      isAssignShiftPanelOpen 
-                        ? 'bg-red-600 hover:bg-red-700 text-white shadow-md' 
-                        : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow'
+                    className={`flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${
+                      isAssignShiftPanelOpen
+                        ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm'
+                        : 'bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100'
                     }`}
                   >
                     {isAssignShiftPanelOpen ? (
@@ -925,7 +1073,7 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
 
                   <button
                     onClick={() => setIsShiftManagementOpen(true)}
-                    className="flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-medium rounded-lg shadow-sm hover:from-orange-600 hover:to-orange-700 shadow transition-all duration-300"
+                    className="flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl bg-orange-50 text-orange-700 border border-orange-100 hover:bg-orange-100 transition-all duration-200"
                   >
                     <FaCalendarAlt className="mr-2" />
                     Shift Management
@@ -934,16 +1082,30 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
               )}
               <button
   onClick={() => setIsManageNonGeneralShiftsOpen(true)}
-  className="flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-medium rounded-lg shadow-sm hover:from-purple-700 hover:to-indigo-700 shadow transition-all duration-300"
+  className="flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl bg-violet-50 text-violet-700 border border-violet-100 hover:bg-violet-100 transition-all duration-200"
 >
   <FaCalendarCheck className="mr-2" />
   Manage Non-General Access
 </button>
               
+              {/* Scheduled Deletions Viewer - Available to both 1 and 8 */}
+              <button
+                onClick={() => setIsViewScheduledOpen(true)}
+                className="relative flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100 transition-all duration-200"
+              >
+                <FaHistory className="mr-2" />
+                Scheduled Deletions
+                {scheduledCount > 0 && (
+                  <span className="ml-2 inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-amber-600 text-white text-xs font-bold">
+                    {scheduledCount}
+                  </span>
+                )}
+              </button>
+
               {/* Manage All Groups Button - Available to both 1 and 8 */}
               <button
                 onClick={() => setIsManageAllGroupsModalOpen(true)}
-                className="flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-medium rounded-lg shadow-sm hover:from-emerald-700 hover:to-teal-700 shadow transition-all duration-300"
+                className="flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 transition-all duration-200"
               >
                 <FaUsersCog className="mr-2" />
                 Manage All Groups
@@ -952,7 +1114,7 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
               {/* Create New User Button - Available to both 1 and 8 */}
               <Link
                 href="/components/Create_new_user"
-                className="flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg shadow-sm hover:from-blue-700 hover:to-indigo-700 shadow transition-all duration-300"
+                className="flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-600/25 transition-all duration-200"
               >
                 <FaPlus className="mr-2" />
                 Create New User
@@ -1042,7 +1204,18 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
         </div>
         
         {/* User Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100">
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-base font-bold text-gray-900" style={{ fontFamily: 'var(--font-syne)' }}>All Users</h2>
+              <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                {loading ? '…' : filteredUsers.length}
+              </span>
+            </div>
+            {searchQuery && !loading && (
+              <span className="text-xs text-gray-400">Filtered from {users.length}</span>
+            )}
+          </div>
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
@@ -1111,6 +1284,14 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
   onClose={() => setIsScheduleModalOpen(false)}
   user={selectedUserForSchedule}
   onSchedule={handleSchedule}
+  onCancelSchedule={handleCancelSchedule}
+  isSaving={isSavingSchedule}
+/>
+
+<ViewScheduledDeletionsModal
+  isOpen={isViewScheduledOpen}
+  onClose={() => setIsViewScheduledOpen(false)}
+  scheduledUsers={scheduledUsers}
   onCancelSchedule={handleCancelSchedule}
   isSaving={isSavingSchedule}
 />

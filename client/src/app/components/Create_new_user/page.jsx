@@ -767,10 +767,11 @@ import { useRouter } from "next/navigation";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import ProtectedRoute from "../../../context/ProtectedRoute";
-import { 
-  FaEye, FaEyeSlash, FaSyncAlt, FaUsers, FaUser, FaEnvelope, 
-  FaLock, FaCalendarAlt, FaPhone, FaBuilding, FaIdCard, 
-  FaMapMarkerAlt, FaLink, FaHome, FaClipboardList, FaTrash, FaPlus 
+import {
+  FaEye, FaEyeSlash, FaSyncAlt, FaUsers, FaUser, FaEnvelope,
+  FaLock, FaCalendarAlt, FaPhone, FaBuilding, FaIdCard,
+  FaMapMarkerAlt, FaLink, FaHome, FaClipboardList, FaTrash, FaPlus,
+  FaCamera, FaImage
 } from "react-icons/fa";
 
 // Hardcoded Plan Options
@@ -850,6 +851,33 @@ function SignUpForm({ existingUser = null }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [passwordMatch, setPasswordMatch] = useState(true);
+
+  // --- NEW: Optional profile picture (not compulsory) ---
+  const [profilePicFile, setProfilePicFile] = useState(null);
+  const [profilePicPreview, setProfilePicPreview] = useState(null);
+
+  const handleProfilePicChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setErrors((prev) => ({ ...prev, profilePic: "Please select an image file." }));
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, profilePic: "Image must be 10MB or smaller." }));
+      return;
+    }
+    setErrors((prev) => { const n = { ...prev }; delete n.profilePic; return n; });
+    setProfilePicFile(file);
+    setProfilePicPreview(URL.createObjectURL(file));
+  };
+
+  const removeProfilePic = () => {
+    if (profilePicPreview) URL.revokeObjectURL(profilePicPreview);
+    setProfilePicFile(null);
+    setProfilePicPreview(null);
+  };
+  // --- END NEW ---
 
   // Fetch roles on mount
   useEffect(() => {
@@ -1037,6 +1065,19 @@ function SignUpForm({ existingUser = null }) {
     const formattedDob = dob ? dob.toISOString().split("T")[0] : null;
     
     try {
+      // 0. UPLOAD PROFILE PICTURE (optional — user may leave it empty)
+      let profilePicUrl = null;
+      if (profilePicFile) {
+        const picForm = new FormData();
+        picForm.append("file", profilePicFile);
+        const uploadRes = await axios.post(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/upload/profile`,
+          picForm,
+          { withCredentials: true, headers: { "Content-Type": "multipart/form-data" } }
+        );
+        profilePicUrl = uploadRes.data?.url || null;
+      }
+
       // 1. REGISTER THE USER
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/register`,
@@ -1055,6 +1096,7 @@ function SignUpForm({ existingUser = null }) {
           role_id: role,
           link: isFieldVisible("link") ? link : undefined,
           group_ids: selectedGroups,
+          profile_pic: profilePicUrl,
         },
         { withCredentials: true }
       );
@@ -1205,6 +1247,49 @@ function SignUpForm({ existingUser = null }) {
                 {errors.role && (
                   <p className="mt-1 text-sm text-red-600">{errors.role}</p>
                 )}
+              </div>
+
+              {/* Profile Picture (Optional) */}
+              <div className="w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                  <FaImage className="mr-2 text-blue-500" />
+                  Profile Picture <span className="ml-1 text-gray-400 font-normal">(optional)</span>
+                </label>
+                <div className="flex items-center gap-4 p-4 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                  <div className="relative flex-shrink-0">
+                    {profilePicPreview ? (
+                      <img
+                        src={profilePicPreview}
+                        alt="Profile preview"
+                        className="h-20 w-20 rounded-full object-cover border-2 border-white shadow"
+                      />
+                    ) : (
+                      <div className="h-20 w-20 rounded-full bg-blue-100 flex items-center justify-center text-blue-400">
+                        <FaUser className="h-8 w-8" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex flex-wrap gap-2">
+                      <label className="cursor-pointer inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow transition">
+                        <FaCamera className="mr-2" />
+                        {profilePicPreview ? "Change Photo" : "Upload Photo"}
+                        <input type="file" accept="image/*" onChange={handleProfilePicChange} className="hidden" />
+                      </label>
+                      {profilePicPreview && (
+                        <button
+                          type="button"
+                          onClick={removeProfilePic}
+                          className="inline-flex items-center px-3 py-2 bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 text-sm font-medium rounded-md transition"
+                        >
+                          <FaTrash className="mr-2" /> Remove
+                        </button>
+                      )}
+                    </div>
+                    <p className="mt-1.5 text-xs text-gray-500">JPG, PNG, WEBP or GIF. Max 10MB. You can leave this empty.</p>
+                    {errors.profilePic && <p className="mt-1 text-sm text-red-600">{errors.profilePic}</p>}
+                  </div>
+                </div>
               </div>
 
               {/* Grid Layout for Fields */}

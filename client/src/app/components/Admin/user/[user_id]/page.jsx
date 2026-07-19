@@ -289,6 +289,7 @@ import axios from "axios";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import moment from 'moment';
+import { FaCamera, FaDownload, FaTrash, FaUser, FaExpand, FaTimes } from "react-icons/fa";
 
 export default function UserProfile({ params }) {
     const { user_id } = params;
@@ -305,13 +306,52 @@ export default function UserProfile({ params }) {
         agent_id: "", // <-- Added agent_id
         mobileno: "",
         role_id: "",
+        profile_pic: "", // <-- Added profile picture URL
     });
-    
-    const [initialRoleId, setInitialRoleId] = useState(null); 
+
+    const [initialRoleId, setInitialRoleId] = useState(null);
     const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [showPassword, setShowPassword] = useState(false);
+
+    // Profile picture UI state
+    const [uploadingPic, setUploadingPic] = useState(false);
+    const [isImageOpen, setIsImageOpen] = useState(false); // lightbox / enlarge
+
+    const handleProfilePicUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) {
+            setErrors((prev) => ({ ...prev, profile_pic: "Please select an image file." }));
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            setErrors((prev) => ({ ...prev, profile_pic: "Image must be 10MB or smaller." }));
+            return;
+        }
+        setErrors((prev) => { const n = { ...prev }; delete n.profile_pic; return n; });
+        setUploadingPic(true);
+        try {
+            const picForm = new FormData();
+            picForm.append("file", file);
+            const res = await axios.post(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/upload/profile`,
+                picForm,
+                { withCredentials: true, headers: { "Content-Type": "multipart/form-data" } }
+            );
+            setFormData((prev) => ({ ...prev, profile_pic: res.data?.url || "" }));
+        } catch (err) {
+            console.error("Profile picture upload failed:", err);
+            setErrors((prev) => ({ ...prev, profile_pic: "Upload failed. Please try again." }));
+        } finally {
+            setUploadingPic(false);
+        }
+    };
+
+    const handleRemoveProfilePic = () => {
+        setFormData((prev) => ({ ...prev, profile_pic: "" }));
+    };
 
     const AGENT_TRAINEE_ROLE_ID = 7;
 
@@ -335,6 +375,7 @@ export default function UserProfile({ params }) {
                     agent_id: userData.agent_id || "", // <-- Populate agent_id
                     mobileno: userData.mobileno || "",
                     role_id: currentRoleId,
+                    profile_pic: userData.profile_pic || "", // <-- Populate profile picture
                 });
                 
                 setInitialRoleId(currentRoleId); 
@@ -410,6 +451,70 @@ export default function UserProfile({ params }) {
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">Update User Profile</h1>
                     <p className="mt-2 text-gray-600">Edit the details below and save changes.</p>
+                </div>
+
+                {/* --- Profile Picture --- */}
+                <div className="mb-8 flex flex-col items-center">
+                    <div className="relative group">
+                        {formData.profile_pic ? (
+                            <>
+                                <img
+                                    src={formData.profile_pic}
+                                    alt={`${formData.fname} ${formData.lname}`}
+                                    onClick={() => setIsImageOpen(true)}
+                                    className="h-28 w-28 rounded-full object-cover border-4 border-white shadow-lg cursor-zoom-in ring-1 ring-gray-200"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setIsImageOpen(true)}
+                                    title="Enlarge"
+                                    className="absolute bottom-1 right-1 bg-gray-900/70 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition"
+                                >
+                                    <FaExpand className="h-3.5 w-3.5" />
+                                </button>
+                            </>
+                        ) : (
+                            <div className="h-28 w-28 rounded-full bg-blue-100 flex items-center justify-center text-blue-400 border-4 border-white shadow-lg">
+                                <FaUser className="h-12 w-12" />
+                            </div>
+                        )}
+                        {uploadingPic && (
+                            <div className="absolute inset-0 rounded-full bg-white/70 flex items-center justify-center">
+                                <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                        <label className="cursor-pointer inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow transition">
+                            <FaCamera className="mr-2" />
+                            {formData.profile_pic ? "Change Photo" : "Upload Photo"}
+                            <input type="file" accept="image/*" onChange={handleProfilePicUpload} className="hidden" disabled={uploadingPic} />
+                        </label>
+                        {formData.profile_pic && (
+                            <>
+                                <a
+                                    href={`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user/${user_id}/profile-picture/download`}
+                                    className="inline-flex items-center px-3 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium rounded-lg shadow-sm transition"
+                                >
+                                    <FaDownload className="mr-2" /> Download
+                                </a>
+                                <button
+                                    type="button"
+                                    onClick={handleRemoveProfilePic}
+                                    className="inline-flex items-center px-3 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 text-sm font-medium rounded-lg shadow-sm transition"
+                                >
+                                    <FaTrash className="mr-2" /> Remove
+                                </button>
+                            </>
+                        )}
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500">JPG, PNG, WEBP or GIF · Max 10MB · optional</p>
+                    {errors.profile_pic && <p className="mt-1 text-sm text-red-600">{errors.profile_pic}</p>}
+                    <p className="mt-1 text-[11px] text-gray-400">Remember to click “Update Profile” to save changes.</p>
                 </div>
 
                 {errors.form && (
@@ -568,6 +673,29 @@ export default function UserProfile({ params }) {
                     </div>
                 </form>
             </div>
+
+            {/* Enlarge / lightbox */}
+            {isImageOpen && formData.profile_pic && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+                    onClick={() => setIsImageOpen(false)}
+                >
+                    <button
+                        type="button"
+                        onClick={() => setIsImageOpen(false)}
+                        className="absolute top-4 right-4 text-white/80 hover:text-white"
+                        title="Close"
+                    >
+                        <FaTimes className="h-7 w-7" />
+                    </button>
+                    <img
+                        src={formData.profile_pic}
+                        alt="Profile"
+                        className="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl object-contain"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </div>
     );
 }
