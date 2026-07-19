@@ -32,7 +32,7 @@
 //   useEffect(() => {
 //     const fetchUser = async () => {
 //       try {
-//         const res = await axios.get(`${API_BASE2}/api/user-email`, { withCredentials: true });
+//         const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, { withCredentials: true });
 //         setUserUniqueId(res.data.unique_id);
 //         setUserRole(parseInt(res.data.role, 10)); 
 //       } catch (err) {
@@ -287,7 +287,7 @@ const ActiveTasksPage = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get(`${API_BASE2}/api/user-email`, { withCredentials: true });
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, { withCredentials: true });
         setUserUniqueId(res.data.unique_id);
         setUserRole(parseInt(res.data.role, 10));
       } catch (err) {

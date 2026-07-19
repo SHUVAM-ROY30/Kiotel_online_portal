@@ -82,7 +82,7 @@ export default function TicketCreateForm() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users`);
         const filteredUsers = response.data.filter((user) => user.role !== "Client");
         const userOptions = filteredUsers.map(user => ({
           value: user.id,
@@ -100,7 +100,7 @@ export default function TicketCreateForm() {
     const fetchCurrentUser = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`,
           { withCredentials: true }
         );
         setCurrentUserId(res.data.id);
@@ -114,7 +114,7 @@ export default function TicketCreateForm() {
   useEffect(() => {
     const fetchTaskStates = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/taskstate`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/taskstate`);
         setTaskStates(response.data);
         const notStartedState = response.data.find(state => state.status_name.toLowerCase() === "not started");
         if (notStartedState) setTicketState(notStartedState.Id.toString());
@@ -128,7 +128,7 @@ export default function TicketCreateForm() {
   useEffect(() => {
     const fetchPriorities = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/priority`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/priority`);
         setPriorities(response.data);
         const lowPriority = response.data.find(priority => priority.priority_name.toLowerCase() === "low");
         if (lowPriority) setTicketPriority(lowPriority.Id.toString());
@@ -142,7 +142,7 @@ export default function TicketCreateForm() {
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tags`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/tags`);
         const tagOptions = response.data.map(tag => ({ value: tag.id, label: tag.tag }));
         setTags(tagOptions);
         // Default-select "Tech support" (tag id 10) if present.
@@ -158,7 +158,7 @@ export default function TicketCreateForm() {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/groups`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/groups`);
         const groupOptions = response.data.map(group => ({ value: group.id, label: group.name }));
         setGroups(groupOptions);
       } catch (error) {
@@ -177,7 +177,7 @@ export default function TicketCreateForm() {
       }
       setLoadingParentTasks(true);
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tasks/parents`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/tasks/parents`);
         const taskOptions = response.data.map(task => ({
           value: task.id,
           label: `${task.title} (ID: ${task.id})`
@@ -206,7 +206,7 @@ export default function TicketCreateForm() {
 
       try {
         const memberFetchPromises = groupsToFetch.map(groupOption =>
-          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/group/${groupOption.value}/users`)
+          axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/group/${groupOption.value}/users`)
             .then(res => ({ groupId: groupOption.value, users: res.data }))
             .catch(err => { return { groupId: groupOption.value, users: [] }; })
         );
@@ -270,7 +270,7 @@ export default function TicketCreateForm() {
     let formData = new FormData();
 
     if (isRecurring) {
-      apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/recurring-task`;
+      apiUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/recurring-task`;
       formData.append("recurrence_type", recurrenceType);
       if (recurrenceType === "weekly") formData.append("weekly_day", weeklyDay);
       if (recurrenceType === "monthly") formData.append("monthly_date", monthlyDate);

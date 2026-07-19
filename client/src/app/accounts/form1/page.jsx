@@ -28,11 +28,11 @@ const MyFormComponent = () => {
 
   useEffect(() => {
     // Fetch states and lock types from backend API
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/states`)
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/states`)
       .then((response) => response.json())
       .then((data) => setStatesList(data));
 
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/lock-types`)
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/lock-types`)
       .then((response) => response.json())
       .then((data) => setLockTypesList(data));
   }, []);

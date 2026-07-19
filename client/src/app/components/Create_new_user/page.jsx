@@ -86,7 +86,7 @@
 //   // Fetch roles on mount
 //   useEffect(() => {
 //     axios
-//       .get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/roles`)
+//       .get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/roles`)
 //       .then((response) => {
 //         const roleList = response.data;
 //         setRoles(roleList);
@@ -116,7 +116,7 @@
 //     const fetchGroups = async () => {
 //       try {
 //         const response = await axios.get(
-//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/groups`
+//           `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/groups`
 //         );
 //         setGroups(response.data);
 //       } catch (error) {
@@ -243,7 +243,7 @@
 //     const formattedDob = dob ? dob.toISOString().split("T")[0] : null;
 //     try {
 //       const response = await axios.post(
-//         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/register`,
+//         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/register`,
 //         {
 //           email,
 //           password,
@@ -854,7 +854,7 @@ function SignUpForm({ existingUser = null }) {
   // Fetch roles on mount
   useEffect(() => {
     axios
-      .get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/roles`)
+      .get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/roles`)
       .then((response) => {
         const roleList = response.data;
         setRoles(roleList);
@@ -884,7 +884,7 @@ function SignUpForm({ existingUser = null }) {
     const fetchGroups = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/groups`
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/groups`
         );
         setGroups(response.data);
       } catch (error) {
@@ -1039,7 +1039,7 @@ function SignUpForm({ existingUser = null }) {
     try {
       // 1. REGISTER THE USER
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/register`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/register`,
         {
           email,
           password,

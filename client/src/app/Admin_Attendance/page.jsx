@@ -274,7 +274,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get(`${API2}/api/user-email`, { withCredentials: true });
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, { withCredentials: true });
         setUserRole(res?.data?.role ?? null);
       } catch (err) {
         console.error('Failed to fetch user role:', err);

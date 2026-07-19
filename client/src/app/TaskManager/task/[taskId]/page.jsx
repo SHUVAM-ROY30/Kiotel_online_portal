@@ -194,7 +194,7 @@ export default function TicketDetails({ params }) {
 
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tasks/subtasks/${ticketId}`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/tasks/subtasks/${ticketId}`,
           { withCredentials: true }
         );
         setSubtasks(response.data || []); 
@@ -212,8 +212,8 @@ export default function TicketDetails({ params }) {
     const fetchOptions = async () => {
       try {
         const [statusRes, priorityRes] = await Promise.all([
-          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/taskstate`),
-          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/priority`),
+          axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/taskstate`),
+          axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/priority`),
         ]);
         setStatuses(statusRes.data);
         setPriorities(priorityRes.data);
@@ -229,7 +229,7 @@ export default function TicketDetails({ params }) {
     const fetchTaskState = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_state_for_task/${ticketId}`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/get_assigned_state_for_task/${ticketId}`,
           { withCredentials: true }
         );
         if (response.data && !response.data.error) {
@@ -247,7 +247,7 @@ export default function TicketDetails({ params }) {
     const fetchTaskPriority = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_priority_for_task/${ticketId}`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/get_assigned_priority_for_task/${ticketId}`,
           { withCredentials: true }
         );
         if (response.data && !response.data.error) {
@@ -265,7 +265,7 @@ export default function TicketDetails({ params }) {
     const fetchAssignedUsers = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticketId}`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/get_assigned_user_for_task/${ticketId}`,
           { withCredentials: true }
         );
         if (response.data && Array.isArray(response.data)) {
@@ -288,7 +288,7 @@ export default function TicketDetails({ params }) {
     const fetchUserDetails = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`,
           { withCredentials: true }
         );
         setUser(response.data);
@@ -304,7 +304,7 @@ export default function TicketDetails({ params }) {
     const fetchUsers = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users`
         );
         const filteredUsers = response.data
           .filter((user) => user.role !== "Client")
@@ -349,7 +349,7 @@ export default function TicketDetails({ params }) {
 
     try {
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_priority`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/update_task_priority`,
         { priority_id: priorityId, ticketId },
         { withCredentials: true }
       );
@@ -365,7 +365,7 @@ export default function TicketDetails({ params }) {
 
     try {
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_due_date`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/update_task_due_date`,
         { ticketId, due_date: newDate },
         { withCredentials: true }
       );
@@ -381,7 +381,7 @@ export default function TicketDetails({ params }) {
     }
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/assign_user_to_task`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/assign_user_to_task`,
         {
           task_id: ticketId,
           assigned_to: selectedUser.value,
@@ -390,7 +390,7 @@ export default function TicketDetails({ params }) {
       );
       if (response.data.success) {
         const updatedUsersResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get_assigned_user_for_task/${ticketId}`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/get_assigned_user_for_task/${ticketId}`,
           { withCredentials: true }
         );
         const updatedUsers = Array.isArray(updatedUsersResponse.data)

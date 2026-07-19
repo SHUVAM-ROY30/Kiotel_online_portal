@@ -49,7 +49,7 @@ const SignIn = () => {
 
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/signin`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/login`,
         { email, password, device_id: deviceId },
         { withCredentials: true }
       );

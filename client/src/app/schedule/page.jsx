@@ -90,7 +90,7 @@ export default function SchedulePage() {
   useEffect(() => {
     const fetchUserRole = async () => {
       try {
-        const res = await axios.get(`${API2}/api/user-email`, { withCredentials: true });
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, { withCredentials: true });
         setUserRole(res.data.role);
       } catch (err) {
         setError('Failed to load role');

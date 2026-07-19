@@ -32,7 +32,7 @@ export default function TicketReplyForm({ params }) {
       try {
         // Fetch ticket details
         const ticketResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${taskId}`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/task/${taskId}/v2`,
           { withCredentials: true }
         );
         setInitialTitle(ticketResponse.data.title);
@@ -40,14 +40,14 @@ export default function TicketReplyForm({ params }) {
 
         // Fetch status options
         const statusResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/status`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/status`,
           { withCredentials: true }
         );
         setStatusOptions(statusResponse.data);
 
         // Fetch user role
         const userResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`,
           { withCredentials: true }
         );
         setRoleId(userResponse.data.role);

@@ -30,7 +30,7 @@ export default function RecurringTasksPage() {
       setLoading(true);
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/recurring_tasks`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/recurring_tasks`,
           { withCredentials: true }
         );
         setRows(res.data || []);

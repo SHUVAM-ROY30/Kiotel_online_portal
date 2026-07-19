@@ -26,7 +26,7 @@
 //     const fetchData = async () => {
 //       try {
 //         const [usersRes, shiftsRes, assignmentsRes] = await Promise.all([
-//           axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`, { withCredentials: true }),
+//           axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users`, { withCredentials: true }),
 //           axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/clockin/shifts`),
 //           axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/clockin/non-general-shift-assignments`)
 //         ]);
@@ -524,7 +524,7 @@ export default function ManageNonGeneralShifts({ onClose }) {
     const fetchData = async () => {
       try {
         const [usersRes, accessRes] = await Promise.all([
-          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`, { withCredentials: true }),
+          axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users`, { withCredentials: true }),
           axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/clockin/non-general-access-users`)
         ]);
 

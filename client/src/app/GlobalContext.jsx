@@ -1,68 +1,4 @@
-// "use client";
 
-// import React, { createContext, useContext, useState, useEffect } from "react";
-// import axios from "axios";
-
-// const GlobalContext = createContext();
-
-// export function GlobalProvider({ children }) {
-//   const [user, setUser] = useState(null);
-//   const [customerProperties, setCustomerProperties] = useState([]);
-//   const [selectedProperty, setSelectedProperty] = useState(null);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     const initData = async () => {
-//       try {
-//         // Fetch User
-//         const userRes = await axios.get(
-//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
-//           { withCredentials: true }
-//         );
-//         const userData = userRes.data;
-//         setUser({
-//           fname: userData.fname,
-//           role: parseInt(userData.role, 10),
-//           email: userData.email,
-//           unique_id: userData.unique_id,
-//         });
-
-//         // Fetch Properties based on role
-//         const url = (parseInt(userData.role, 10) === 1 || parseInt(userData.role, 10) === 3)
-//           ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/admin/properties`
-//           : `${process.env.NEXT_PUBLIC_BACKEND_URL}/customer/properties?customer_id=${userData.unique_id}`;
-          
-//         const propRes = await axios.get(url, { withCredentials: true });
-//         const props = propRes.data.properties || propRes.data || [];
-//         setCustomerProperties(props);
-        
-//         if (props.length > 0) {
-//           setSelectedProperty(props[0]);
-//         }
-//       } catch (err) {
-//         console.error("Global Initialization Error:", err);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     initData();
-//   }, []);
-
-//   return (
-//     <GlobalContext.Provider value={{
-//       user,
-//       customerProperties,
-//       selectedProperty,
-//       setSelectedProperty,
-//       loading
-//     }}>
-//       {children}
-//     </GlobalContext.Provider>
-//   );
-// }
-
-// export const useGlobal = () => useContext(GlobalContext);
 
 
 
@@ -125,7 +61,7 @@ export function GlobalProvider({ children }) {
       try {
         // Fetch User
         const userRes = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`,
           { withCredentials: true }
         );
         const userData = userRes.data;

@@ -48,7 +48,7 @@ const TicketReplyForm = ({ params }) => {
 
     const fetchStatusOptions = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/status`, {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/status`, {
           withCredentials: true,
         });
         setStatusOptions(response.data); // Set dropdown options
@@ -59,7 +59,7 @@ const TicketReplyForm = ({ params }) => {
 
     const fetchRoleId = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`, {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, {
           withCredentials: true,
         });
         setRoleId(response.data.role); // Set role ID from session

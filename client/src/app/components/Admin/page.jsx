@@ -456,7 +456,7 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
   useEffect(() => {
     const fetchAllGroups = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/groups`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/groups`);
         setAllGroups(response.data || []);
       } catch (err) {
         console.error("Failed to fetch groups:", err);
@@ -485,14 +485,14 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
     const fetchUserData = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`,
           { withCredentials: true }
         );
         setUserFname(response.data.fname);
         setUserRole(response.data.role);
 
         const usersResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users`,
           { withCredentials: true }
         );
         setUsers(usersResponse.data);
@@ -529,7 +529,7 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
   const handleDeleteUserAccount = async (accountNo) => {
     try {
       await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/delete-user-account/${accountNo}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/delete-user-account/${accountNo}`,
         { withCredentials: true }
       );
       console.log("Employee deleted from HR DB successfully");
@@ -552,7 +552,7 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
     if (!confirmed) return;
     try {
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/delete-user`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/delete-user`,
         { user_id: userId },
         { withCredentials: true }
       );
@@ -611,7 +611,7 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
       console.error("Error assigning shifts:", err);
       setShiftError("Failed to assign shifts");
       const usersResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users`,
         { withCredentials: true }
       );
       setUsers(usersResponse.data);
@@ -639,14 +639,14 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
     setGroupsError(null);
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user/${userId}/manage-groups`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user/${userId}/manage-groups`,
         groupOperations,
         { withCredentials: true }
       );
 
       if (response.status === 200) {
         const usersResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users`,
           { withCredentials: true }
         );
         setUsers(usersResponse.data);
@@ -800,7 +800,7 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
     const fetchUserData = async () => {
       try {
         const usersResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users`,
           { withCredentials: true }
         );
         setUsers(usersResponse.data);

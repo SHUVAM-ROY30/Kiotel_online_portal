@@ -34,7 +34,7 @@
 //     useEffect(() => {
 //         const fetchData = async () => {
 //             try {
-//                 const userResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user/${user_id}`);
+//                 const userResponse = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user/${user_id}`);
 //                 const userData = userResponse.data;
                 
 //                 const currentRoleId = userData.role_id || userData.role || "";
@@ -54,7 +54,7 @@
                 
 //                 setInitialRoleId(currentRoleId); // <-- Store the initial role ID
 
-//                 const rolesResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/roles`);
+//                 const rolesResponse = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/roles`);
 //                 setRoles(rolesResponse.data);
 //             } catch (error) {
 //                 console.error("Error fetching user data or roles:", error);
@@ -110,7 +110,7 @@
 
 //         setLoading(true);
 //         try {
-//             await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user/update_new/${user_id}`, updatedData);
+//             await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user/update_new/${user_id}`, updatedData);
 //             setLoading(false);
 //             router.push("/Dashboard");
 //         } catch (error) {
@@ -318,7 +318,7 @@ export default function UserProfile({ params }) {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const userResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user/${user_id}`);
+                const userResponse = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user/${user_id}`);
                 const userData = userResponse.data;
                 
                 const currentRoleId = userData.role_id || userData.role || "";
@@ -339,7 +339,7 @@ export default function UserProfile({ params }) {
                 
                 setInitialRoleId(currentRoleId); 
 
-                const rolesResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/roles`);
+                const rolesResponse = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/roles`);
                 setRoles(rolesResponse.data);
             } catch (error) {
                 console.error("Error fetching user data or roles:", error);
@@ -393,7 +393,7 @@ export default function UserProfile({ params }) {
 
         setLoading(true);
         try {
-            await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user/update_new/${user_id}`, updatedData);
+            await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user/update_new/${user_id}`, updatedData);
             setLoading(false);
             router.push("/Dashboard");
         } catch (error) {

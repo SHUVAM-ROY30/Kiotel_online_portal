@@ -443,39 +443,6 @@ console.log("WordCount =", WordCount);
             </div>
           )}
 
-          {editor && (
-            <>
-              {/* <BubbleMenuBar editor={editor} disabled={readOnly} /> */}
-
-              {/* Floating menu on empty line */}
-              {/* <FloatingMenu
-                editor={editor}
-                tippyOptions={{ duration: 100 }}
-                className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg shadow-lg px-2 py-1.5"
-              >
-                <span className="text-xs text-gray-400 mr-1">Insert:</span>
-                {[
-                  { label: "H1", action: () => editor.chain().focus().toggleHeading({ level: 1 }).run() },
-                  { label: "H2", action: () => editor.chain().focus().toggleHeading({ level: 2 }).run() },
-                  { label: "• List", action: () => editor.chain().focus().toggleBulletList().run() },
-                  { label: "1. List", action: () => editor.chain().focus().toggleOrderedList().run() },
-                  { label: "☑ Task", action: () => editor.chain().focus().toggleTaskList().run() },
-                  { label: "❝ Quote", action: () => editor.chain().focus().toggleBlockquote().run() },
-                  { label: "</> Code", action: () => editor.chain().focus().toggleCodeBlock().run() },
-                ].map((item) => (
-                  <button
-                    key={item.label}
-                    type="button"
-                    onClick={item.action}
-                    className="px-2 py-1 rounded text-xs text-gray-600 hover:bg-gray-100 transition-colors"
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </FloatingMenu> */}
-            </>
-          )}
-
           {/* Tiptap content */}
           <EditorContent
             editor={editor}

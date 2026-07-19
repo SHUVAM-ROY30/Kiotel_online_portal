@@ -41,7 +41,7 @@ const UpdateProfile = () => {
   useEffect(() => {
     const fetchUserRole = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`, { withCredentials: true });
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, { withCredentials: true });
         const role = response.data.role;
         setUserRole(role);
       } catch (error) {
@@ -59,7 +59,7 @@ const UpdateProfile = () => {
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/roles`, { withCredentials: true });
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/roles`, { withCredentials: true });
         setRoles(response.data);
       } catch (error) {
         console.error("Failed to fetch roles:", error);
@@ -74,7 +74,7 @@ const UpdateProfile = () => {
     const fetchProfileData = async () => {
       if (userRole) {
         try {
-          const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user/profile`, { withCredentials: true });
+          const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user/profile`, { withCredentials: true });
           const { data } = response;
           setFormData({
             emailid: data.emailid || '',
