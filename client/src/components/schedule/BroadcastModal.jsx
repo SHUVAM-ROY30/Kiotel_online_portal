@@ -5,11 +5,15 @@ import axios from 'axios';
 
 const API2 = process.env.NEXT_PUBLIC_BACKEND_URL;
 
+// Prefilled defaults — editable by the user before sending
+const DEFAULT_SUBJECT = 'Schedule is Live';
+const DEFAULT_MESSAGE = 'Please log in to portal.kiotel.co';
+
 const BroadcastModal = ({ showBroadcastModal, setShowBroadcastModal, uniqueId }) => {
   const [employees, setEmployees] = useState([]); // Store fetched employees
   const [selectedEmployees, setSelectedEmployees] = useState(new Set());
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
+  const [subject, setSubject] = useState(DEFAULT_SUBJECT);
+  const [message, setMessage] = useState(DEFAULT_MESSAGE);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState(null);
 
@@ -24,8 +28,8 @@ const BroadcastModal = ({ showBroadcastModal, setShowBroadcastModal, uniqueId })
           });
           setEmployees(res.data); // Set the fetched list
           setSelectedEmployees(new Set()); // Reset selection
-          setSubject('');
-          setMessage('');
+          setSubject(DEFAULT_SUBJECT);
+          setMessage(DEFAULT_MESSAGE);
           setSending(false);
           setSendResult(null);
         } catch (err) {
