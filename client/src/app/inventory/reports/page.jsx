@@ -5,12 +5,22 @@ import InventoryLayout from "../_components/InventoryLayout";
 import { useInventoryUser } from "../_hooks/useInventoryUser";
 import axios from "axios";
 
+const UNIT_CONDITIONS = {
+  occupied: "Occupied",
+  it_custody_working: "IT Custody — Working",
+  it_custody_damaged: "IT Custody — Damaged",
+  thrown: "Thrown",
+  unknown: "Unknown",
+};
+
 export default function Reports() {
   const { user, userRole, loading: userLoading } = useInventoryUser();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedItem, setExpandedItem] = useState(null);
+  // Model / serial / condition only exist once the unit-import migration is applied.
+  const [hasUnitDetails, setHasUnitDetails] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -28,6 +38,7 @@ export default function Reports() {
           }
         );
         setItems(res.data?.data || []);
+        setHasUnitDetails(Boolean(res.data?.has_unit_details));
       } catch (err) {
         setError("Failed to load report.");
       } finally {
@@ -152,6 +163,11 @@ export default function Reports() {
                         <tr style={{ background: "#f9fafb" }}>
                           <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b6b8a", fontWeight: 600, borderBottom: "1px solid #e8eaf0" }}>Unit Code</th>
                           <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b6b8a", fontWeight: 600, borderBottom: "1px solid #e8eaf0" }}>Status</th>
+                          {hasUnitDetails && <>
+                            <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b6b8a", fontWeight: 600, borderBottom: "1px solid #e8eaf0" }}>Model</th>
+                            <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b6b8a", fontWeight: 600, borderBottom: "1px solid #e8eaf0" }}>Serial / IMEI</th>
+                            <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b6b8a", fontWeight: 600, borderBottom: "1px solid #e8eaf0" }}>Condition</th>
+                          </>}
                           <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b6b8a", fontWeight: 600, borderBottom: "1px solid #e8eaf0" }}>Property</th>
                           <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b6b8a", fontWeight: 600, borderBottom: "1px solid #e8eaf0" }}>Cabin</th>
                           <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b6b8a", fontWeight: 600, borderBottom: "1px solid #e8eaf0" }}>Assigned Date</th>
@@ -170,6 +186,13 @@ export default function Reports() {
                                 {unit.status.toUpperCase()}
                               </span>
                             </td>
+                            {hasUnitDetails && <>
+                              <td style={{ padding: "10px 16px", color: "#4a4a6a" }}>{unit.model || '—'}</td>
+                              <td style={{ padding: "10px 16px", color: "#4a4a6a" }}>{unit.serial_no || '—'}</td>
+                              <td style={{ padding: "10px 16px", color: "#4a4a6a", fontSize: 12 }} title={unit.remark || ""}>
+                                {UNIT_CONDITIONS[unit.condition_status] || '—'}
+                              </td>
+                            </>}
                             <td style={{ padding: "10px 16px", color: "#4a4a6a" }}>{unit.property_name}</td>
                             <td style={{ padding: "10px 16px", color: "#4a4a6a" }}>{unit.cabin_number || unit.cabin_no || '—'}</td>
                             <td style={{ padding: "10px 16px", color: "#6b6b8a", fontSize: 12 }}>
