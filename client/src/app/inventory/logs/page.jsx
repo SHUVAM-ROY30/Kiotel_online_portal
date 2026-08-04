@@ -85,6 +85,8 @@ export default function Logs() {
       'property_cabin.link': '🔗 Linked Property-Cabin',
       'property_cabin.unlink': '🔓 Unlinked Property-Cabin',
       'item.create': '📦 Created Item',
+      'inventory.units.import': '📊 Bulk Imported Units',
+      'unit.rename': '🏷️ Renamed Unit Code',
     };
     return labels[action] || action;
   };
@@ -104,7 +106,25 @@ export default function Logs() {
       if (parsed.qty || parsed.quantity) parts.push(`Qty: ${parsed.qty || parsed.quantity}`);
       if (parsed.reason) parts.push(`Reason: ${parsed.reason}`);
       if (parsed.before !== undefined && parsed.after !== undefined) parts.push(`${parsed.before} → ${parsed.after}`);
-      if (parsed.unit_codes) parts.push(`Units: ${parsed.unit_codes.join(', ')}`);
+      if (parsed.unit_codes) {
+        const shown = parsed.unit_codes.join(', ');
+        const total = parsed.unit_codes_total ?? parsed.unit_codes.length;
+        parts.push(
+          parsed.unit_codes_truncated
+            ? `Units: ${shown} … +${total - parsed.unit_codes.length} more (${total} total)`
+            : `Units: ${shown}`
+        );
+      }
+      // Bulk import writes one audit entry covering all three phases.
+      if (parsed.inserted !== undefined) {
+        const phases = [`${parsed.inserted} added`];
+        if (parsed.assigned) phases.push(`${parsed.assigned} assigned`);
+        if (parsed.retired) phases.push(`${parsed.retired} retired`);
+        if (parsed.updated) phases.push(`${parsed.updated} updated`);
+        if (parsed.kept) phases.push(`${parsed.kept} unchanged`);
+        parts.push(phases.join(', '));
+      }
+      if (parsed.file) parts.push(`File: ${parsed.file}`);
       if (parsed.imported) parts.push(`Imported: ${parsed.imported}`);
       if (parsed.property_id) parts.push(`Property: ${parsed.property_id}`);
       if (parsed.cabin_id) parts.push(`Cabin: ${parsed.cabin_id}`);

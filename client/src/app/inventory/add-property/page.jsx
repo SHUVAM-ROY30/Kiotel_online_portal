@@ -79,7 +79,7 @@
 //       );
 //       if (res.data?.success) {
 //         setSuccess("Property created successfully!");
-//         setTimeout(() => router.push("/inventory/properties"), 1200);
+//         setTimeout(() => router.push("/inventory/locations?view=properties"), 1200);
 //       } else {
 //         setError(res.data?.message || "Failed to create property.");
 //       }
@@ -140,7 +140,7 @@
 //         <div className="ci-actions">
 //           <button
 //             className="ci-btn-secondary"
-//             onClick={() => router.push("/inventory/properties")}
+//             onClick={() => router.push("/inventory/locations?view=properties")}
 //             type="button"
 //           >
 //             Cancel
@@ -270,7 +270,7 @@ export default function AddProperty() {
 
       if (res.data?.success) {
         setSuccess("Property created successfully!");
-        setTimeout(() => router.push("/inventory/properties"), 1200);
+        setTimeout(() => router.push("/inventory/locations?view=properties"), 1200);
       } else {
         setError(res.data?.message || "Failed to create property.");
       }
@@ -345,7 +345,7 @@ export default function AddProperty() {
 </div>
 
         <div className="ci-actions">
-          <button className="ci-btn-secondary" onClick={() => router.push("/inventory/properties")} type="button">Cancel</button>
+          <button className="ci-btn-secondary" onClick={() => router.push("/inventory/locations?view=properties")} type="button">Cancel</button>
           <button className="ci-btn-primary" onClick={handleSubmit} disabled={submitting} type="button">
             {submitting ? <><div className="ci-spinner" /> Creating...</> : <>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

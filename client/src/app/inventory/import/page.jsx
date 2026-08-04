@@ -18,10 +18,67 @@ const CONDITION_LABELS = {
 };
 
 const SKIP_LABELS = {
-  duplicate_in_file: "Repeated inside the workbook",
-  placeholder: "Placeholder row (no asset number)",
-  no_code: "No asset code",
+  duplicate_in_file: "Same unit filled in twice",
+  unreadable_code: "Asset code could not be read",
+  no_code: "Details filled in but no asset code",
+  placeholder: "Placeholder row",
 };
+
+const ACTION_LABELS = {
+  assign: "Assign",
+  retire: "Retire",
+  details: "Details only",
+  none: "No change",
+  blocked: "Needs fixing",
+};
+
+// Mirrors expandAssignment() on the server so a picked location shows what it
+// resolves to straight away. The server re-derives it for real on commit.
+function expandForDisplay(sel, options) {
+  if (!options) return { cabin: null, properties: [], note: null };
+  const cabin = sel.cabin_id
+    ? options.cabins.find((c) => c.id === Number(sel.cabin_id)) || null
+    : null;
+  const picked = sel.property_id
+    ? options.properties.find((p) => p.id === Number(sel.property_id)) || null
+    : null;
+
+  if (cabin && !picked) {
+    const ids = options.links.filter((l) => l.cabin_id === cabin.id).map((l) => l.property_id);
+    const props = options.properties.filter((p) => ids.includes(p.id));
+    return {
+      cabin,
+      properties: props,
+      note: props.length
+        ? `property ${props.length > 1 ? "codes" : "code"} ${props.map((p) => p.code).join(", ")} from the cabin link`
+        : "this cabin has no linked property — it will be assigned to the cabin only",
+    };
+  }
+  if (picked && !cabin) {
+    const ids = options.links.filter((l) => l.property_id === picked.id).map((l) => l.cabin_id);
+    if (ids.length === 1) {
+      const c = options.cabins.find((x) => x.id === ids[0]) || null;
+      return { cabin: c, properties: [picked], note: c ? `cabin ${c.cabin_number} from the property link` : null };
+    }
+    return {
+      cabin: null,
+      properties: [picked],
+      note: ids.length > 1
+        ? `this property has ${ids.length} cabins — pick one too, or it is assigned to the property only`
+        : "this property has no linked cabin — it will be assigned to the property only",
+    };
+  }
+  if (cabin && picked) {
+    const linked = options.links.some((l) => l.cabin_id === cabin.id && l.property_id === picked.id);
+    return {
+      cabin,
+      properties: [picked],
+      note: linked ? null : "these two are not linked to each other — this row will be skipped",
+      invalid: !linked,
+    };
+  }
+  return { cabin: null, properties: [], note: null };
+}
 
 function locationOf(row) {
   if (row?.property_name) return row.property_name;
@@ -65,15 +122,19 @@ function BulkImportPage() {
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
 
-  // duplicate resolution
-  const [defaultDecision, setDefaultDecision] = useState("keep");
-  const [decisions, setDecisions] = useState({});
-  const [dupPage, setDupPage] = useState(1);
-  const [dupSearch, setDupSearch] = useState("");
-  const [dupItem, setDupItem] = useState("all");
+  // review filters
+  const [rowPage, setRowPage] = useState(1);
+  const [rowSearch, setRowSearch] = useState("");
+  const [rowItem, setRowItem] = useState("all");
+  const [rowAction, setRowAction] = useState("all");
 
   const [showWarnings, setShowWarnings] = useState(false);
   const [showSkipped, setShowSkipped] = useState(false);
+  const [showRefused, setShowRefused] = useState(true);
+
+  // Corrections made on this screen, keyed by asset code:
+  //   { [unit_code]: { cabin_id: string, property_id: string } }
+  const [fixes, setFixes] = useState({});
 
   const fileRef = useRef(null);
 
@@ -133,9 +194,7 @@ function BulkImportPage() {
       });
       if (!res.data?.success) { setError(res.data?.message || "Could not read the file."); return; }
       setPreview(res.data);
-      setDecisions({});
-      setDefaultDecision("keep");
-      setDupPage(1);
+      setRowPage(1); setRowSearch(""); setRowItem("all"); setRowAction("all");
       setStep(2);
     } catch (err) {
       const data = err.response?.data;
@@ -153,80 +212,121 @@ function BulkImportPage() {
   const runImport = async () => {
     setBusy(true); setError(null);
     try {
+      // Apply this screen's corrections, then send only rows that do something.
+      // The server re-validates and re-derives every location regardless.
+      const payload = preview.rows
+        .map((r) => {
+          const fix = fixes[r.unit_code];
+          if (!fix) return r;
+          return {
+            ...r,
+            cabin_id: fix.cabin_id ? Number(fix.cabin_id) : null,
+            property_id: fix.property_id ? Number(fix.property_id) : null,
+            property_ids: fix.property_id ? [Number(fix.property_id)] : [],
+            // A corrected row is no longer blocked by what the sheet said.
+            location_error: null,
+            location_unresolved: null,
+          };
+        })
+        .filter((r) => {
+          const fixed = fixes[r.unit_code];
+          if (fixed) return Boolean(fixed.cabin_id || fixed.property_id);
+          return r.action !== "none" && r.action !== "blocked";
+        });
+
+      if (payload.length === 0) {
+        setError("Nothing to apply — every row is either unchanged or still needs fixing.");
+        return;
+      }
+
       const res = await axios.post(
         `${API}/units/import/commit`,
         {
-          rows: preview.rows,
-          duplicates: preview.duplicates,
-          decisions,
-          default_decision: defaultDecision,
+          rows: payload,
           file_name: preview.file_name,
+          file_hash: preview.file_hash,
         },
         { withCredentials: true, headers: authHeaders() }
       );
-      if (!res.data?.success) { setError(res.data?.message || "Import failed."); return; }
+      if (!res.data?.success) { setError(res.data?.message || "Upload failed."); return; }
       setResult(res.data);
       setStep(3);
     } catch (err) {
-      setError(await errorMessage(err, "Import failed."));
+      setError(await errorMessage(err, "Upload failed."));
     } finally {
       setBusy(false);
     }
   };
 
   const reset = () => {
-    setStep(1); setFile(null); setPreview(null); setResult(null);
-    setDecisions({}); setDefaultDecision("keep"); setError(null);
-    setDupSearch(""); setDupItem("all"); setDupPage(1);
+    setStep(1); setFile(null); setPreview(null); setResult(null); setError(null);
+    setRowSearch(""); setRowItem("all"); setRowAction("all"); setRowPage(1);
+    setFixes({});
   };
 
-  // ── duplicate helpers ───────────────────────────────────────
-  const choiceFor = (code) => decisions[code] || defaultDecision;
+  // ── inline corrections ──────────────────────────────────────
+  const setFix = (code, field, value) =>
+    setFixes((f) => {
+      const next = { ...(f[code] || { cabin_id: "", property_id: "" }), [field]: value };
+      // Both blank means "no correction" — drop the entry so the row falls back
+      // to whatever the sheet said.
+      if (!next.cabin_id && !next.property_id) {
+        const copy = { ...f };
+        delete copy[code];
+        return copy;
+      }
+      return { ...f, [code]: next };
+    });
 
-  const setChoice = (code, choice) =>
-    setDecisions((d) => ({ ...d, [code]: choice }));
+  const clearFix = (code) =>
+    setFixes((f) => {
+      const copy = { ...f };
+      delete copy[code];
+      return copy;
+    });
 
-  const applyToAll = (choice) => {
-    setDefaultDecision(choice);
-    setDecisions({});          // clear overrides so the bulk choice really applies to all
-    setDupPage(1);
-  };
+  const fixCount = Object.keys(fixes).length;
 
-  const duplicates = preview?.duplicates || [];
+  // ── review helpers ──────────────────────────────────────────
+  const rows = useMemo(() => preview?.rows || [], [preview]);
 
-  const dupItems = useMemo(() => {
-    const names = new Set(duplicates.map((d) => d.item_name));
+  const rowItems = useMemo(() => {
+    const names = new Set(rows.map((r) => r.item_name));
     return ["all", ...[...names].sort()];
-  }, [duplicates]);
+  }, [rows]);
 
-  const filteredDupes = useMemo(() => {
-    const q = dupSearch.trim().toLowerCase();
-    return duplicates.filter((d) => {
-      if (dupItem !== "all" && d.item_name !== dupItem) return false;
+  const filteredRows = useMemo(() => {
+    const q = rowSearch.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (rowItem !== "all" && r.item_name !== rowItem) return false;
+      if (rowAction === "needs-fixing") {
+        if (!(r.action === "blocked" || r.location_unresolved)) return false;
+      } else if (rowAction !== "all" && r.action !== rowAction) return false;
       if (!q) return true;
       return (
-        d.unit_code.toLowerCase().includes(q) ||
-        (d.model || "").toLowerCase().includes(q) ||
-        locationOf(d).toLowerCase().includes(q)
+        (r.unit_code || "").toLowerCase().includes(q) ||
+        (r.serial_no || "").toLowerCase().includes(q) ||
+        (r.model || "").toLowerCase().includes(q) ||
+        locationOf(r).toLowerCase().includes(q)
       );
     });
-  }, [duplicates, dupSearch, dupItem]);
+  }, [rows, rowSearch, rowItem, rowAction]);
 
-  const pageCount = Math.max(1, Math.ceil(filteredDupes.length / PAGE_SIZE));
-  const page = Math.min(dupPage, pageCount);
-  const pagedDupes = filteredDupes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const page = Math.min(rowPage, pageCount);
+  const pagedRows = filteredRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const updateCount = duplicates.filter((d) => choiceFor(d.unit_code) === "update").length;
-  const keepCount = duplicates.length - updateCount;
-
-  // Set the choice for every duplicate currently passing the filter.
-  const applyToFiltered = (choice) => {
-    setDecisions((d) => {
-      const next = { ...d };
-      for (const row of filteredDupes) next[row.unit_code] = choice;
-      return next;
-    });
-  };
+  // A correction turns a blocked or stuck row into something worth applying, so
+  // the button count has to include them.
+  const actionable = useMemo(() => {
+    const base = preview?.summary?.actionable ?? 0;
+    const addedByFixes = rows.filter((r) => {
+      const f = fixes[r.unit_code];
+      if (!f || !(f.cabin_id || f.property_id)) return false;
+      return r.action === "blocked" || r.action === "none" || r.location_unresolved;
+    }).length;
+    return base + addedByFixes;
+  }, [preview, rows, fixes]);
 
   // ── access gate ─────────────────────────────────────────────
   if (!userLoading && userRole === "employee") {
@@ -262,18 +362,22 @@ function BulkImportPage() {
           <div className="imp-card">
             <div className="imp-card-title">How it works</div>
             <ul className="imp-help">
-              <li>Start from the template below. It has <strong>one tab per inventory item</strong>, named after the item, with the <strong>Prefix already filled in</strong> — you only type the <strong>Asset Number</strong> (just the digits: <code>1</code>, <code>2</code>, <code>3</code>).</li>
-              <li>The portal builds the code itself — prefix <code>MT</code> + number <code>1</code> becomes <code>MT001</code>. Rows with a prefix but no number are ignored, so leave the spare rows alone.</li>
-              <li>Copy <strong>Cabin No</strong> and <strong>Assigned Property</strong> values from the template&apos;s <strong>Reference</strong> tab, which lists every property with the cabins linked to it. Fill in one or the other, not both.</li>
-              <li>Properties and cabins are <strong>matched, never created</strong>. Anything that doesn&apos;t match is imported unassigned and listed for you to fix.</li>
-              <li>Model, Serial/IMEI, Status and Remark are optional. Already have a sheet with full codes like <code>MT-01</code> in one column? That still works.</li>
-              <li>Nothing is written until you review the next screen and press Import.</li>
+              <li><strong>Add stock first.</strong> Use <strong>Add Inventory</strong> to create units — it issues the asset codes. This sheet never creates anything.</li>
+              <li>The template then lists <strong>the units sitting in stock with IT</strong>, one tab per item, with their asset codes already filled in. Anything already assigned, damaged or thrown is left out — there is nothing to do with those here.</li>
+              <li><strong>Leave the Asset Code column exactly as it is.</strong> It says which unit each row is about.</li>
+              <li>A row is only acted on <strong>if you put something in it</strong>. Leave a row untouched and that unit is not changed.</li>
+              <li>To <strong>assign</strong>, fill in <strong>either Cabin No or Assigned Property Code</strong> — just one. The other is filled in for you from the property/cabin link. Copy the values from the template&apos;s <strong>Reference</strong> tab.</li>
+              <li>Properties are identified by <strong>code</strong> (e.g. <code>1001</code>), never by name — a misspelt name is how a device ends up in the wrong place. If you do fill in both a cabin and a property, they must be linked to each other, or that row is reported and skipped.</li>
+              <li>To <strong>record details only</strong>, fill in Model / Serial / Remark and leave the location blank. The unit stays in stock.</li>
+              <li>To <strong>take a unit out of service</strong>, put <code>IT Custody - Damage</code> or <code>Thrown</code> in Status. It comes out of stock.</li>
+              <li>Model, Serial/IMEI and Remark come pre-filled with whatever the portal already holds — edit to correct them, or leave them alone.</li>
+              <li>Nothing is written until you review the next screen and press Apply.</li>
             </ul>
             <button className="imp-btn-ghost" onClick={downloadTemplate} type="button">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              Download template (with valid property &amp; cabin names)
+              Download template (units currently in stock)
             </button>
           </div>
 
@@ -320,13 +424,63 @@ function BulkImportPage() {
       {/* ── STEP 2 ─────────────────────────────────────────── */}
       {step === 2 && preview && (
         <>
+          {preview.already_imported && (
+            <div className="ai-alert">
+              You uploaded this same workbook on{" "}
+              <strong>{new Date(preview.already_imported.created_at).toLocaleString()}</strong>
+              {preview.already_imported.imported_by_name ? <> ({preview.already_imported.imported_by_name})</> : null}.
+              {" "}Units it already assigned are no longer in stock, so they show below as needing attention rather than being assigned twice.
+            </div>
+          )}
+
           <div className="imp-summary">
-            <div className="imp-stat"><div className="imp-stat-val">{preview.summary.total_rows}</div><div className="imp-stat-lbl">Rows read</div></div>
-            <div className="imp-stat ok"><div className="imp-stat-val">{preview.summary.new_units}</div><div className="imp-stat-lbl">New units</div></div>
-            <div className="imp-stat warn"><div className="imp-stat-val">{preview.summary.duplicates}</div><div className="imp-stat-lbl">Already in portal</div></div>
-            <div className="imp-stat"><div className="imp-stat-val">{preview.summary.skipped}</div><div className="imp-stat-lbl">Skipped</div></div>
-            <div className="imp-stat warn"><div className="imp-stat-val">{preview.summary.warnings}</div><div className="imp-stat-lbl">Need a look</div></div>
+            <div className="imp-stat"><div className="imp-stat-val">{preview.summary.total_rows}</div><div className="imp-stat-lbl">Rows filled in</div></div>
+            <div className="imp-stat ok"><div className="imp-stat-val">{preview.summary.will_assign}</div><div className="imp-stat-lbl">To assign</div></div>
+            <div className="imp-stat"><div className="imp-stat-val">{preview.summary.details_only}</div><div className="imp-stat-lbl">Details only</div></div>
+            <div className="imp-stat"><div className="imp-stat-val">{preview.summary.will_retire}</div><div className="imp-stat-lbl">To retire</div></div>
+            <div className={`imp-stat${Math.max(0, (preview.summary.needs_fixing || 0) - fixCount) ? " warn" : ""}`}>
+              <div className="imp-stat-val">{Math.max(0, (preview.summary.needs_fixing || 0) - fixCount)}</div>
+              <div className="imp-stat-lbl">Need fixing</div>
+            </div>
+            <div className="imp-stat warn"><div className="imp-stat-val">{preview.summary.refused}</div><div className="imp-stat-lbl">Cannot apply</div></div>
+            <div className="imp-stat"><div className="imp-stat-val">{preview.summary.in_stock_total}</div><div className="imp-stat-lbl">In stock now</div></div>
           </div>
+
+          {fixCount > 0 && (
+            <div className="ai-alert success">
+              ✓ {fixCount} location{fixCount === 1 ? "" : "s"} corrected on this screen.
+              {" "}These are applied on Apply — the spreadsheet itself is not changed.
+            </div>
+          )}
+
+          {/* refused rows — the most important thing on this screen */}
+          {preview.refused.length > 0 && (
+            <div className="imp-card imp-card-danger">
+              <button className="imp-collapse" type="button" onClick={() => setShowRefused((v) => !v)}>
+                {showRefused ? "▾" : "▸"} {preview.refused.length} row{preview.refused.length === 1 ? "" : "s"} cannot be applied
+                <span className="imp-dim"> — these will be skipped</span>
+              </button>
+              {showRefused && (
+                <div className="imp-table-wrap imp-scroll">
+                  <table className="imp-table">
+                    <thead><tr><th>Asset code</th><th>Tab · row</th><th>Why</th></tr></thead>
+                    <tbody>
+                      {preview.refused.slice(0, 300).map((r, i) => (
+                        <tr key={i}>
+                          <td><code>{r.unit_code}</code></td>
+                          <td className="imp-dim">{r.sheet} · {r.excel_row}</td>
+                          <td>{r.reason}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {preview.refused.length > 300 && (
+                    <p className="imp-dim">Showing the first 300 of {preview.refused.length}.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* per-sheet breakdown */}
           <div className="imp-card">
@@ -336,7 +490,7 @@ function BulkImportPage() {
                 <thead>
                   <tr>
                     <th>Tab</th><th>Mapped to item</th><th>Matched by</th>
-                    <th className="num">New</th><th className="num">Existing</th>
+                    <th className="num">Filled in</th><th className="num">Refused</th>
                     <th className="num">Skipped</th><th>Status</th>
                   </tr>
                 </thead>
@@ -346,8 +500,8 @@ function BulkImportPage() {
                       <td><strong>{s.sheet}</strong></td>
                       <td>{s.item_name || <span className="imp-dim">—</span>}</td>
                       <td className="imp-dim">{s.matched_via || "—"}</td>
-                      <td className="num">{s.new_count || 0}</td>
-                      <td className="num">{s.duplicate_count || 0}</td>
+                      <td className="num">{s.action_count || 0}</td>
+                      <td className="num">{s.refused_count || 0}</td>
                       <td className="num">{s.skipped || 0}</td>
                       <td>
                         {s.status === "ok"
@@ -362,111 +516,142 @@ function BulkImportPage() {
             </div>
           </div>
 
-          {/* duplicates */}
-          {duplicates.length > 0 && (
+          {/* what will change */}
+          {rows.length > 0 && (
             <div className="imp-card">
-              <div className="imp-card-title">
-                {duplicates.length} asset code{duplicates.length === 1 ? "" : "s"} already exist in the portal
-              </div>
+              <div className="imp-card-title">What will change</div>
               <p className="imp-card-sub">
-                New codes are always added. For these, choose whether to keep what the portal already has
-                or overwrite it with the values from the spreadsheet.
-                Assignments are only overwritten when the sheet actually names a property or cabin.
+                Every row you filled in, and exactly what it does to that unit. Rows showing
+                &ldquo;No change&rdquo; are left alone.
               </p>
-
-              <div className="imp-bulkbar">
-                <span className="imp-bulk-lbl">Apply to all {duplicates.length}:</span>
-                <button
-                  type="button"
-                  className={`imp-choice${defaultDecision === "keep" && !Object.keys(decisions).length ? " active" : ""}`}
-                  onClick={() => applyToAll("keep")}
-                >Keep existing</button>
-                <button
-                  type="button"
-                  className={`imp-choice${defaultDecision === "update" && !Object.keys(decisions).length ? " active" : ""}`}
-                  onClick={() => applyToAll("update")}
-                >Update from file</button>
-                <span className="imp-bulk-count">
-                  <strong>{keepCount}</strong> keep · <strong>{updateCount}</strong> update
-                </span>
-              </div>
 
               <div className="imp-filters">
                 <input
                   className="imp-search"
-                  placeholder="Search code, model or location…"
-                  value={dupSearch}
-                  onChange={(e) => { setDupSearch(e.target.value); setDupPage(1); }}
+                  placeholder="Search code, serial, model or location…"
+                  value={rowSearch}
+                  onChange={(e) => { setRowSearch(e.target.value); setRowPage(1); }}
                 />
-                <select className="imp-select" value={dupItem} onChange={(e) => { setDupItem(e.target.value); setDupPage(1); }}>
-                  {dupItems.map((n) => <option key={n} value={n}>{n === "all" ? "All items" : n}</option>)}
+                <select className="imp-select" value={rowItem} onChange={(e) => { setRowItem(e.target.value); setRowPage(1); }}>
+                  {rowItems.map((n) => <option key={n} value={n}>{n === "all" ? "All items" : n}</option>)}
                 </select>
-                {(dupSearch || dupItem !== "all") && (
-                  <div className="imp-filter-actions">
-                    <span className="imp-dim">{filteredDupes.length} shown —</span>
-                    <button type="button" className="imp-link" onClick={() => applyToFiltered("keep")}>keep all shown</button>
-                    <button type="button" className="imp-link" onClick={() => applyToFiltered("update")}>update all shown</button>
-                  </div>
-                )}
+                <select className="imp-select" value={rowAction} onChange={(e) => { setRowAction(e.target.value); setRowPage(1); }}>
+                  <option value="all">All actions</option>
+                  <option value="needs-fixing">Needs fixing</option>
+                  <option value="assign">Assign</option>
+                  <option value="details">Details only</option>
+                  <option value="retire">Retire</option>
+                  <option value="none">No change</option>
+                </select>
+                <div className="imp-filter-actions">
+                  <span className="imp-dim">{filteredRows.length} shown</span>
+                </div>
               </div>
 
               <div className="imp-table-wrap">
                 <table className="imp-table imp-dup-table">
                   <thead>
-                    <tr>
-                      <th>Code</th><th>Item</th><th>Field</th>
-                      <th>In portal now</th><th>In spreadsheet</th><th>Choice</th>
-                    </tr>
+                    <tr><th>Unit</th><th>Item</th><th>Action</th><th>What changes</th><th style={{ minWidth: 250 }}>Set location</th></tr>
                   </thead>
                   <tbody>
-                    {pagedDupes.map((d) => {
-                      const choice = choiceFor(d.unit_code);
-                      const fields = [
-                        ["Model", d.existing.model, d.model],
-                        ["Serial", d.existing.serial_no, d.serial_no],
-                        ["Condition", CONDITION_LABELS[d.existing.condition_status] || "—", CONDITION_LABELS[d.condition_status]],
-                        ["Location", locationOf(d.existing), locationOf(d)],
-                      ].filter(([, a, b]) => (a || "—") !== (b || "—"));
+                    {pagedRows.map((r) => {
+                      const fix = fixes[r.unit_code];
+                      const resolved = fix ? expandForDisplay(fix, preview.options) : null;
+                      const problem = r.action === "blocked" || r.location_unresolved;
                       return (
-                        <tr key={d.unit_code} className={choice === "update" ? "imp-row-update" : ""}>
-                          <td><code>{d.unit_code}</code>
-                            <div className="imp-dim">{d.sheet} · row {d.excel_row}</div>
-                            {d.item_conflict && (
-                              <div className="imp-pill danger" title={`Belongs to ${d.existing.item_name}`}>
-                                different item
-                              </div>
-                            )}
+                        <tr key={`${r.sheet}-${r.excel_row}-${r.unit_code}`}
+                            className={r.action === "blocked" && !fix ? "imp-row-blocked" : r.action === "retire" ? "imp-row-update" : ""}>
+                          <td><code>{r.unit_code}</code>
+                            <div className="imp-dim">{r.sheet} · row {r.excel_row}</div>
                           </td>
-                          <td>{d.item_name}</td>
-                          <td colSpan={3} className="imp-diff-cell">
-                            {fields.length === 0 ? (
-                              <span className="imp-dim">No differences — nothing would change.</span>
+                          <td>{r.item_name}</td>
+                          <td>
+                            <span className={`imp-pill${
+                              fix ? " ok"
+                                : r.action === "assign" ? " ok"
+                                : r.action === "retire" || r.action === "blocked" ? " danger" : ""
+                            }`}>
+                              {fix ? "Assign (fixed)" : ACTION_LABELS[r.action] || r.action}
+                            </span>
+                          </td>
+                          <td className="imp-diff-cell">
+                            {r.action === "blocked" && !fix ? (
+                              <span className="imp-warn-hard">{r.blocked_reason}</span>
+                            ) : r.location_unresolved && !fix ? (
+                              <span className="imp-warn-hard">{r.location_unresolved}</span>
+                            ) : r.changes.length === 0 && !fix ? (
+                              <span className="imp-dim">Nothing — the sheet matches what the portal already has.</span>
                             ) : (
                               <table className="imp-diff">
                                 <tbody>
-                                  {fields.map(([label, was, now]) => (
-                                    <tr key={label}>
-                                      <td className="imp-diff-lbl">{label}</td>
-                                      <td className="imp-diff-was">{was || "—"}</td>
+                                  {r.changes.filter((c) => !(fix && c.field === "Assign to")).map((c, i) => (
+                                    <tr key={i}>
+                                      <td className="imp-diff-lbl">{c.field}</td>
+                                      <td className="imp-diff-was">{c.from || "—"}</td>
                                       <td className="imp-diff-arrow">→</td>
-                                      <td className="imp-diff-now">{now || "—"}</td>
+                                      <td className="imp-diff-now">
+                                        {c.to || "—"}
+                                        {c.note && <div className="imp-dim">{c.note}</div>}
+                                      </td>
                                     </tr>
                                   ))}
+                                  {fix && (
+                                    <tr>
+                                      <td className="imp-diff-lbl">Assign to</td>
+                                      <td className="imp-diff-was">In stock</td>
+                                      <td className="imp-diff-arrow">→</td>
+                                      <td className="imp-diff-now">
+                                        {[
+                                          resolved.cabin ? `Cabin ${resolved.cabin.cabin_number}` : null,
+                                          resolved.properties.length ? resolved.properties.map((p) => `${p.name} (${p.code})`).join(" + ") : null,
+                                        ].filter(Boolean).join(" · ") || "—"}
+                                        {resolved.note && (
+                                          <div className={resolved.invalid ? "imp-warn-hard" : "imp-dim"}>{resolved.note}</div>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  )}
                                 </tbody>
                               </table>
                             )}
                           </td>
-                          <td className="imp-choice-cell">
-                            <label className="imp-radio">
-                              <input type="radio" name={`d-${d.unit_code}`} checked={choice === "keep"}
-                                onChange={() => setChoice(d.unit_code, "keep")} />
-                              Keep
-                            </label>
-                            <label className="imp-radio">
-                              <input type="radio" name={`d-${d.unit_code}`} checked={choice === "update"}
-                                onChange={() => setChoice(d.unit_code, "update")} />
-                              Update
-                            </label>
+                          <td>
+                            {r.action === "retire" ? (
+                              <span className="imp-dim">n/a — being retired</span>
+                            ) : (
+                              <div className="imp-fix">
+                                <select
+                                  className="imp-select imp-fix-sel"
+                                  value={fix?.cabin_id || ""}
+                                  onChange={(e) => setFix(r.unit_code, "cabin_id", e.target.value)}
+                                  aria-label={`Cabin for ${r.unit_code}`}
+                                >
+                                  <option value="">Cabin…</option>
+                                  {preview.options.cabins.map((c) => (
+                                    <option key={c.id} value={c.id}>Cabin {c.cabin_number}</option>
+                                  ))}
+                                </select>
+                                <select
+                                  className="imp-select imp-fix-sel"
+                                  value={fix?.property_id || ""}
+                                  onChange={(e) => setFix(r.unit_code, "property_id", e.target.value)}
+                                  aria-label={`Property for ${r.unit_code}`}
+                                >
+                                  <option value="">Property…</option>
+                                  {preview.options.properties.map((p) => (
+                                    <option key={p.id} value={p.id}>{p.code} — {p.name}</option>
+                                  ))}
+                                </select>
+                                {fix && (
+                                  <button type="button" className="imp-link" onClick={() => clearFix(r.unit_code)}>
+                                    undo
+                                  </button>
+                                )}
+                                {problem && !fix && (
+                                  <div className="imp-dim">Pick one — the other is filled in.</div>
+                                )}
+                              </div>
+                            )}
                           </td>
                         </tr>
                       );
@@ -477,9 +662,9 @@ function BulkImportPage() {
 
               {pageCount > 1 && (
                 <div className="imp-pagination">
-                  <button type="button" disabled={page === 1} onClick={() => setDupPage(page - 1)}>← Prev</button>
+                  <button type="button" disabled={page === 1} onClick={() => setRowPage(page - 1)}>← Prev</button>
                   <span>Page {page} of {pageCount}</span>
-                  <button type="button" disabled={page === pageCount} onClick={() => setDupPage(page + 1)}>Next →</button>
+                  <button type="button" disabled={page === pageCount} onClick={() => setRowPage(page + 1)}>Next →</button>
                 </div>
               )}
             </div>
@@ -495,16 +680,16 @@ function BulkImportPage() {
               {showWarnings && (
                 <div className="imp-table-wrap">
                   <table className="imp-table">
-                    <thead><tr><th>Code</th><th>Tab · row</th><th>Value in sheet</th><th>What happens</th></tr></thead>
+                    <thead><tr><th>Unit</th><th>Tab · row</th><th>Value in sheet</th><th>What happens</th></tr></thead>
                     <tbody>
-                      {preview.warnings.map((w) => (
-                        <tr key={`${w.sheet}-${w.excel_row}-${w.unit_code}`}>
+                      {preview.warnings.map((w, i) => (
+                        <tr key={`${w.sheet}-${w.excel_row}-${i}`}>
                           <td><code>{w.unit_code}</code></td>
                           <td className="imp-dim">{w.sheet} · {w.excel_row}</td>
                           <td>{w.raw_location || <span className="imp-dim">—</span>}</td>
                           <td>
-                            {w.warnings.map((msg, i) => (
-                              <div key={i} className={w.match === "fuzzy" ? "imp-warn-fuzzy" : "imp-warn-hard"}>{msg}</div>
+                            {w.warnings.map((msg, j) => (
+                              <div key={j} className={w.match === "fuzzy" ? "imp-warn-fuzzy" : "imp-warn-hard"}>{msg}</div>
                             ))}
                           </td>
                         </tr>
@@ -521,7 +706,7 @@ function BulkImportPage() {
             <div className="imp-card">
               <button className="imp-collapse" type="button" onClick={() => setShowSkipped((v) => !v)}>
                 {showSkipped ? "▾" : "▸"} {preview.skipped.length} row{preview.skipped.length === 1 ? "" : "s"} skipped
-                <span className="imp-dim"> — placeholders and rows repeated inside the workbook</span>
+                <span className="imp-dim"> — unreadable codes and units filled in twice</span>
               </button>
               {showSkipped && (
                 <>
@@ -538,12 +723,12 @@ function BulkImportPage() {
                   </div>
                   <div className="imp-table-wrap imp-scroll">
                     <table className="imp-table">
-                      <thead><tr><th>Tab · row</th><th>Code in sheet</th><th>Reason</th></tr></thead>
+                      <thead><tr><th>Tab · row</th><th>In sheet</th><th>Reason</th></tr></thead>
                       <tbody>
                         {preview.skipped.slice(0, 300).map((s, i) => (
                           <tr key={i}>
                             <td className="imp-dim">{s.sheet} · {s.excel_row}</td>
-                            <td>{s.raw_code || <span className="imp-dim">(blank)</span>}</td>
+                            <td>{s.unit_code || s.raw_code || <span className="imp-dim">(blank)</span>}</td>
                             <td>{s.reason}</td>
                           </tr>
                         ))}
@@ -560,9 +745,20 @@ function BulkImportPage() {
 
           <div className="ai-actions imp-sticky-actions">
             <button className="ai-btn-secondary" onClick={reset} type="button" disabled={busy}>← Choose another file</button>
-            <button className="ai-btn-primary" onClick={runImport} disabled={busy} type="button">
-              {busy ? <><div className="inv-spinner" /> Importing…</> : (
-                <>Import {preview.summary.new_units} new{updateCount > 0 ? ` · update ${updateCount}` : ""}</>
+            <button
+              className="ai-btn-primary"
+              onClick={runImport}
+              disabled={busy || actionable === 0}
+              title={actionable === 0 ? "Nothing in this sheet would change anything" : undefined}
+              type="button"
+            >
+              {busy ? <><div className="inv-spinner" /> Applying…</> : (
+                actionable === 0 ? "Nothing to apply" : (
+                  <>
+                    Apply {actionable} change{actionable === 1 ? "" : "s"}
+                    {preview.summary.will_assign > 0 ? ` · assign ${preview.summary.will_assign}` : ""}
+                  </>
+                )
               )}
             </button>
           </div>
@@ -575,9 +771,9 @@ function BulkImportPage() {
           <div className="ai-alert success">✓ {result.message}</div>
 
           <div className="imp-summary">
-            <div className="imp-stat ok"><div className="imp-stat-val">{result.results.inserted}</div><div className="imp-stat-lbl">Units added</div></div>
-            <div className="imp-stat"><div className="imp-stat-val">{result.results.updated}</div><div className="imp-stat-lbl">Units updated</div></div>
-            <div className="imp-stat"><div className="imp-stat-val">{result.results.kept}</div><div className="imp-stat-lbl">Left unchanged</div></div>
+            <div className="imp-stat ok"><div className="imp-stat-val">{result.results.assigned}</div><div className="imp-stat-lbl">Assigned</div></div>
+            <div className="imp-stat"><div className="imp-stat-val">{result.results.details_updated}</div><div className="imp-stat-lbl">Details updated</div></div>
+            <div className="imp-stat"><div className="imp-stat-val">{result.results.retired}</div><div className="imp-stat-lbl">Retired</div></div>
             <div className="imp-stat warn"><div className="imp-stat-val">{result.results.rejected.length}</div><div className="imp-stat-lbl">Needed attention</div></div>
           </div>
 
@@ -587,20 +783,56 @@ function BulkImportPage() {
               <div className="imp-table-wrap">
                 <table className="imp-table">
                   <thead>
-                    <tr><th>Item</th><th className="num">Added</th><th className="num">Updated</th><th className="num">Stock before</th><th className="num">Stock after</th></tr>
+                    <tr>
+                      <th>Item</th><th className="num">Assigned</th><th className="num">Retired</th>
+                      <th className="num">Details only</th>
+                      <th className="num">Stock before</th><th className="num">Stock after</th>
+                    </tr>
                   </thead>
                   <tbody>
                     {result.results.per_item.map((p) => (
                       <tr key={p.item_id}>
                         <td><strong>{p.item_name}</strong></td>
-                        <td className="num">{p.inserted}</td>
-                        <td className="num">{p.updated}</td>
+                        <td className="num">{p.assigned}</td>
+                        <td className="num">{p.retired}</td>
+                        <td className="num">{p.details_only}</td>
                         <td className="num imp-dim">{p.before_quantity}</td>
                         <td className="num">{p.after_quantity}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <p className="imp-dim">
+                Assigning and retiring both take a unit out of stock, which is why the after figure drops.
+                Each is recorded in the item&apos;s history as its own entry.
+              </p>
+            </div>
+          )}
+
+          {result.results.assigned_codes?.length > 0 && (
+            <div className="imp-card">
+              <div className="imp-card-title">Units assigned</div>
+              <div className="imp-skip-groups">
+                {result.results.assigned_codes.map((c) => (
+                  <span key={c} className="imp-pill ok">{c}</span>
+                ))}
+              </div>
+              {result.results.assigned > result.results.assigned_codes.length && (
+                <p className="imp-dim">
+                  Showing the first {result.results.assigned_codes.length} of {result.results.assigned}.
+                </p>
+              )}
+            </div>
+          )}
+
+          {result.results.retired_codes?.length > 0 && (
+            <div className="imp-card">
+              <div className="imp-card-title">Units retired</div>
+              <div className="imp-skip-groups">
+                {result.results.retired_codes.map((c) => (
+                  <span key={c} className="imp-pill danger">{c}</span>
+                ))}
               </div>
             </div>
           )}
@@ -610,7 +842,7 @@ function BulkImportPage() {
               <div className="imp-card-title">Rows that needed attention</div>
               <div className="imp-table-wrap imp-scroll">
                 <table className="imp-table">
-                  <thead><tr><th>Code</th><th>What happened</th></tr></thead>
+                  <thead><tr><th>Unit</th><th>What happened</th></tr></thead>
                   <tbody>
                     {result.results.rejected.map((r, i) => (
                       <tr key={i}><td><code>{r.unit_code}</code></td><td>{r.reason}</td></tr>
@@ -635,7 +867,7 @@ export default function BulkImport() {
   return (
     <InventoryLayout
       title="Bulk Upload"
-      subtitle="Import asset units from an Excel workbook — one tab per item type"
+      subtitle="Record details and assign the units already in stock"
     >
       <BulkImportPage />
     </InventoryLayout>

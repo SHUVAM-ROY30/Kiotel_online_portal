@@ -67,7 +67,7 @@
 //       );
 //       if (res.data?.success) {
 //         setSuccess("Cabin created successfully!");
-//         setTimeout(() => router.push("/inventory/cabins"), 1200);
+//         setTimeout(() => router.push("/inventory/locations?view=cabins"), 1200);
 //       } else {
 //         setError(res.data?.message || "Failed to create cabin.");
 //       }
@@ -123,7 +123,7 @@
 //         <div className="ci-actions">
 //           <button
 //             className="ci-btn-secondary"
-//             onClick={() => router.push("/inventory/cabins")}
+//             onClick={() => router.push("/inventory/locations?view=cabins")}
 //             type="button"
 //           >
 //             Cancel
@@ -255,7 +255,7 @@ const [nameError, setNameError] = useState("");
       );
       if (res.data?.success) {
         setSuccess("Cabin created successfully!");
-        setTimeout(() => router.push("/inventory/cabins"), 1200);
+        setTimeout(() => router.push("/inventory/locations?view=cabins"), 1200);
       } else { setError(res.data?.message || "Failed to create cabin."); }
     } catch (err) { setError(err.response?.data?.message || "Something went wrong."); } finally { setSubmitting(false); }
   };
@@ -317,7 +317,7 @@ const [nameError, setNameError] = useState("");
 </div>
 
         <div className="ci-actions">
-          <button className="ci-btn-secondary" onClick={() => router.push("/inventory/cabins")} type="button">Cancel</button>
+          <button className="ci-btn-secondary" onClick={() => router.push("/inventory/locations?view=cabins")} type="button">Cancel</button>
           <button className="ci-btn-primary" onClick={handleSubmit} disabled={submitting} type="button">
             {submitting ? <><div className="ci-spinner" /> Creating...</> : <><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Create Cabin</>}
           </button>

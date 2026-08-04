@@ -205,13 +205,14 @@ import Link from "next/link";
 import InventoryLayout from "../../_components/InventoryLayout";
 import { useInventoryUser } from "../../_hooks/useInventoryUser";
 import RenameUnitModal from "../../_components/RenameUnitModal";
+import UnitActionModal from "../../_components/UnitActionModals";
 import axios from "axios";
 
 export default function PropertyInventory() {
   const { id } = useParams();
   const router = useRouter();
   const { user, userRole, loading: userLoading, can } = useInventoryUser();
-  
+
   const [propertyData, setPropertyData] = useState(null);
   const [linkedCabins, setLinkedCabins] = useState([]);
   const [inventory, setInventory] = useState([]);
@@ -221,6 +222,9 @@ export default function PropertyInventory() {
   const [cabins, setCabins] = useState([]);
   const [selectedCabinId, setSelectedCabinId] = useState("");
   const [renameModal, setRenameModal] = useState({ open: false, unit: null });
+  // Retreat / Re-assign, both driven by the shared modal.
+  const [unitAction, setUnitAction] = useState({ open: false, unit: null, mode: null });
+  const [notice, setNotice] = useState(null);
 
   const fetchProperty = useCallback(async () => {
     if (!user) return;
@@ -364,12 +368,34 @@ export default function PropertyInventory() {
       <div className="ih-breadcrumb">
         <Link href="/inventory">Dashboard</Link>
         <span className="ih-breadcrumb-sep">›</span>
-        <Link href="/inventory/properties">Properties</Link>
+        <Link href="/inventory/locations?view=properties">Properties</Link>
         <span className="ih-breadcrumb-sep">›</span>
         <span style={{ color: "#8080a8" }}>
           {loading ? "..." : propertyData?.name}
         </span>
       </div>
+
+      {notice && (
+        <div
+          style={{
+            display: "flex", alignItems: "flex-start", gap: 10,
+            padding: "11px 14px", marginBottom: 16, borderRadius: 8,
+            background: "#f0fdf4", border: "1px solid #bbf7d0",
+            color: "#166534", fontSize: 13, lineHeight: 1.55,
+          }}
+        >
+          <span>✓</span>
+          <span style={{ flex: 1 }}>{notice}</span>
+          <button
+            onClick={() => setNotice(null)}
+            type="button"
+            aria-label="Dismiss"
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#166534", fontSize: 16, lineHeight: 1 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Property Header */}
       <div className="ih-item-header">
@@ -548,21 +574,37 @@ export default function PropertyInventory() {
                     </td>
                     {can("create") && (
                       <td>
-                        <button
-                          onClick={() => setRenameModal({ open: true, unit: item })}
-                          style={{
-                            padding: "4px 12px",
-                            background: "#6366f1",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: 6,
-                            fontSize: 12,
-                            fontWeight: 500,
-                            cursor: "pointer",
-                          }}
-                        >
-                          ✏️ Rename
-                        </button>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          <button
+                            onClick={() => setUnitAction({ open: true, unit: item, mode: "retreat" })}
+                            title="Take this unit back into IT stock so it can be assigned again"
+                            style={{
+                              padding: "4px 12px", background: "#0f766e", color: "#fff",
+                              border: "none", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
+                            }}
+                          >
+                            ↩ Retreat
+                          </button>
+                          <button
+                            onClick={() => setUnitAction({ open: true, unit: item, mode: "reassign" })}
+                            title="Move this unit to another cabin or property"
+                            style={{
+                              padding: "4px 12px", background: "#7c3aed", color: "#fff",
+                              border: "none", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
+                            }}
+                          >
+                            ⇄ Re-assign
+                          </button>
+                          <button
+                            onClick={() => setRenameModal({ open: true, unit: item })}
+                            style={{
+                              padding: "4px 12px", background: "#6366f1", color: "#fff",
+                              border: "none", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
+                            }}
+                          >
+                            ✏️ Rename
+                          </button>
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -627,6 +669,27 @@ export default function PropertyInventory() {
           onClose={() => setRenameModal({ open: false, unit: null })}
           onSuccess={() => {
             setRenameModal({ open: false, unit: null });
+            fetchProperty();
+          }}
+        />
+      )}
+
+      {/* Retreat / Re-assign */}
+      {unitAction.open && (
+        <UnitActionModal
+          unit={unitAction.unit}
+          mode={unitAction.mode}
+          authHeaders={{
+            "x-user-id": user?.id,
+            "x-user-role": user?.roleId,
+            "x-user-email": user?.email,
+            "x-user-fname": user?.fname,
+            "x-user-unique-id": user?.unique_id,
+          }}
+          onClose={() => setUnitAction({ open: false, unit: null, mode: null })}
+          onDone={(res) => {
+            // The unit has left this property, so the list it was in is stale.
+            setNotice(res?.message || "Done.");
             fetchProperty();
           }}
         />
