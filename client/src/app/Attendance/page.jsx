@@ -29,6 +29,21 @@ const DIRECT_SHIFT_EMAILS = [
   "arbaz.p@valianthotels.com",
 ];
 
+// 🔴 DIRECT SHIFT USER GROUPS (subset of DIRECT_SHIFT_EMAILS, keep lowercase) 🔴
+// Dev team -> only Non General shifts (category_id 3)
+const DEV_TEAM_EMAILS = [
+  "shuvam.r@kiotel.co",
+  "bhuvnesh.s@kiotel.co",
+  "tushars@kiotel.co",
+  "vishals@kiotel.co",
+  "adityas@kiotel.co",
+];
+
+// Office admins -> only the ADMIN shift
+const OFFICE_ADMIN_DIRECT_EMAILS = [
+  "arbaz.p@valianthotels.com",
+];
+
 // 🔴 ADD YOUR SPECIFIC EMPLOYEE IDs HERE 🔴
 const QA_TEAM_IDS = ["1QD211Q", "J9CI294", "L48FR84", "P0623XZ"];
 const OFFICE_ADMIN_IDS = ["8P4YX26", "16YM0V6", "FF39G61"];
@@ -219,8 +234,18 @@ useEffect(() => {
     fetchShifts();
   }, [isAuthorized]);
 
+  // Direct shift users (attendance module on their dashboard) are further split
+  // into a dev team group and an office admin group.
+  const normalizedEmail = String(userEmail || "").trim().toLowerCase();
+  const isDevTeamDirect =
+    isDirectShiftUser && DEV_TEAM_EMAILS.includes(normalizedEmail);
+  const isOfficeAdminDirect =
+    isDirectShiftUser && OFFICE_ADMIN_DIRECT_EMAILS.includes(normalizedEmail);
+
   const isGeneralUser =
     employee &&
+    !isDevTeamDirect &&
+    !isOfficeAdminDirect &&
     !QA_TEAM_IDS.includes(String(employee.unique_id)) &&
     !OFFICE_ADMIN_IDS.includes(String(employee.unique_id));
 
@@ -271,6 +296,16 @@ useEffect(() => {
 const availableShifts = allShifts.filter((shift) => {
   if (!employee) return false;
   const empId = String(employee.unique_id);
+
+  // Dev Team (direct shift users) - only Non General shifts
+  if (isDevTeamDirect) {
+    return shift.category_id === 3 && shift.shift_name !== "ADMIN";
+  }
+
+  // Office Admins (direct shift users) - only the ADMIN shift
+  if (isOfficeAdminDirect) {
+    return shift.shift_name === "ADMIN";
+  }
 
   // QA Team - No change
   if (QA_TEAM_IDS.includes(empId)) {
