@@ -9,6 +9,7 @@ import ScheduleMainView from '@/components/schedule/ScheduleMainView';
 import ScheduleModals, { CreateScheduleModal } from '@/components/schedule/ScheduleModals';
 import BroadcastModal from '@/components/schedule/BroadcastModal';
 import ScheduleUploadModal from '@/components/schedule/ScheduleUploadModal';
+import AutoChangeModal from '@/components/schedule/AutoChangeModal';
 import {
   arrayMove,
 } from '@dnd-kit/sortable';
@@ -75,6 +76,7 @@ export default function SchedulePage() {
   const [availableSchedules, setAvailableSchedules] = useState([]);
 
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showAutoChangeModal, setShowAutoChangeModal] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const uniqueId = typeof window !== 'undefined' ? localStorage.getItem('uniqueId') : null;
@@ -1004,17 +1006,31 @@ const orderedEmployees = useMemo(() => {
           <div className="flex-1 flex flex-col p-4 lg:p-6">
             <div className="flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
               
-              {/* Upload Button Section */}
-              <div className="flex-shrink-0 p-4 border-b">
-                {currentSchedule && !isMonthView && !isThreeMonthView && (
-                  (userRole === 1 || (userRole === 5 && currentSchedule.status === 'DRAFT')) && (
-                    <button
-                      onClick={() => setShowUploadModal(true)}
-                      className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-md hover:shadow-lg w-full sm:w-auto"
-                    >
-                      Upload Schedule File
-                    </button>
-                  )
+              {/* Upload / AUTO Change Button Section */}
+              <div className="flex-shrink-0 p-4 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  {currentSchedule && !isMonthView && !isThreeMonthView && (
+                    (userRole === 1 || (userRole === 5 && currentSchedule.status === 'DRAFT')) && (
+                      <button
+                        onClick={() => setShowUploadModal(true)}
+                        className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-md hover:shadow-lg w-full sm:w-auto"
+                      >
+                        Upload Schedule File
+                      </button>
+                    )
+                  )}
+                </div>
+
+                {/* Not tied to a selected schedule — the panel spans every
+                    auto-marked entry, not just the one on screen. */}
+                {[1, 5, '1', '5'].includes(userRole) && (
+                  <button
+                    onClick={() => setShowAutoChangeModal(true)}
+                    className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-md hover:shadow-lg w-full sm:w-auto sm:ml-auto"
+                    title="Review shifts auto-changed because there was no clock-in"
+                  >
+                    AUTO Change
+                  </button>
                 )}
               </div>
               
@@ -1074,6 +1090,14 @@ const orderedEmployees = useMemo(() => {
       </div>
 
       {/* Modals */}
+      <AutoChangeModal
+        isOpen={showAutoChangeModal}
+        onClose={() => setShowAutoChangeModal(false)}
+        userRole={userRole}
+        // Reverted entries go back to ASSIGNED, so pull the grid back in sync.
+        onReverted={() => currentSchedule && loadScheduleEntries(currentSchedule.id)}
+      />
+
       <ScheduleUploadModal
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
