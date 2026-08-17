@@ -86,7 +86,7 @@ export default function OpenedTickets() {
     const fetchUserRole = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`,
           { withCredentials: true }
         );
         setUserRole(response.data.role);
@@ -104,7 +104,7 @@ export default function OpenedTickets() {
       setLoading(true);
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/opened_tasks`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/opened_tasks`,
           { withCredentials: true }
         );
         const tasks = response.data;
@@ -139,7 +139,7 @@ export default function OpenedTickets() {
   useEffect(() => {
     const fetchTaskStates = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/taskstate`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/taskstate`);
         setTaskStates(response.data);
       } catch (error) {
         console.error("Error fetching task states:", error);
@@ -152,7 +152,7 @@ export default function OpenedTickets() {
   useEffect(() => {
     const fetchPriorities = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/priority`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/priority`);
         setPriorities(response.data);
       } catch (error) {
         console.error("Error fetching priorities:", error);
@@ -165,7 +165,7 @@ export default function OpenedTickets() {
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tags`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/tags`);
         const tagOptions = response.data.map((tag) => ({
           value: tag.id,
           label: tag.tag,
@@ -213,7 +213,7 @@ export default function OpenedTickets() {
   useEffect(() => {
     const fetchKanbanSettings = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/kanban-settings`, {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/kanban-settings`, {
           withCredentials: true,
         });
         if (response.data && response.data.settings) {
@@ -256,7 +256,7 @@ export default function OpenedTickets() {
   const saveKanbanSettings = async () => {
     try {
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/save-kanban-settings`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/save-kanban-settings`,
         { settings: JSON.stringify(kanbanSettings) },
         { withCredentials: true }
       );
@@ -407,7 +407,7 @@ export default function OpenedTickets() {
       if (!statusObj) return;
       // Update task status
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/update_task_state`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/update_task_state`,
         {
           ticketId: draggedTicket.task_id,
           status_id: statusObj.Id,

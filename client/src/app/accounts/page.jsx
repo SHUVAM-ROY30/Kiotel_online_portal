@@ -19,7 +19,7 @@ export default function Account() {
   useEffect(() => {
     const fetchUserFname = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`, {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, {
           withCredentials: true,
         });
         setUserFname(response.data.name);
@@ -51,7 +51,7 @@ export default function Account() {
   useEffect(() => {
     const fetchUserRole = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`, { withCredentials: true });
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, { withCredentials: true });
         const role = response.data.role;
         const id = response.data.id;
         console.log("Fetched Role ID:", role);
@@ -72,7 +72,7 @@ export default function Account() {
   useEffect(() => {
     const fetchUserId = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`, { withCredentials: true });
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, { withCredentials: true });
         const role = response.data.role;
         const id = response.data.id;
         console.log("Fetched Role ID:", role);

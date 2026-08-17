@@ -46,3 +46,29 @@
   color: #6b7280;
   border: 1px solid #d1d5db;
 }
+
+/* TipTap placeholder */
+.tiptap p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Task list */
+ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+
+ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}

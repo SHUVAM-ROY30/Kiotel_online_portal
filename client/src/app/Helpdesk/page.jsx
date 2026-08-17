@@ -32,7 +32,7 @@
 //   useEffect(() => {
 //     const fetchUserRole = async () => {
 //       try {
-//         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`, { withCredentials: true });
+//         const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, { withCredentials: true });
 //         const role = response.data.role;
 //         console.log("Fetched Role ID:", role); // Debugging statement
 //         setUserRole(role);
@@ -303,7 +303,7 @@ function Home() {
   useEffect(() => {
     const fetchUserRole = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`, { withCredentials: true });
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, { withCredentials: true });
         const role = response.data.role;
         console.log("Fetched Role ID:", role); // Debugging statement
         setUserRole(role);

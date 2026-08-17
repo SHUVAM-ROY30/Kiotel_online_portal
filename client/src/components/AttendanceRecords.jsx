@@ -828,7 +828,12 @@ export default function AttendanceRecords({ uniqueId, employeeName }) {
                         </td>
 
                         <td className="px-5 py-3.5 text-center whitespace-nowrap">
-                          {record.early_minutes > 0 ? (
+                          {record.is_early_waived ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded text-xs font-bold">
+                              <FaShieldAlt className="text-[10px]" /> 0
+                              (Waived)
+                            </span>
+                          ) : record.early_minutes > 0 ? (
                             <span className="text-orange-600 font-semibold">
                               {record.early_minutes} min
                             </span>
@@ -945,7 +950,13 @@ export default function AttendanceRecords({ uniqueId, employeeName }) {
                         <p className="text-[10px] text-gray-500 mb-0.5">
                           Early
                         </p>
-                        {record.early_minutes > 0 ? (
+                        {record.is_early_waived ? (
+                          <span className="text-[9px] font-bold text-blue-700 leading-tight">
+                            0
+                            <br />
+                            (Waived)
+                          </span>
+                        ) : record.early_minutes > 0 ? (
                           <p className="text-xs font-semibold text-orange-600 truncate">
                             {record.early_minutes}m
                           </p>

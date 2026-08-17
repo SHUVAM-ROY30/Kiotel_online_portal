@@ -45,7 +45,7 @@
 //     const fetchUserRole = async () => {
 //       try {
 //         const { data } = await axios.get(
-//           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+//           `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`,
 //           { withCredentials: true }
 //         );
 //         setUserRole(data.role);
@@ -92,7 +92,7 @@
 //   useEffect(() => {
 //     const fetchUsers = async () => {
 //       try {
-//         const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`);
+//         const { data } = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users`);
 //         setUsers(data.filter(user => user.role !== "Client"));
 //       } catch (error) {
 //         console.error("Error fetching users:", error);
@@ -485,7 +485,7 @@ const OpenedTickets = () => {
     const fetchUserRole = async () => {
       try {
         const { data } = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`,
           { withCredentials: true }
         );
         setUserRole(data.role);
@@ -532,7 +532,7 @@ const OpenedTickets = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`);
+        const { data } = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users`);
         setUsers(data.filter(user => user.role !== "Client"));
       } catch (error) {
         console.error("Error fetching users:", error);

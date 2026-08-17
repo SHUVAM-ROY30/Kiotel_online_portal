@@ -39,7 +39,7 @@ export default function SocketProvider({ children }) {
 
     const verifySession = async () => {
       try {
-        const res = await axios.get(`${API_URL}/api/user-email`, { withCredentials: true });
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, { withCredentials: true });
         
         if (isMounted) {
           setUserFname(res.data.fname || "");

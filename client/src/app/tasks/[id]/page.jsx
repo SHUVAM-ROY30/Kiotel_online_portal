@@ -44,7 +44,7 @@
 //   useEffect(() => {
 //     const fetchUser = async () => {
 //       try {
-//         const res = await axios.get(`${API_BASE2}/api/user-email`, { withCredentials: true });
+//         const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, { withCredentials: true });
 //         setCurrentUser({
 //           id: res.data.unique_id,
 //           role: parseInt(res.data.role, 10),
@@ -552,7 +552,7 @@ export default function TaskDetails() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get(`${API_BASE2}/api/user-email`, { withCredentials: true });
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, { withCredentials: true });
         setCurrentUser({
           id: res.data.unique_id,
           role: parseInt(res.data.role, 10),

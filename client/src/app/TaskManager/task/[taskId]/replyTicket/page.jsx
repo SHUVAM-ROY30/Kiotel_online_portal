@@ -23,6 +23,7 @@ export default function TicketReplyForm({ params }) {
   const [status, setStatus] = useState(1);
   const [statusOptions, setStatusOptions] = useState([]);
   const [roleId, setRoleId] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [initialTitle, setInitialTitle] = useState("");
 
@@ -31,7 +32,7 @@ export default function TicketReplyForm({ params }) {
       try {
         // Fetch ticket details
         const ticketResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${taskId}`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/task/${taskId}/v2`,
           { withCredentials: true }
         );
         setInitialTitle(ticketResponse.data.title);
@@ -39,17 +40,18 @@ export default function TicketReplyForm({ params }) {
 
         // Fetch status options
         const statusResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/status`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/status`,
           { withCredentials: true }
         );
         setStatusOptions(statusResponse.data);
 
         // Fetch user role
         const userResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`,
           { withCredentials: true }
         );
         setRoleId(userResponse.data.role);
+        setCurrentUserId(userResponse.data.id);
       } catch (error) {
         console.error("Error initializing form:", error);
         toast.error("Failed to load form data");
@@ -86,13 +88,23 @@ export default function TicketReplyForm({ params }) {
       }
     }
 
+    if (!currentUserId) {
+      toast.error("Could not identify the current user. Please refresh and try again.");
+      setLoading(false);
+      return;
+    }
+
     try {
+      // Reply now goes through the Node v2 API (attachments -> DigitalOcean Spaces).
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task/${taskId}/reply`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/task/${taskId}/reply/v2`,
         formData,
         {
           withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: {
+            "Content-Type": "multipart/form-data",
+            "x-user-id": currentUserId,
+          },
         }
       );
 

@@ -86,6 +86,12 @@ const ThreeMonthView = ({
   const end = endOfMonth(currentMonth);
   const days = useMemo(() => eachDayOfInterval({ start, end }), [start, end]);
 
+  // Shift 3 "green" threshold: June 2026 and earlier = 18, July 2026 onward = 21.
+  const shift3Threshold = useMemo(() => {
+    const cutoff = new Date(2026, 6, 1); // July 1, 2026 (month is 0-indexed)
+    return startOfMonth(currentMonth) >= cutoff ? 21 : 18;
+  }, [currentMonth]);
+
   const goToPreviousMonth = () => setCurrentMonth((prev) => subMonths(prev, 1));
   const goToNextMonth = () => setCurrentMonth((prev) => addMonths(prev, 1));
 
@@ -309,7 +315,7 @@ const ThreeMonthView = ({
                     <td className="p-2 text-center font-semibold text-blue-600 border-l border-slate-300 bg-blue-50">{counts.totalShifts}</td>
                     <td className="p-2 text-center font-semibold text-blue-600 border-l border-slate-300 bg-blue-50">{counts.shift1}</td>
                     <td className="p-2 text-center font-semibold text-blue-600 border-l border-slate-300 bg-blue-50">{counts.shift2}</td>
-                    <td className={`p-2 text-center font-semibold border-l border-slate-300 ${counts.shift3 >= 18 ? 'bg-green-700 text-white' : 'bg-blue-50 text-blue-600'}`}>{counts.shift3}</td>
+                    <td className={`p-2 text-center font-semibold border-l border-slate-300 ${counts.shift3 >= shift3Threshold ? 'bg-green-700 text-white' : 'bg-blue-50 text-blue-600'}`}>{counts.shift3}</td>
                   </tr>
                 );
               })}
@@ -328,7 +334,7 @@ const ThreeMonthView = ({
                 <td className="p-3 sticky left-0 bg-green-100 z-10">TOTAL in 3rd Shift</td>
                 {days.map((day) => {
                   const count = getEmployeeCountForShift(day, 3);
-                  return <td key={`s3-${String(day)}`} className={`p-2 text-center font-semibold ${count >= 18 ? 'bg-green-700 text-white' : 'text-blue-700'}`}>{count}</td>;
+                  return <td key={`s3-${String(day)}`} className={`p-2 text-center font-semibold ${count >= shift3Threshold ? 'bg-green-700 text-white' : 'text-blue-700'}`}>{count}</td>;
                 })}
                 <td colSpan="8" className="bg-green-50"></td>
               </tr>

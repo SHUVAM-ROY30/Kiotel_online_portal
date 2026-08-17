@@ -45,6 +45,7 @@ export default function TicketCreateForm() {
   const [ticketState, setTicketState] = useState(""); 
   const [ticketPriority, setTicketPriority] = useState(""); 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   const [tags, setTags] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
@@ -81,7 +82,7 @@ export default function TicketCreateForm() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users`);
         const filteredUsers = response.data.filter((user) => user.role !== "Client");
         const userOptions = filteredUsers.map(user => ({
           value: user.id,
@@ -96,9 +97,24 @@ export default function TicketCreateForm() {
   }, []);
 
   useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`,
+          { withCredentials: true }
+        );
+        setCurrentUserId(res.data.id);
+      } catch (err) {
+        console.error("Failed to fetch current user:", err);
+      }
+    };
+    fetchCurrentUser();
+  }, []);
+
+  useEffect(() => {
     const fetchTaskStates = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/taskstate`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/taskstate`);
         setTaskStates(response.data);
         const notStartedState = response.data.find(state => state.status_name.toLowerCase() === "not started");
         if (notStartedState) setTicketState(notStartedState.Id.toString());
@@ -112,7 +128,7 @@ export default function TicketCreateForm() {
   useEffect(() => {
     const fetchPriorities = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/priority`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/priority`);
         setPriorities(response.data);
         const lowPriority = response.data.find(priority => priority.priority_name.toLowerCase() === "low");
         if (lowPriority) setTicketPriority(lowPriority.Id.toString());
@@ -126,9 +142,12 @@ export default function TicketCreateForm() {
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tags`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/tags`);
         const tagOptions = response.data.map(tag => ({ value: tag.id, label: tag.tag }));
         setTags(tagOptions);
+        // Default-select "Tech support" (tag id 10) if present.
+        const defaultTag = tagOptions.find(t => Number(t.value) === 10);
+        if (defaultTag) setSelectedTags([defaultTag]);
       } catch (error) {
         toast.error("Failed to load tags.");
       }
@@ -139,7 +158,7 @@ export default function TicketCreateForm() {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/groups`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/groups`);
         const groupOptions = response.data.map(group => ({ value: group.id, label: group.name }));
         setGroups(groupOptions);
       } catch (error) {
@@ -158,7 +177,7 @@ export default function TicketCreateForm() {
       }
       setLoadingParentTasks(true);
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tasks/parents`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/tasks/parents`);
         const taskOptions = response.data.map(task => ({
           value: task.id,
           label: `${task.title} (ID: ${task.id})`
@@ -187,7 +206,7 @@ export default function TicketCreateForm() {
 
       try {
         const memberFetchPromises = groupsToFetch.map(groupOption =>
-          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/group/${groupOption.value}/users`)
+          axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/group/${groupOption.value}/users`)
             .then(res => ({ groupId: groupOption.value, users: res.data }))
             .catch(err => { return { groupId: groupOption.value, users: [] }; })
         );
@@ -218,6 +237,14 @@ export default function TicketCreateForm() {
       toast.error("Parent task is required for subtasks.");
       return;
     }
+    if (!isRecurring && !currentUserId) {
+      toast.error("Could not identify the current user. Please refresh and try again.");
+      return;
+    }
+    if (selectedTags.length === 0) {
+      toast.error("At least one tag is required.");
+      return;
+    }
 
     if (isRecurring) {
       if (recurrenceType === "weekly" && (weeklyDay < 0 || weeklyDay > 6)) return toast.error("Invalid day.");
@@ -237,11 +264,13 @@ export default function TicketCreateForm() {
 
     const allAssignedUserIds = [...new Set([...userIdsFromIndividuals, ...userIdsFromGroups])];
 
-    let apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/task`;
+    // Non-recurring tasks now use the Node v2 API (attachments -> DigitalOcean Spaces).
+    // Recurring tasks still use the existing Flask endpoint (unchanged).
+    let apiUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/task/v2`;
     let formData = new FormData();
 
     if (isRecurring) {
-      apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/recurring-task`;
+      apiUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/recurring-task`;
       formData.append("recurrence_type", recurrenceType);
       if (recurrenceType === "weekly") formData.append("weekly_day", weeklyDay);
       if (recurrenceType === "monthly") formData.append("monthly_date", monthlyDate);
@@ -268,8 +297,11 @@ export default function TicketCreateForm() {
     }
 
     try {
+      const headers = { "Content-Type": "multipart/form-data" };
+      // v2 (non-recurring) authenticates via the user's tblusers id.
+      if (!isRecurring) headers["x-user-id"] = currentUserId;
       const response = await axios.post(apiUrl, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers,
         withCredentials: true,
       });
 

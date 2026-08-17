@@ -13,7 +13,7 @@
 // //     try {
 // //       setLoading(true);
 // //       const res = await axios.get(
-// //         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/browser_approvals`,
+// //         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/browser_approvals`,
 // //         { withCredentials: true }
 // //       );
 // //       setApprovals(res.data);
@@ -34,7 +34,7 @@
 // //     try {
 // //       setMessage(""); // Clear old messages
 // //       await axios.put(
-// //         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/browser_approvals/${id}`,
+// //         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/browser_approvals/${id}`,
 // //         { status: newStatus },
 // //         { withCredentials: true }
 // //       );
@@ -158,7 +158,7 @@
 //     try {
 //       setLoading(true);
 //       const res = await axios.get(
-//         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/browser_approvals`,
+//         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/browser_approvals`,
 //         { withCredentials: true }
 //       );
 //       setApprovals(res.data);
@@ -178,7 +178,7 @@
 //     try {
 //       setMessage({ text: "", type: "" });
 //       await axios.put(
-//         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/browser_approvals/${id}`,
+//         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/browser_approvals/${id}`,
 //         { status: newStatus },
 //         { withCredentials: true }
 //       );
@@ -372,7 +372,7 @@ const BrowserApproval = () => {
     try {
       setLoading(true);
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/browser_approvals`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/browser_approvals`,
         { withCredentials: true }
       );
       setApprovals(res.data);
@@ -393,7 +393,7 @@ const BrowserApproval = () => {
     try {
       setMessage({ text: "", type: "" });
       await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/browser_approvals/${id}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/browser_approvals/${id}`,
         { status: newStatus },
         { withCredentials: true }
       );
@@ -423,7 +423,7 @@ const BrowserApproval = () => {
     try {
       // Call the newly created /name endpoint
       await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/browser_approvals/${id}/name`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/browser_approvals/${id}/name`,
         { device_name: editNameValue },
         { withCredentials: true }
       );

@@ -29,7 +29,7 @@ export default function ActiveAgentsPage() {
     const fetchUser = async () => {
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`,
           { withCredentials: true }
         );
         if (res.data.role !== 1) {

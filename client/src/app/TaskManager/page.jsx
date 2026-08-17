@@ -31,7 +31,7 @@ export default function Home() {
     const fetchUserRole = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`,
           { withCredentials: true }
         );
         console.log(response.data.role)
@@ -53,7 +53,7 @@ export default function Home() {
     const fetchOpenedTickets = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/my-task`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/my-task`,
           { withCredentials: true }
         );
         setOpenedTickets(response.data);
@@ -69,7 +69,7 @@ export default function Home() {
     const fetchCreatedTickets = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/created-task`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/created-task`,
           { withCredentials: true }
         );
         const allTickets = response.data;
@@ -322,7 +322,7 @@ export default function Home() {
 //     const fetchData = async () => {
 //       try {
 //         // Fetch user details
-//         const userResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user-email`, { withCredentials: true });
+//         const userResponse = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, { withCredentials: true });
 //         setUserFname(userResponse.data.fname);
 //         setUserRole(userResponse.data.role);
 

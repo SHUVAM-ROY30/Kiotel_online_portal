@@ -40,7 +40,7 @@ const ManageAllGroupsModal = ({ isOpen, onClose, onGroupsChange }) => { // onGro
     setLoading(prev => ({ ...prev, groups: true }));
     setError(null);
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/groups`);
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/groups`);
       setAllGroups(response.data || []);
     } catch (err) {
       console.error("Failed to fetch groups:", err);
@@ -54,7 +54,7 @@ const ManageAllGroupsModal = ({ isOpen, onClose, onGroupsChange }) => { // onGro
   const fetchUsers = async () => {
     setLoading(prev => ({ ...prev, users: true }));
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users`); // Or a specific endpoint for all users
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users`); // Or a specific endpoint for all users
       setUsers(response.data || []);
     } catch (err) {
       console.error("Failed to fetch users:", err);
@@ -70,7 +70,7 @@ const ManageAllGroupsModal = ({ isOpen, onClose, onGroupsChange }) => { // onGro
     setLoading(prev => ({ ...prev, groupUsers: true }));
     try {
       // Assuming your backend has an endpoint like this
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/group/${groupId}/users`);
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/group/${groupId}/users`);
       setGroupUsersMap(prev => ({ ...prev, [groupId]: response.data || [] }));
     } catch (err) {
       console.error(`Failed to fetch users for group ${groupId}:`, err);
@@ -124,7 +124,7 @@ const ManageAllGroupsModal = ({ isOpen, onClose, onGroupsChange }) => { // onGro
     setError(null);
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/groups`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/groups`,
         { name: newGroupName.trim() },
         { withCredentials: true }
       );
@@ -154,7 +154,7 @@ const ManageAllGroupsModal = ({ isOpen, onClose, onGroupsChange }) => { // onGro
     setError(null);
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/group/${editingGroupId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/group/${editingGroupId}`,
         { name: editingGroupName.trim() },
         { withCredentials: true }
       );
@@ -181,7 +181,7 @@ const ManageAllGroupsModal = ({ isOpen, onClose, onGroupsChange }) => { // onGro
     setError(null);
     try {
       const response = await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/group/${groupId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/group/${groupId}`,
         { withCredentials: true }
       );
       if (response.status === 200) {
@@ -237,7 +237,7 @@ const ManageAllGroupsModal = ({ isOpen, onClose, onGroupsChange }) => { // onGro
     try {
       // Use the same endpoint as user-specific group management
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/group/${selectedGroupId}/manage-users`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/group/${selectedGroupId}/manage-users`,
         operations,
         { withCredentials: true }
       );

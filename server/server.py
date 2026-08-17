@@ -19,6 +19,7 @@ import mysql.connector
 
 import hashlib
 import uuid
+import jwt as _pyjwt  # PyJWT — for the temporary Node-JWT migration shim
 
 # from werkzeug.utils import secure_filename
 # from flask_mail import Mail, Message
@@ -91,6 +92,39 @@ def create_connection2():
         print(f"The error '{e}' occurred in secondary DB")
         return None
 
+# --- TEMPORARY MIGRATION SHIM (remove when Flask is fully decommissioned) ---
+# Trust the JWT that the Node backend (api.kiotel.co) issues, so every still-Flask
+# endpoint keeps working during the Flask -> Node migration. The auth_token cookie
+# is set on the shared .kiotel.co domain, so it reaches Flask on portal.kiotel.co.
+# JWT_SECRET MUST be identical to the Node backend's JWT_SECRET (.env).
+JWT_SECRET = "c3b0772ae373a55d2d62290bf4c8419f88a96971365d501aaa4ebf1e4541b35fd6b6bea5ec5134a59a79861a6165f1b2"  # TODO: set to match Node .env JWT_SECRET
+JWT_COOKIE_NAME = "auth_token"
+
+@app.before_request
+def _bridge_node_jwt():
+    # Don't interfere with CORS preflight or an already-authenticated session.
+    if request.method == "OPTIONS":
+        return
+    if session.get("user_id"):
+        return
+    token = request.cookies.get(JWT_COOKIE_NAME)
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:].strip()
+    if not token:
+        return
+    try:
+        decoded = _pyjwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        uid = decoded.get("id")
+        if uid:
+            session["user_id"] = uid
+    except Exception:
+        # Invalid/expired token -> leave unauthenticated (login_required handles it).
+        pass
+# --- END MIGRATION SHIM ---
+
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -106,6 +140,51 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
+def save_face_log(
+    predicted_employee_id=None,
+    best_distance=None,
+    second_best_distance=None,
+    gap_value=None,
+    threshold_used=None,
+    min_gap_used=None,
+    recognition_result=None
+):
+    conn = create_connection2()
+
+    if not conn:
+        print("Unable to connect for logging")
+        return
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO face_recognition_logs (
+                    predicted_employee_id,
+                    best_distance,
+                    second_best_distance,
+                    gap_value,
+                    threshold_used,
+                    min_gap_used,
+                    recognition_result
+                )
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
+            """, (
+                predicted_employee_id,
+                best_distance,
+                second_best_distance,
+                gap_value,
+                threshold_used,
+                min_gap_used,
+                recognition_result
+            ))
+
+        conn.commit()
+
+    except Exception as e:
+        print(f"LOG ERROR: {e}")
+
+    finally:
+        conn.close()
 
 
 # @app.route("/api/signin", methods=["POST"])
@@ -1666,6 +1745,14 @@ def logout():
     session.clear()  # Clear all session data
     response = jsonify({'message': 'Logged out successfully'})
     response.status_code = 200
+    # Clear the Node-issued auth cookie so the migration shim can't re-authenticate
+    # after logout. Delete BOTH the host-only (localhost/dev) and domain-scoped (prod)
+    # variants so logout works regardless of how Node set the cookie.
+    response.delete_cookie('auth_token', path='/')  # host-only (dev)
+    try:
+        response.delete_cookie('auth_token', path='/', domain='kiotel.co', samesite='None', secure=True)  # prod
+    except Exception:
+        pass
     return response
 
 
@@ -4051,6 +4138,56 @@ ORDER BY
         connection.close()
 
 
+@app.route('/api/recurring_tasks', methods=['GET'])
+@login_required
+def get_recurring_tasks():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "User not logged in"}), 401
+
+    connection = create_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Basic join to show task details with recurrence data
+            query = """
+                SELECT
+                    rt.id,
+                    rt.task_id,
+                    rt.recurrence_type,
+                    rt.weekly_day,
+                    rt.monthly_date,
+                    rt.start_date,
+                    rt.end_date,
+                    rt.created_at,
+
+                    t.title AS task_title,
+                    t.description AS task_description,
+                    t.created_at AS task_created_at,
+                    s.status_name,
+                    p.priority_name
+                FROM recurring_tasks rt
+                LEFT JOIN tbltasks t ON t.id = rt.task_id
+                LEFT JOIN tbltaskstatus s ON t.taskstatus_id = s.id
+                LEFT JOIN tblpriority p ON t.priority_id = p.id
+                ORDER BY rt.id DESC
+            """
+            cursor.execute(query)
+            rows = cursor.fetchall()
+
+            # If you want to apply the same privacy rules as opened_tasks,
+            # we can extend this later (role-based filtering).
+            return jsonify(rows), 200
+
+    except Exception as e:
+        print(f"Error fetching recurring tasks: {e}")
+        return jsonify({"error": "Failed to fetch recurring tasks"}), 500
+    finally:
+        connection.close()
+
+
 
 @app.route('/api/tags', methods=['GET'])
 def get_tags():
@@ -4215,9 +4352,11 @@ def generate_recurring_tasks():
 
 
 # Run daily at 00:01 UTC
-scheduler = BackgroundScheduler()
-scheduler.add_job(func=generate_recurring_tasks, trigger="cron", hour=0, minute=1)
-scheduler.start()
+# --- DISABLED: recurring-task generation moved to the Node cron
+#     (backend/jobs/recurringTasks.js). Running both would double-generate tasks. ---
+# scheduler = BackgroundScheduler()
+# scheduler.add_job(func=generate_recurring_tasks, trigger="cron", hour=0, minute=1)
+# scheduler.start()
 
 
 
@@ -4559,6 +4698,8 @@ def update_task_title():
 # ── Config ────────────────────────────────────────────────────────
 MODEL_NAME = "ArcFace"    # Best accuracy, non-negotiable
 DETECTOR   = "mtcnn"      # Best balance of speed + accuracy for kiosk
+DETECTOR2   = "retinaface"      # Best balance of speed + accuracy for kiosk
+THRESHOLD2  = 0.55         # Good starting point, tune after testing
 THRESHOLD  = 0.60         # Good starting point, tune after testing
 
 embedding_cache: dict = {}
@@ -4638,145 +4779,6 @@ def extract_embedding_from_image(img: np.ndarray) -> list:
         raise ValueError(f"Face processing failed: {e}")
 
 
-# def load_cache_from_rows(rows: list):
-#     global embedding_cache
-#     raw = {}
-#     for row in rows:
-#         emp_id = row["employee_id"]
-#         emb    = row["embedding"]
-
-#         if isinstance(emb, str):
-#             emb = json.loads(emb)
-#         elif isinstance(emb, dict):
-#             emb = list(emb.values())
-#         elif isinstance(emb, list):
-#             pass
-#         else:
-#             print(f"⚠️ Unknown embedding type for {emp_id}: {type(emb)}")
-#             continue
-
-#         if len(emb) != 512:
-#             print(f"⚠️ Wrong embedding length for {emp_id}: {len(emb)}")
-#             continue
-
-#         raw.setdefault(emp_id, []).append(np.array(emb, dtype=np.float32))
-
-#     embedding_cache = {
-#         emp_id: np.mean(embs, axis=0)
-#         for emp_id, embs in raw.items()
-#     }
-#     print(f"✅ Cache loaded: {len(embedding_cache)} employees")
-
-
-# # def extract_embedding_from_image(img: np.ndarray) -> list:
-# #     try:
-# #         print("   calling DeepFace.represent...")
-# #         result = DeepFace.represent(
-# #             img_path          = img,
-# #             model_name        = MODEL_NAME,
-# #             detector_backend  = DETECTOR,
-# #             enforce_detection = True,
-# #             align             = True,
-# #         )
-# #         print(f"   DeepFace result count: {len(result)}")
-# #         return result[0]["embedding"]
-# #     except Exception as e:
-# #         print(f"   DeepFace failed: {type(e).__name__}: {e}")
-# #         raise ValueError(f"No face detected: {e}")
-
-# def extract_embedding_from_image(img: np.ndarray) -> list:
-#     try:
-#         print("   calling DeepFace.represent...")
-        
-#         # ── Step 1: Detect all faces first ──
-        
-#         face_objs = DeepFace.extract_faces(
-#             img_path         = img,
-#             detector_backend = DETECTOR,
-#             enforce_detection = True,
-#             align            = True,
-#         )
-        
-#         if not face_objs:
-#             raise ValueError("No face detected")
-
-#         print(f"   Detected {len(face_objs)} face(s)")
-
-#         # ── Step 2: Pick the largest face (person closest to camera) ──
-#         def face_area(face_obj):
-#             region = face_obj.get("facial_area", {})
-#             w = region.get("w", 0)
-#             h = region.get("h", 0)
-#             return w * h
-
-#         largest_face = max(face_objs, key=face_area)
-#         region       = largest_face["facial_area"]
-        
-#         print(f"   Largest face area: {face_area(largest_face)}px | confidence: {largest_face.get('confidence', 0):.2f}")
-
-#         # ── Step 3: Check confidence of largest face ──
-#         # Reject if face confidence is too low
-#         MIN_FACE_CONFIDENCE = 0.90
-#         if largest_face.get("confidence", 0) < MIN_FACE_CONFIDENCE:
-#             raise ValueError(f"Face confidence too low: {largest_face.get('confidence', 0):.2f}")
-
-#         # ── Step 4: Check face is large enough (not far away) ──
-#         # Face must be at least 10% of image width
-#         img_h, img_w = img.shape[:2]
-#         face_w = region.get("w", 0)
-#         face_h = region.get("h", 0)
-#         min_face_size = img_w * 0.10
-
-#         if face_w < min_face_size:
-#             raise ValueError(f"Face too small ({face_w}px) — please move closer")
-
-#         # ── Step 5: Check face is roughly centered ──
-#         # Face center must be within middle 70% of image
-#         face_center_x = region.get("x", 0) + face_w / 2
-#         face_center_y = region.get("y", 0) + face_h / 2
-        
-#         left_bound  = img_w * 0.15
-#         right_bound = img_w * 0.85
-#         top_bound   = img_h * 0.10
-#         bot_bound   = img_h * 0.90
-
-#         if not (left_bound < face_center_x < right_bound and
-#                 top_bound  < face_center_y < bot_bound):
-#             raise ValueError("Face not centered — please position yourself in front of the camera")
-
-#         # ── Step 6: Crop to largest face and get embedding ──
-#         x = max(0, region.get("x", 0))
-#         y = max(0, region.get("y", 0))
-#         w = region.get("w", img_w)
-#         h = region.get("h", img_h)
-
-#         # Add 20% padding around face for better recognition
-#         pad_x = int(w * 0.20)
-#         pad_y = int(h * 0.20)
-#         x1 = max(0, x - pad_x)
-#         y1 = max(0, y - pad_y)
-#         x2 = min(img_w, x + w + pad_x)
-#         y2 = min(img_h, y + h + pad_y)
-
-#         cropped_face = img[y1:y2, x1:x2]
-
-#         # ── Step 7: Get embedding from cropped face only ──
-#         result = DeepFace.represent(
-#             img_path          = cropped_face,
-#             model_name        = MODEL_NAME,
-#             detector_backend  = DETECTOR,
-#             enforce_detection = False,  # already cropped, skip re-detection
-#             align             = True,
-#         )
-
-#         print(f"   ✅ Embedding extracted from largest face")
-#         return result[0]["embedding"]
-
-#     except ValueError:
-#         raise
-#     except Exception as e:
-#         print(f"   DeepFace failed: {type(e).__name__}: {e}")
-#         raise ValueError(f"Face processing failed: {e}")
 
 def get_image_from_request() -> np.ndarray:
     if "photo" not in request.files:
@@ -4882,6 +4884,12 @@ def identify_face():
     # ── Check 1: Must be within threshold ──
     if best_dist > THRESHOLD:
         print(f"❌ Rejected: {best_dist:.4f} > {THRESHOLD}")
+        save_face_log(
+    predicted_employee_id=best_id,
+    best_distance=float(best_dist),
+    threshold_used=THRESHOLD,
+    recognition_result="NO_MATCH"
+)
         return jsonify({
             "success" : False,
             "reason"  : "no_match",
@@ -4897,6 +4905,141 @@ def identify_face():
 
         if gap < MIN_GAP:
             print(f"❌ Ambiguous: gap {gap:.4f} < {MIN_GAP} — rejecting")
+            save_face_log(
+    predicted_employee_id=best_id,
+    best_distance=float(best_dist),
+    second_best_distance=float(second_dist),
+    gap_value=float(gap),
+    threshold_used=THRESHOLD,
+    min_gap_used=MIN_GAP,
+    recognition_result="AMBIGUOUS"
+) 
+            return jsonify({
+                "success" : False,
+                "reason"  : "ambiguous_match",
+                "detail"  : "Too similar to another employee — please try again",
+                "distance": round(best_dist, 4),
+            }), 200
+    save_face_log(
+    predicted_employee_id=best_id,
+    best_distance=float(best_dist),
+    second_best_distance=float(second_dist) if len(distances) > 1 else None,
+    gap_value=float(gap) if len(distances) > 1 else None,
+    threshold_used=THRESHOLD,
+    min_gap_used=MIN_GAP,
+    recognition_result="MATCH"
+)
+    print(f"✅ Confirmed match: {best_id} @ {best_dist:.4f}")
+    return jsonify({
+        "success"    : True,
+        "employee_id": best_id,
+        "distance"   : round(best_dist, 4),
+        "confidence" : round((1 - best_dist) * 100, 1),
+    }), 200
+
+
+
+
+
+def extract_embedding_from_image2(img: np.ndarray) -> list:
+    try:
+        print("   calling DeepFace.represent on FULL image...")
+        
+        # Let DeepFace handle detection AND alignment natively
+        results = DeepFace.represent(
+            img_path          = img,
+            model_name        = MODEL_NAME,
+            detector_backend  = DETECTOR2,
+            enforce_detection = True,
+            align             = True, # This now works perfectly because we didn't manually crop
+        )
+
+        if not results:
+            raise ValueError("No face detected")
+
+        # Find the largest face in the image
+        def face_area(res):
+            region = res.get("facial_area", {})
+            return region.get("w", 0) * region.get("h", 0)
+
+        largest_face = max(results, key=face_area)
+        region = largest_face.get("facial_area", {})
+
+        # Validation checks
+        img_h, img_w = img.shape[:2]
+        if region.get("w", 0) < img_w * 0.10:
+            raise ValueError("Face too small — please move closer")
+
+        # DeepFace represent returns confidence under "face_confidence"
+        if largest_face.get("face_confidence", 0) < 0.90:
+            raise ValueError("Face confidence too low")
+
+        print(f"   ✅ Embedding extracted perfectly via DeepFace native pipeline")
+        return largest_face["embedding"]
+
+    except ValueError:
+        raise
+    except Exception as e:
+        print(f"   DeepFace failed: {type(e).__name__}: {e}")
+        raise ValueError(f"Face processing failed: {e}")
+
+
+@app.route("/api/face/identify2", methods=["POST"])
+def identify_face2():
+    print("🔵 identify_face called")
+    try:
+        img = get_image_from_request()
+    except ValueError as e:
+        return jsonify({"success": False, "reason": "bad_request", "detail": str(e)}), 400
+
+    try:
+        embedding = extract_embedding_from_image2(img)
+        print(f"✅ Embedding extracted")
+    except ValueError as e:
+        print(f"❌ {e}")
+        return jsonify({"success": False, "reason": "no_face", "detail": str(e)})
+
+    if not embedding_cache:
+        return jsonify({"success": False, "reason": "no_employees_registered"})
+
+    query_emb = np.array(embedding, dtype=np.float32)
+
+    # ── Get ALL distances ──
+    distances = []
+    for emp_id, stored_emb in embedding_cache.items():
+        if isinstance(stored_emb, np.ndarray):
+            dist = cosine_distance(query_emb, stored_emb)
+        else:
+            dist = min(cosine_distance(query_emb, e) for e in stored_emb)
+        distances.append((emp_id, dist))
+        print(f"   {emp_id} → {dist:.4f}")
+
+    # Sort best first
+    distances.sort(key=lambda x: x[1])
+
+    best_id   = distances[0][0]
+    best_dist = distances[0][1]
+
+    print(f"Best: {best_id} @ {best_dist:.4f} | Threshold: {THRESHOLD2}")
+
+    # ── Check 1: Must be within threshold ──
+    if best_dist > THRESHOLD2:
+        print(f"❌ Rejected: {best_dist:.4f} > {THRESHOLD2}")
+        return jsonify({
+            "success" : False,
+            "reason"  : "no_match",
+            "distance": round(best_dist, 4),
+        }), 200
+
+    # ── Check 2: Must have clear gap from 2nd best ──
+    MIN_GAP2 = 0.10
+    if len(distances) > 1:
+        second_dist = distances[1][1]
+        gap = second_dist - best_dist
+        print(f"2nd: {distances[1][0]} @ {second_dist:.4f} | Gap: {gap:.4f}")
+
+        if gap < MIN_GAP2:
+            print(f"❌ Ambiguous: gap {gap:.4f} < {MIN_GAP2} — rejecting")
             return jsonify({
                 "success" : False,
                 "reason"  : "ambiguous_match",
@@ -5135,7 +5278,8 @@ def delete_face_data(account_no):
             pass
 
 
-@app.route("/api/browser_approvals", methods=["GET"])
+# MIGRATED TO NODE (backend/routes/devices.js) — route disabled, body kept for backup.
+# @app.route("/api/browser_approvals", methods=["GET"])
 def get_browser_approvals():
     connection = create_connection()
     if connection is None:
@@ -5164,7 +5308,8 @@ def get_browser_approvals():
 
 
 # Update the status (Approve / Reject)
-@app.route("/api/browser_approvals/<int:approval_id>", methods=["PUT"])
+# MIGRATED TO NODE (backend/routes/devices.js) — route disabled, body kept for backup.
+# @app.route("/api/browser_approvals/<int:approval_id>", methods=["PUT"])
 def update_browser_approval(approval_id):
     # IMPORTANT: Verify admin access here as well
     
@@ -5196,7 +5341,8 @@ def update_browser_approval(approval_id):
         connection.close()
 
 # NEW ENDPOINT: Only for updating the device name
-@app.route("/api/browser_approvals/<int:approval_id>/name", methods=["PUT"])
+# MIGRATED TO NODE (backend/routes/devices.js) — route disabled, body kept for backup.
+# @app.route("/api/browser_approvals/<int:approval_id>/name", methods=["PUT"])
 def update_browser_name(approval_id):
     data = request.get_json()
     

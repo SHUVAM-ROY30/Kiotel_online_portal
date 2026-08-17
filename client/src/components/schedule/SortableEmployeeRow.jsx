@@ -104,7 +104,7 @@ const SortableEmployeeRow = ({
             {firstName.charAt(0)}{lastName.charAt(0)}
           </div>
           <div className="w-full">
-            <div className={`font-semibold leading-tight ${isMatch ? 'text-blue-900' : 'text-slate-800'}`} style={{ fontSize: '11px', wordBreak: 'break-word' }}>
+            <div className={`font-semibold leading-tight ${isMatch ? 'text-blue-900' : 'text-slate-800'}`} style={{ fontSize: '17px', wordBreak: 'break-word' }}>
               {firstName} {lastName}
             </div>
           </div>
