@@ -37,6 +37,9 @@ const ADMIN_ATTENDANCE_ACCESS_EMAILS = [
 function Dashboard() {
   const [userFname, setUserFname] = useState(null);
   const [userRole, setUserRole] = useState(null);
+  // Feature flags for this user. An absent key means the feature has no flag
+  // row yet, which counts as ON — same rule the server applies.
+  const [featureFlags, setFeatureFlags] = useState({});
   const [userEmail, setUserEmail] = useState(null);
   const [userUniqueID, setuserUniqueID] = useState(null);
   const [userProfilePic, setUserProfilePic] = useState(null); // NEW: Profile Pic State
@@ -65,6 +68,19 @@ function Dashboard() {
         setUserEmail(res.data.email);
         setuserUniqueID(res.data.unique_id);
         setUserProfilePic(res.data.profile_pic); // NEW: Save the profile picture
+
+        // Which modules this person is allowed to see. Failing quietly is
+        // deliberate: a flag lookup that cannot run must not blank the
+        // dashboard, and every card is re-checked by its own page anyway.
+        if (res.data.unique_id) {
+          axios
+            .get(
+              `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/features/my-flags/${encodeURIComponent(res.data.unique_id)}`,
+              { withCredentials: true }
+            )
+            .then((r) => setFeatureFlags(r.data || {}))
+            .catch(() => {});
+        }
 
         // CHECK ROLE AND SESSION STORAGE
         if (fetchedRole !== 1 && fetchedRole !== 4) {
@@ -198,6 +214,8 @@ function Dashboard() {
     // ✅ Updated Admin Attendance condition to include 'canSeeAdminAttendance'
     { title: "Admin Attendance", href: "/Admin_Attendance", icon: FaClipboardCheck, gradient: "from-violet-500 to-purple-600", description: "Attendance oversight", show: !isAttendanceOnlyUser && (userRole === 1 || userRole === 8 || canSeeAdminAttendance), isAdminCard: true },
     
+    // Payroll is salary data: role 1 only, and the page re-checks server-side.
+    { title: "Payroll", href: "/Payroll", icon: FaClipboardCheck, gradient: "from-emerald-700 to-teal-800", description: "Salaries, pay sheets and payroll runs", show: !isAttendanceOnlyUser && userRole === 1 && featureFlags?.payroll !== false, isAdminCard: true },
     { title: "Careers Admin", href: "/Admin_careers", icon: FaClipboardCheck, gradient: "from-fuchsia-600 to-pink-600", description: "Careers view", show: !isAttendanceOnlyUser && userRole === 1, isAdminCard: true },
     { title: "Admin Panel", href: "/components/Admin", icon: FaCog, gradient: "from-slate-600 to-slate-800", description: "System administration", show: !isAttendanceOnlyUser && (userRole === 1 || userRole === 8), isAdminCard: true },
     { title: "Inventory Management", href: "/inventory", icon: FaCog, gradient: "from-slate-600 to-slate-800", description: "Manage Your Inventory", show: !isAttendanceOnlyUser && (userRole === 1 || userRole === 6), isAdminCard: true },
