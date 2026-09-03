@@ -23,6 +23,9 @@ const ATTENDANCE_WITH_OTHER_TABS_EMAILS = [
   "vishals@kiotel.co",
   "tushars@kiotel.co",
   "adityas@kiotel.co",
+  "avency@kiotel.co",
+  "dhruvp@kiotel.co",
+  "omkarc@kiotel.co",
   "arbaz.p@valianthotels.com",
 ];
 

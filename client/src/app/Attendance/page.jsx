@@ -26,6 +26,9 @@ const DIRECT_SHIFT_EMAILS = [
   "tushars@kiotel.co",
   "vishals@kiotel.co",
   "adityas@kiotel.co",
+  "avency@kiotel.co",
+  "dhruvp@kiotel.co",
+  "omkarc@kiotel.co",
   "arbaz.p@valianthotels.com",
 ];
 
@@ -37,6 +40,9 @@ const DEV_TEAM_EMAILS = [
   "tushars@kiotel.co",
   "vishals@kiotel.co",
   "adityas@kiotel.co",
+  "avency@kiotel.co",
+  "dhruvp@kiotel.co",
+  "omkarc@kiotel.co",
 ];
 
 // Office admins -> only the ADMIN shift
