@@ -673,22 +673,39 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
       );
       console.log("Employee deleted from HR DB successfully");
     } catch (error) {
+      // A 404 just means this account has no HR record (admins never get one),
+      // which is fine. Anything else left the two databases disagreeing about
+      // whether this person is deleted, so say so instead of only logging it.
+      if (error?.response?.status === 404) {
+        console.log("No HR employee record for", accountNo, "— nothing to delete there");
+        return;
+      }
       console.error("Error deleting HR employee:", error);
+      alert(
+        "The portal account was deleted, but the HR employee record could not be. " +
+          "Please retry so the two stay in step."
+      );
     }
   };
 
   const deleteUserAndAccount = async (id, accountNo) => {
     try {
-      await handleDeleteUser(id);
+      // Only touch the HR record once the portal account is actually gone.
+      // Running it unconditionally meant cancelling the confirm — or the portal
+      // delete failing — still deleted the employee in HR, leaving an account
+      // that reads as deleted in one place and active in the other.
+      const deleted = await handleDeleteUser(id);
+      if (!deleted) return;
       await handleDeleteUserAccount(accountNo);
     } catch (err) {
       console.error("Delete failed:", err);
     }
   };
 
+  // Resolves true only when the portal account was really deleted.
   const handleDeleteUser = async (userId) => {
     const confirmed = window.confirm("Are you sure you want to delete this user?");
-    if (!confirmed) return;
+    if (!confirmed) return false;
     try {
       await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/delete-user`,
@@ -698,9 +715,11 @@ useEffect(() => { fetchScheduledDeletions(); }, []);
       setUsers(users.filter((user) => user.id !== userId));
       setFilteredUsers(filteredUsers.filter((user) => user.id !== userId));
       alert("User deleted successfully");
+      return true;
     } catch (error) {
       console.error("Failed to delete user:", error);
       alert("Failed to delete user");
+      return false;
     }
   };
 
