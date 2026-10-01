@@ -86,10 +86,12 @@ const ThreeMonthView = ({
   const end = endOfMonth(currentMonth);
   const days = useMemo(() => eachDayOfInterval({ start, end }), [start, end]);
 
-  // Shift 3 "green" threshold: June 2026 and earlier = 18, July 2026 onward = 21.
+  // Shift 3 "green" threshold: June 2026 and earlier = 18, July–September 2026 = 21, October 2026 onward = 24.
   const shift3Threshold = useMemo(() => {
-    const cutoff = new Date(2026, 6, 1); // July 1, 2026 (month is 0-indexed)
-    return startOfMonth(currentMonth) >= cutoff ? 21 : 18;
+    const monthStart = startOfMonth(currentMonth);
+    if (monthStart >= new Date(2026, 9, 1)) return 24; // October 1, 2026 (month is 0-indexed)
+    if (monthStart >= new Date(2026, 6, 1)) return 21; // July 1, 2026
+    return 18;
   }, [currentMonth]);
 
   const goToPreviousMonth = () => setCurrentMonth((prev) => subMonths(prev, 1));
