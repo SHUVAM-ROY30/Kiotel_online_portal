@@ -97,6 +97,40 @@ const ThreeMonthView = ({
   const goToPreviousMonth = () => setCurrentMonth((prev) => subMonths(prev, 1));
   const goToNextMonth = () => setCurrentMonth((prev) => addMonths(prev, 1));
 
+  // LOP/LLOP Excel report for the month on screen — Admin (1) and HR (5) only;
+  // the API enforces the same rule.
+  const canDownloadLopReport = [1, 5].includes(Number(userRole));
+  const [lopReportLoading, setLopReportLoading] = useState(false);
+
+  const downloadLopReport = async () => {
+    if (lopReportLoading) return;
+    const month = format(currentMonth, 'yyyy-MM');
+    setLopReportLoading(true);
+    try {
+      const res = await axios.get(`${API}/api/schedule-reports/lop-llop`, {
+        params: { month },
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `LOP_LLOP_Report_${month}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download LOP/LLOP report:', err);
+      alert(err?.response?.status === 403
+        ? 'You do not have permission to download this report.'
+        : 'Failed to download LOP/LLOP report.');
+    } finally {
+      setLopReportLoading(false);
+    }
+  };
+
   const orderedEmployees = useMemo(() => {
     if (!employees || employees.length === 0) return [];
 
@@ -235,7 +269,19 @@ const ThreeMonthView = ({
         <button onClick={goToPreviousMonth} className="px-4 py-2 rounded-lg font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition">
           ← Previous
         </button>
-        <h2 className="text-2xl font-semibold text-slate-800">{format(currentMonth, 'MMMM yyyy')}</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-semibold text-slate-800">{format(currentMonth, 'MMMM yyyy')}</h2>
+          {canDownloadLopReport && (
+            <button
+              onClick={downloadLopReport}
+              disabled={lopReportLoading}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md transition disabled:opacity-60 disabled:cursor-not-allowed"
+              title={`Download LOP/LLOP report for ${format(currentMonth, 'MMMM yyyy')}`}
+            >
+              {lopReportLoading ? 'Preparing...' : 'LOP/LLOP Reports'}
+            </button>
+          )}
+        </div>
         <button onClick={goToNextMonth} className="px-4 py-2 rounded-lg font-medium bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 transition">
           Next →
         </button>

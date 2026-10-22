@@ -73,8 +73,8 @@
 
 //       if (intTask.hk_task_id) {
 //         try {
-//           const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
-//           const extRes = await axios.get(`${API_EXT}api/v1/external/tasks/${intTask.hk_task_id}`, {
+//           const externalApiToken = "";
+//           const extRes = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/tasks/${intTask.hk_task_id}`, {
 //             headers: { Authorization: `Bearer ${externalApiToken}` }
 //           });
 
@@ -582,8 +582,8 @@ export default function TaskDetails() {
 
       if (intTask.hk_task_id) {
         try {
-          const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
-          const extRes = await axios.get(`${API_EXT}api/v1/external/tasks/${intTask.hk_task_id}`, {
+          const externalApiToken = "";
+          const extRes = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/tasks/${intTask.hk_task_id}`, {
             headers: { Authorization: `Bearer ${externalApiToken}` }
           });
 

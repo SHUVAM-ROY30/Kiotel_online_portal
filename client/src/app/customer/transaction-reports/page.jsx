@@ -52,13 +52,13 @@ function TransactionReportsContent() {
       setLoading(true);
       setErrorMsg("");
       try {
-        const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+        const externalApiToken = "";
         const params = { device_id: deviceId, page, limit: PAGE_LIMIT };
         if (status) params.status = status;
         if (startDate) params.start = startDate;
         if (endDate) params.end = endDate;
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_URL_ext}api/v1/external/transaction-reports`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/transaction-reports`,
           {
             headers: { Authorization: `Bearer ${externalApiToken}` },
             params,

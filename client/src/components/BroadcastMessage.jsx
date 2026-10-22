@@ -102,7 +102,14 @@ export default function BroadcastMessage() {
       selectedEmployees.includes(emp.unique_id)
     );
 
-    const emails = selectedEmps.map(emp => emp.email);
+    // Skip employees with no email and send each address once.
+    const emails = [...new Set(
+      selectedEmps.map(emp => (emp.email || "").trim()).filter(Boolean)
+    )];
+
+    if (emails.length === 0) {
+      return alert("None of the selected employees have an email address.");
+    }
 
     const formData = new FormData();
     formData.append('emails', JSON.stringify(emails));
@@ -115,12 +122,17 @@ export default function BroadcastMessage() {
 
     try {
       setLoading(true);
-      await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/send/broadcast`, formData, {
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/send/broadcast`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      alert("Message sent successfully with attachments!");
+      const skipped = selectedEmps.length - emails.length;
+      alert(
+        (res.data?.message || "Message sent successfully!") +
+        (skipped > 0 ? `\n${skipped} selected employee(s) had no email address or a duplicate.` : "") +
+        (res.data?.partial ? "\nSee Broadcast Logs for the addresses that failed." : "")
+      );
       setMessage("");
       setSubject("");
       setAttachments([]);

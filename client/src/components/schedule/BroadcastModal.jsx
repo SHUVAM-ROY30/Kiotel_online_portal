@@ -77,7 +77,8 @@ const BroadcastModal = ({ showBroadcastModal, setShowBroadcastModal, uniqueId })
     try {
       // Get emails for selected employee IDs
       const selectedEmpObjects = employees.filter(emp => selectedEmployees.has(emp.id));
-      const emails = selectedEmpObjects.map(emp => emp.emailid).filter(email => email); // Filter out potentially undefined emails
+      // Filter out missing emails and send each address once
+      const emails = [...new Set(selectedEmpObjects.map(emp => (emp.emailid || '').trim()).filter(Boolean))];
 
       if (emails.length === 0) {
         setSendResult({ success: false, message: 'No valid emails found for selected employees.' });
@@ -96,7 +97,10 @@ const BroadcastModal = ({ showBroadcastModal, setShowBroadcastModal, uniqueId })
       });
 
       if (res.status === 200) {
-        setSendResult({ success: true, message: 'Broadcast sent successfully!' });
+        setSendResult({
+          success: !res.data?.partial,
+          message: res.data?.message || 'Broadcast sent successfully!',
+        });
         // Optionally clear selection after successful send
         // setSelectedEmployees(new Set());
       } else {

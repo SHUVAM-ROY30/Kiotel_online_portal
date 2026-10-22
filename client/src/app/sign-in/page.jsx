@@ -99,6 +99,19 @@ const SignIn = () => {
         setErrors({
           form: "This browser is pending admin approval. Please wait for an administrator to approve your device.",
         });
+      } else if (!err.response) {
+        // Network/CORS failure — the server was never reached.
+        setErrors({
+          form: "Cannot reach the server. Please check your connection and try again.",
+        });
+      } else if (err.response.status === 429) {
+        setErrors({
+          form: err.response.data?.error || "Too many login attempts. Please try again later.",
+        });
+      } else if (err.response.status >= 500) {
+        setErrors({
+          form: "Login is temporarily unavailable. Please try again shortly.",
+        });
       } else {
         // Generic message for invalid credentials / deleted accounts
         setErrors({

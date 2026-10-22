@@ -88,10 +88,10 @@
 //     e.stopPropagation();
 //     if (!window.confirm("Are you sure you want to delete this task?")) return;
 //     try {
-//       const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+//       const externalApiToken = "";
 //       if (task.hk_task_id) {
 //         try {
-//           await axios.delete(`${API_EXT}api/v1/external/tasks/${task.hk_task_id}`, {
+//           await axios.delete(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/tasks/${task.hk_task_id}`, {
 //             headers: { Authorization: `Bearer ${externalApiToken}` }
 //           });
 //         } catch (extErr) {
@@ -108,10 +108,10 @@
 //   const handleToggleActive = async (e, task) => {
 //     e.stopPropagation();
 //     try {
-//       const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+//       const externalApiToken = "";
 //       if (task.hk_task_id) {
 //         try {
-//           await axios.patch(`${API_EXT}api/v1/external/tasks/${task.hk_task_id}`, { is_active: !task.is_active }, {
+//           await axios.patch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/tasks/${task.hk_task_id}`, { is_active: !task.is_active }, {
 //             headers: { Authorization: `Bearer ${externalApiToken}` }
 //           });
 //         } catch (extErr) {
@@ -388,9 +388,9 @@ export default function TaskManager() {
     e.stopPropagation();
     if (!window.confirm("Are you sure you want to delete this task?")) return;
     try {
-      const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+      const externalApiToken = "";
       if (task.hk_task_id) {
-        await axios.delete(`${API_EXT}api/v1/external/tasks/${task.hk_task_id}`, {
+        await axios.delete(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/tasks/${task.hk_task_id}`, {
           headers: { Authorization: `Bearer ${externalApiToken}` }
         });
       }

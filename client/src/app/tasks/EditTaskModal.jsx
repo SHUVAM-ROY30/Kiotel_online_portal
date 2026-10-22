@@ -39,7 +39,7 @@ const EditTaskModal = ({ task, onClose, onTaskUpdated }) => {
 
     setIsSubmitting(true);
     try {
-      const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+      const externalApiToken = "";
       const payload = {
         title: title.trim(),
         description: description.trim(),
@@ -49,7 +49,7 @@ const EditTaskModal = ({ task, onClose, onTaskUpdated }) => {
 
       if (task.hk_task_id) {
         try {
-          await axios.patch(`${API_BASE2}api/v1/external/tasks/${task.hk_task_id}`, payload, {
+          await axios.patch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/tasks/${task.hk_task_id}`, payload, {
             headers: { Authorization: `Bearer ${externalApiToken}` }
           });
         } catch (extErr) {

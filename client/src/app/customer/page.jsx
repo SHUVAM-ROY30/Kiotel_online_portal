@@ -126,9 +126,9 @@ export default function CustomerDashboard() {
       // External (kiotel dashboard) — is an agent remotely controlling this device right now?
       let externalAgent = null;
       try {
-        const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+        const externalApiToken = "";
         const extRes = await axios.get(
-          `${process.env.NEXT_PUBLIC_URL_ext}api/v1/external/devices/${encodeURIComponent(selectedProperty.property_id)}/active-agent`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/devices/${encodeURIComponent(selectedProperty.property_id)}/active-agent`,
           { headers: { Authorization: `Bearer ${externalApiToken}` } }
         );
         externalAgent = extRes.data;
@@ -161,10 +161,10 @@ export default function CustomerDashboard() {
   // const fetchReports = async () => {
   //   setLoadingReports(true);
   //   try {
-  //     const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+  //     const externalApiToken = "";
       
   //     const res = await axios.get(
-  //       `${process.env.NEXT_PUBLIC_URL_ext}api/v1/external/transaction-reports`,
+  //       `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/transaction-reports`,
   //       {
   //         headers: { Authorization: `Bearer ${externalApiToken}` },
   //         params: { limit: 10 }
@@ -188,10 +188,10 @@ export default function CustomerDashboard() {
 
     setLoadingReports(true);
     try {
-      const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+      const externalApiToken = "";
       
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_URL_ext}api/v1/external/transaction-reports`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/transaction-reports`,
         {
           headers: { Authorization: `Bearer ${externalApiToken}` },
           params: { 

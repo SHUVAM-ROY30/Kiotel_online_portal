@@ -75,6 +75,8 @@ export default function BroadcastLogs({ onBack }) {
         return "bg-green-50 text-green-700 border-green-200";
       case "FAILED":
         return "bg-red-50 text-red-700 border-red-200";
+      case "PARTIAL":
+        return "bg-amber-50 text-amber-700 border-amber-200";
       default:
         return "bg-gray-50 text-gray-700 border-gray-200";
     }
@@ -136,6 +138,7 @@ export default function BroadcastLogs({ onBack }) {
                 <option value="">All Statuses</option>
                 <option value="SUCCESS">Success</option>
                 <option value="FAILED">Failed</option>
+                <option value="PARTIAL">Partial</option>
               </select>
             </div>
           </div>
@@ -335,6 +338,14 @@ export default function BroadcastLogs({ onBack }) {
                       <p className="text-sm text-gray-900 mt-1">{selectedLog.broadcast.created_by}</p>
                     </div>
                   </div>
+                  {selectedLog.broadcast.error_message && (
+                    <div>
+                      <p className="text-xs text-gray-500">Delivery Issues</p>
+                      <p className="text-sm text-red-700 mt-1 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
+                        {selectedLog.broadcast.error_message}
+                      </p>
+                    </div>
+                  )}
                   {/* <div>
                     <p className="text-xs text-gray-500">Sent At</p>
                     <p className="text-sm text-gray-900 mt-1">{formatDate(selectedLog.broadcast.created_at)}</p>

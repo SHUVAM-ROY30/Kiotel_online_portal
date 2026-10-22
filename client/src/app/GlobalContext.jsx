@@ -7,6 +7,55 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { usePathname } from "next/navigation";
+import { isPublicPath } from "./_hooks/publicRoutes";
+
+// ---------------------------------------------------------------------------
+// Session credentials for every call to OUR APIs.
+//
+// The backend now authenticates with the httpOnly `auth_token` cookie, so every
+// request to the Node API and the Flask API must be sent WITH credentials.
+// Rather than touch hundreds of call sites, we attach credentials centrally:
+//   - an axios request interceptor (covers the default axios instance), and
+//   - a fetch wrapper.
+// Both are scoped to our own backends only (never the external kiosk API), so
+// cross-origin "withCredentials" cannot break the external calls.
+// ---------------------------------------------------------------------------
+if (typeof window !== "undefined" && !window.__kiotelAuthTransport) {
+  window.__kiotelAuthTransport = true;
+
+  const OUR_API_BASES = [
+    process.env.NEXT_PUBLIC_BACKEND_URL,
+    process.env.NEXT_PUBLIC_API_BASE_URL,
+  ]
+    .filter(Boolean)
+    .map((s) => String(s).replace(/\/+$/, ""));
+
+  const isOurApi = (url) => {
+    if (!url) return false;
+    const u = String(url);
+    if (!/^https?:\/\//i.test(u)) return false; // relative URLs don't hit the backend
+    return OUR_API_BASES.some((base) => base && u.startsWith(base));
+  };
+
+  // axios (default instance). Per-module axios.create() instances already set
+  // withCredentials themselves.
+  axios.interceptors.request.use((config) => {
+    const full = `${config.baseURL || ""}${config.url || ""}`;
+    if (isOurApi(full) || isOurApi(config.url)) config.withCredentials = true;
+    return config;
+  });
+
+  // fetch — default credentials to "include" for our APIs unless the caller set them.
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    const url = typeof input === "string" ? input : (input && input.url) || "";
+    if (isOurApi(url) && (!init || init.credentials === undefined)) {
+      init = { ...(init || {}), credentials: "include" };
+    }
+    return nativeFetch(input, init);
+  };
+}
 
 const GlobalContext = createContext();
 
@@ -56,8 +105,20 @@ export function GlobalProvider({ children }) {
     equipment: { status: FORM_STATUS.NOT_STARTED, admin_comments: "" },
   });
 
+  // Skip the session check on public pages (sign-in etc.), and run it again
+  // when the user moves from a public page into the portal after logging in —
+  // login is a client-side navigation, so this provider does not remount.
+  const pathname = usePathname();
+  const onPublicPage = isPublicPath(pathname);
+
   useEffect(() => {
+    if (onPublicPage) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
     const initData = async () => {
+      setLoading(true);
       try {
         // Fetch User
         const userRes = await axios.get(
@@ -88,14 +149,17 @@ export function GlobalProvider({ children }) {
           setSelectedProperty(props[0]);
         }
       } catch (err) {
-        console.error("Global Initialization Error:", err);
+        // 401 just means "not logged in yet" (e.g. on the sign-in page) — not an error.
+        if (err?.response?.status !== 401) {
+          console.error("Global Initialization Error:", err);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     initData();
-  }, []);
+  }, [onPublicPage]);
 
   // Fetch form statuses whenever selectedProperty changes
   useEffect(() => {

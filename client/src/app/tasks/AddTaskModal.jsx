@@ -51,12 +51,12 @@ const AddTaskModal = ({ userUniqueId, properties, onClose, onTaskCreated }) => {
     setIsSubmitting(true);
     try {
       const devicesToSubmit = selectAllDevices ? properties.map(p => p.property_id) : selectedDevices;
-      const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+      const externalApiToken = "";
 
       for (const devId of devicesToSubmit) {
         let externalTaskId = null;
         try {
-          const extRes = await axios.post(`${API_BASE2}api/v1/external/tasks`, {
+          const extRes = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/tasks`, {
             device_id: devId,
             title: title.trim(),
             description: description.trim(),

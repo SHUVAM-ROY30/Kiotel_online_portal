@@ -736,9 +736,9 @@ function AuditDetailModal({ sessionId, audit, onClose }) {
     const fetchFull = async () => {
       setLoadingFull(true);
       try {
-        const token = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+        const token = "";
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_URL_ext}api/v1/external/transaction-reports/${encodeURIComponent(sessionId)}/audit`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/transaction-reports/${encodeURIComponent(sessionId)}/audit`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!cancelled) setFull(res.data);
@@ -1005,12 +1005,12 @@ function useSessionNeighbors({ deviceId, sessionId, page, status, start, end, en
     let cancelled = false;
     const compute = async () => {
       try {
-        const token = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+        const token = "";
         const baseParams = { device_id: deviceId, page, limit: PAGE_LIMIT };
         if (status) baseParams.status = status;
         if (start) baseParams.start = start;
         if (end) baseParams.end = end;
-        const url = `${process.env.NEXT_PUBLIC_URL_ext}api/v1/external/transaction-reports`;
+        const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/transaction-reports`;
         const headers = { Authorization: `Bearer ${token}` };
 
         const res = await axios.get(url, { headers, params: baseParams });
@@ -1095,9 +1095,9 @@ function SessionDetailContent() {
       setLoading(true);
       setErrorMsg("");
       try {
-        const externalApiToken = process.env.NEXT_PUBLIC_EXTERNAL_API_TOKEN;
+        const externalApiToken = "";
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_URL_ext}api/v1/external/transaction-reports/${encodeURIComponent(sessionId)}`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ext/api/v1/external/transaction-reports/${encodeURIComponent(sessionId)}`,
           { headers: { Authorization: `Bearer ${externalApiToken}` } }
         );
         if (!cancelled) setData(res.data);

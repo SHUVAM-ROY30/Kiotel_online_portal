@@ -23,7 +23,12 @@ COPY package.json package-lock.json ./
 # i.e. it was installed this same way. The project is plain JavaScript (0 .ts /
 # .tsx files, jsconfig.json rather than tsconfig.json), so @types/* packages are
 # type-only and have no effect on the build output or runtime.
-RUN npm ci --legacy-peer-deps
+#
+# The BuildKit cache mount keeps npm's download cache (~1 GB of tarballs here)
+# on the build host, so a lockfile change only re-downloads what changed. It is
+# never written into a layer.
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --legacy-peer-deps --no-audit --no-fund
 
 FROM node:24-slim AS builder
 WORKDIR /app
@@ -32,19 +37,24 @@ ARG NEXT_PUBLIC_API_BASE_URL
 ARG NEXT_PUBLIC_BACKEND_URL
 ARG NEXT_PUBLIC_EXTERNAL_API_TOKEN
 ARG NEXT_PUBLIC_URL_ext
+# NODE_OPTIONS: Univer is heavy; give the build headroom rather than dying on
+# an OOM that reads as a generic "next build failed".
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL} \
     NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL} \
     NEXT_PUBLIC_EXTERNAL_API_TOKEN=${NEXT_PUBLIC_EXTERNAL_API_TOKEN} \
     NEXT_PUBLIC_URL_ext=${NEXT_PUBLIC_URL_ext} \
     NEXT_TELEMETRY_DISABLED=1 \
-    NODE_ENV=production
+    NODE_ENV=production \
+    NODE_OPTIONS=--max-old-space-size=4096
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Univer is heavy; give the build headroom rather than dying on an OOM that
-# reads as a generic "next build failed".
-ENV NODE_OPTIONS=--max-old-space-size=4096
-RUN npm run build
+# Persist Next's incremental build cache (webpack + SWC) across image builds.
+# Without it every `docker compose build` compiles the whole app from zero;
+# with it, a small source change rebuilds noticeably faster. The cache lives on
+# the build host only and never reaches the runtime image.
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build
 
 FROM node:24-slim AS runtime
 ENV NODE_ENV=production \
@@ -53,9 +63,11 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     NEXT_TELEMETRY_DISABLED=1
 
-RUN apt-get update \
- && apt-get install -y --no-install-recommends tzdata curl ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+# No apt layer. tzdata/curl/ca-certificates used to be installed here; none is
+# needed. Node ships full ICU with its own zone data (TZ=Asia/Kolkata resolves
+# without /usr/share/zoneinfo), uses its own bundled CA store, and the
+# HEALTHCHECK below uses Node's built-in fetch instead of curl. This saves an
+# `apt-get update` on every build, some image size, and curl's CVE surface.
 
 WORKDIR /app
 # public/ holds the face-api.js model shards used by the kiosk page.
@@ -67,7 +79,7 @@ USER node
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD curl -fsS "http://127.0.0.1:${PORT}/" >/dev/null || exit 1
+  CMD ["node", "-e", "fetch('http://127.0.0.1:'+process.env.PORT+'/',{redirect:'manual'}).then(r=>process.exit(r.status<400?0:1),()=>process.exit(1))"]
 
 # server.js is emitted by output:'standalone'; it already binds HOSTNAME/PORT.
 CMD ["node", "server.js"]

@@ -37,6 +37,19 @@ services:
     container_name: kiotel-portal-client
     restart: unless-stopped
 
+    # Runs tini as PID 1 in front of Node. The kernel applies no default signal
+    # action to PID 1, so any signal Node does not explicitly handle is ignored
+    # and the stop falls through to SIGKILL after 10s. tini forwards signals and
+    # reaps zombie child processes.
+    init: true
+
+    # json-file logs are unbounded by default; cap at ~50 MB.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
     environment:
       TZ: Asia/Kolkata
 

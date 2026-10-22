@@ -5,6 +5,7 @@ import axios from "axios";
 import { io } from "socket.io-client";
 import { Toaster, toast } from "react-hot-toast";
 import { usePathname } from "next/navigation";
+import { isPublicPath } from "@/app/_hooks/publicRoutes";
 import FloatingLiveAgents from "./FloatingLiveAgents";
 import FloatingChatBox from "./FloatingChatBox";
 
@@ -36,6 +37,15 @@ export default function SocketProvider({ children }) {
   // 1. Session & Initial Data Fetch
   useEffect(() => {
     let isMounted = true;
+
+    // No session on public pages (sign-in etc.) — don't call /api/auth/me there.
+    if (isPublicPath(pathname)) {
+      setUserUniqueID("");
+      setUserFname("");
+      setUserRole("");
+      setUserProfilePic(null);
+      return () => { isMounted = false; };
+    }
 
     const verifySession = async () => {
       try {
