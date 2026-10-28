@@ -283,7 +283,7 @@
 
 
 "use client";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import DatePicker from "react-datepicker";
@@ -291,8 +291,8 @@ import "react-datepicker/dist/react-datepicker.css";
 import moment from 'moment';
 import { FaCamera, FaDownload, FaTrash, FaUser, FaExpand, FaTimes } from "react-icons/fa";
 
-export default function UserProfile({ params }) {
-    const { user_id } = params;
+export default function UserProfile() {
+    const { user_id } = useParams();
     const router = useRouter();
     const [formData, setFormData] = useState({
         emailid: "",

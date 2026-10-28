@@ -13,5 +13,12 @@ node_modules/
 .vscode/
 *.code-workspace
 
+# Flask runtime data: user uploads and session files never belong in git.
+# (Already-tracked files also need `git rm -r --cached` once.)
+server/uploads/
+server/flask_session/
+server/venv/
+__pycache__/
+
 # Lefthook local
 lefthook-local.yml

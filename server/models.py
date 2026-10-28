@@ -1,9 +1,12 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
 import json
+import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://travarit_test:Kiotel123!@box2272.bluehost.com/travarit_login'
+# Legacy model: nothing in server.py queries it, so default to an in-memory DB
+# instead of keeping credentials in source. SQLAlchemy connects lazily.
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('LEGACY_SQLALCHEMY_DATABASE_URI', 'sqlite://')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 

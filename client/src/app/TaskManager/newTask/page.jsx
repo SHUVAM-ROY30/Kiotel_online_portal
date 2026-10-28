@@ -9,11 +9,10 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
-import dynamic from "next/dynamic"; // <-- NEW: For Rich Text Editor in Next.js
+import DescriptionEditor from "../_components/DescriptionEditor";
 
 import "react-datepicker/dist/react-datepicker.css";
 import "react-toastify/dist/ReactToastify.css";
-import "react-quill/dist/quill.snow.css"; // <-- NEW: Rich Text Editor CSS
 
 import {
   FaPaperclip,
@@ -29,9 +28,6 @@ import {
   FaSync,
   FaInfoCircle
 } from "react-icons/fa";
-
-// --- NEW: Dynamic import for ReactQuill to prevent Next.js SSR errors ---
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 export default function TicketCreateForm() {
   const router = useRouter();
@@ -68,16 +64,6 @@ export default function TicketCreateForm() {
   const [monthlyDate, setMonthlyDate] = useState(1); 
   const [endDate, setEndDate] = useState(null);
 
-  // --- NEW: Rich Text Editor Toolbar Modules ---
-  const quillModules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{'list': 'ordered'}, {'list': 'bullet'}],
-      ['link', 'code-block'],
-      ['clean']
-    ],
-  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -370,16 +356,13 @@ export default function TicketCreateForm() {
                 </div>
                 
                 {/* --- NEW: Rich Text Editor --- */}
-                <div className="pb-8"> {/* Added padding bottom because Quill toolbar takes space */}
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                   <div className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
-                    <ReactQuill 
-                      theme="snow"
-                      value={description} 
-                      onChange={setDescription} 
-                      modules={quillModules}
+                    <DescriptionEditor
+                      value={description}
+                      onChange={setDescription}
                       placeholder="Write task details, add lists, links, or code blocks..."
-                      className="h-40"
                     />
                   </div>
                 </div>

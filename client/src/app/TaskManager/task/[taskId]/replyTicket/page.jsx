@@ -2,7 +2,7 @@
 // components/TicketReplyForm.jsx
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -14,9 +14,9 @@ import {
   FaInfoCircle
 } from "react-icons/fa";
 
-export default function TicketReplyForm({ params }) {
+export default function TicketReplyForm() {
   const router = useRouter();
-  const { taskId } = params;
+  const { taskId } = useParams();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [attachments, setAttachments] = useState(null);

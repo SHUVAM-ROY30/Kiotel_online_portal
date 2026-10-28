@@ -32,6 +32,8 @@ export default function FloatingChatBox({ targetUser, onClose }) {
   const fileInputRef = useRef(null); 
   const typingTimeoutRef = useRef(null);
   const isEmittingTypingRef = useRef(false);
+  // react-draggable needs an explicit nodeRef on React 19 (findDOMNode was removed).
+  const dragNodeRef = useRef(null);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
 
@@ -209,7 +211,7 @@ export default function FloatingChatBox({ targetUser, onClose }) {
 
   // --- THE UI CORE ---
   const ChatContent = (
-    <div className={`${isMobile ? 'fixed inset-0 w-full h-[100dvh] rounded-none z-[99999]' : 'fixed bottom-0 right-0 w-[340px] h-[440px] rounded-xl z-[9999] shadow-[0_5px_25px_rgba(0,0,0,0.15)] border border-gray-200'} bg-white flex flex-col font-sans overflow-hidden`}>
+    <div ref={dragNodeRef} className={`${isMobile ? 'fixed inset-0 w-full h-[100dvh] rounded-none z-[99999]' : 'fixed bottom-0 right-0 w-[340px] h-[440px] rounded-xl z-[9999] shadow-[0_5px_25px_rgba(0,0,0,0.15)] border border-gray-200'} bg-white flex flex-col font-sans overflow-hidden`}>
       
       {/* HEADER */}
       <div className={`chat-header bg-blue-600 text-white p-3 md:p-3 flex justify-between items-center shadow-sm hover:bg-blue-700 transition-colors z-20 ${isMobile ? 'rounded-none cursor-default pt-safe-top' : 'rounded-t-xl cursor-move'}`}>
@@ -381,7 +383,7 @@ export default function FloatingChatBox({ targetUser, onClose }) {
 
   // If Mobile, render standard div. If Desktop, wrap in Draggable.
   return isMobile ? ChatContent : (
-    <Draggable handle=".chat-header" bounds="body" defaultPosition={{x: -30, y: -30}}>
+    <Draggable nodeRef={dragNodeRef} handle=".chat-header" bounds="body" defaultPosition={{x: -30, y: -30}}>
       {ChatContent}
     </Draggable>
   );

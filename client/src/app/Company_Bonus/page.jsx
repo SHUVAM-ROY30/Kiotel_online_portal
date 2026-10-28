@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import DOMPurify from "isomorphic-dompurify";
 import ProtectedRoute from "../../context/ProtectedRoute";
 import {
   FaArrowLeft,
@@ -997,7 +998,9 @@ function CompanyBonusPage() {
       }
     });
 
-    return content;
+    // Rendered with dangerouslySetInnerHTML: sanitize the stored HTML and the
+    // highlight markup built above. `target` is kept so links still open in a new tab.
+    return DOMPurify.sanitize(content, { ADD_ATTR: ["target"] });
   };
 
   /* ── redirect clients ── */

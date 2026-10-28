@@ -4,12 +4,12 @@
 
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 
-const TicketReplyForm = ({ params }) => {
+const TicketReplyForm = () => {
   const router = useRouter();
-  const { ticketId } = params; // Use router.query to get the ticketId from the URL
+  const { ticketId } = useParams();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [attachments, setAttachments] = useState(null);

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# Next.js 14 portal frontend.
+# Next.js 15 portal frontend.
 #
 # IMPORTANT -- NEXT_PUBLIC_* is inlined into the client bundle at BUILD time,
 # not read at runtime. There are ~398 references to NEXT_PUBLIC_BACKEND_URL and

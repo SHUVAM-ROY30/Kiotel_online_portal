@@ -41,13 +41,39 @@ import logging
 
 
 
+from dotenv import load_dotenv
+
+# Secrets live in server/.env (git-ignored), never in this file. See .env.example.
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+
+
+def _require_env(name):
+    # Fail at startup rather than run with a missing or empty secret.
+    value = os.environ.get(name)
+    if not value:
+        raise RuntimeError(f"{name} is not set. Add it to server/.env (see server/.env.example).")
+    return value
+
+
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
-# CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
+
+# Credentialed CORS must name its origins: the default reflects any Origin,
+# which lets any website make cookie-authenticated calls to this API.
+CORS_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("CORS_ORIGINS", "https://portal.kiotel.co,https://careers.kiotel.co").split(",")
+    if o.strip()
+]
+CORS(app, origins=CORS_ORIGINS, supports_credentials=True)
 
 # Configure the session
-app.config["SECRET_KEY"] = "abcdefghijklmnopqrstuvwxyz"
+app.config["SECRET_KEY"] = _require_env("FLASK_SECRET_KEY")
 app.config["SESSION_TYPE"] = "filesystem"
+
+# Werkzeug 3.1 caps non-file multipart fields at 500 kB. Task/ticket descriptions
+# are rich HTML sent as a form field and can carry pasted images, so keep the
+# pre-upgrade headroom. (Ignored by Flask < 3.1.)
+app.config["MAX_FORM_MEMORY_SIZE"] = 16 * 1024 * 1024
 
 # Directory for saving uploads
 UPLOAD_FOLDER = './uploads'
@@ -61,12 +87,17 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 
+DB_HOST = os.environ.get("DB_HOST", "64.227.6.9")
+DB_USER = os.environ.get("DB_USER", "kshiti")
+DB_PASSWORD = _require_env("DB_PASSWORD")
+
+
 def create_connection():
     try:
         connection = pymysql.connect(
-            host="64.227.6.9",  # Replace with the public IP address of your VPS
-            user="kshiti",  # Replace with your MySQL user
-            password="Kiotel123!",  # Replace with your MySQL password
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
             database="kiotel",  # Replace with your database name
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -80,9 +111,9 @@ def create_connection():
 def create_connection2():
     try:
         connection = pymysql.connect(
-            host="64.227.6.9",
-            user="kshiti",
-            password="Kiotel123!",
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
             database="Kiotel_Hr",  # Second DB
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -97,7 +128,7 @@ def create_connection2():
 # endpoint keeps working during the Flask -> Node migration. The auth_token cookie
 # is set on the shared .kiotel.co domain, so it reaches Flask on portal.kiotel.co.
 # JWT_SECRET MUST be identical to the Node backend's JWT_SECRET (.env).
-JWT_SECRET = "c3b0772ae373a55d2d62290bf4c8419f88a96971365d501aaa4ebf1e4541b35fd6b6bea5ec5134a59a79861a6165f1b2"  # TODO: set to match Node .env JWT_SECRET
+JWT_SECRET = _require_env("JWT_SECRET")
 JWT_COOKIE_NAME = "auth_token"
 
 @app.before_request
@@ -2778,8 +2809,8 @@ def get_locktypess():
 
 port = 587  # For starttls
 smtp_server = "smtp.gmail.com"
-sender_email = "noreply@kiotel.co"
-password = "uqfs hzid zgyf eqox"
+sender_email = os.environ.get("SMTP_SENDER_EMAIL", "noreply@kiotel.co")
+password = _require_env("SMTP_PASSWORD")
 
 from datetime import datetime, timezone # Import timezone
 
@@ -4272,9 +4303,9 @@ def generate_recurring_tasks():
 
     try:
         db = mysql.connector.connect(
-            host="64.227.6.9",
-            user="kshiti",
-            password="Kiotel123!",
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
             database="kiotel",
             autocommit=False
         )
@@ -5378,7 +5409,14 @@ startup_load_embeddings()
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+    # Dev server only. The Werkzeug debugger is an interactive console (remote
+    # code execution) so it is opt-in via FLASK_DEBUG=1 and must never be on in
+    # production. In production run: gunicorn -w 1 -b 127.0.0.1:8080 server:app
+    app.run(
+        debug=os.environ.get("FLASK_DEBUG") == "1",
+        host="127.0.0.1",
+        port=int(os.environ.get("PORT", "8080")),
+    )
 
 
 

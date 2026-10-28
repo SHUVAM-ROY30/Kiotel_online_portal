@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import ProtectedRoute from '../../../../context/ProtectedRoute'; // Import your ProtectedRoute
 
-export default function TicketDetails({ params }) {
-  const ticketId = params.ticketId;
+export default function TicketDetails() {
+  const ticketId = useParams().ticketId;
   const [ticketDetails, setTicketDetails] = useState(null);
   const [replies, setReplies] = useState([]);
   const [loading, setLoading] = useState(true);

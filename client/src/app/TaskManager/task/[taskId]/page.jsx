@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Select from "react-select";
 import DOMPurify from "isomorphic-dompurify";
 import {
@@ -24,8 +24,8 @@ import {
   FaArrowLeft
 } from "react-icons/fa";
 
-export default function TicketDetails({ params }) {
-  const ticketId = params.taskId;
+export default function TicketDetails() {
+  const ticketId = useParams().taskId;
   const [ticketDetails, setTicketDetails] = useState(null);
   const [replies, setReplies] = useState([]);
   const [loading, setLoading] = useState(true);

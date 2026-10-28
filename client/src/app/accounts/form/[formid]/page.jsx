@@ -6,11 +6,11 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import ProtectedRoute from "../../../../context/ProtectedRoute";
 
-export default function TicketDetails({ params }) {
-  const ticketId = params.formid;
+export default function TicketDetails() {
+  const ticketId = useParams().formid;
   const [ticketDetails, setTicketDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
